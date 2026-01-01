@@ -30,6 +30,10 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle?: string })
 }
 
 export default function Page() {
+  const sharedCardClass =
+    "rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.9)] transition hover:-translate-y-0.5 hover:border-white/20";
+  const sharedCardContentClass = "flex h-full flex-col gap-3";
+
   return (
     <div className="relative min-h-screen bg-neutral-950 text-white">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/80 backdrop-blur">
@@ -181,20 +185,28 @@ export default function Page() {
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {packages.slice(0, 3).map((pkg) => (
-                <div key={pkg.title} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="text-lg font-semibold">{pkg.title}</div>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-neutral-300">
-                      {pkg.duration}
-                    </span>
+                <div
+                  key={pkg.title}
+                  className={`${sharedCardClass} border-t-2 border-t-emerald-400/30`}
+                >
+                  <div className={sharedCardContentClass}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-emerald-200">Package</p>
+                        <div className="text-lg font-semibold">{pkg.title}</div>
+                      </div>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-wider text-neutral-300">
+                        {pkg.duration}
+                      </span>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-neutral-300">{pkg.description}</p>
+                    <Link
+                      href="/packages"
+                      className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-300"
+                    >
+                      See All Packages
+                    </Link>
                   </div>
-                  <p className="mt-3 text-sm text-neutral-300 leading-6">{pkg.description}</p>
-                  <Link
-                    href="/packages"
-                    className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-300"
-                  >
-                    See All Packages
-                  </Link>
                 </div>
               ))}
             </div>
@@ -207,14 +219,24 @@ export default function Page() {
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {services.map((cat) => (
-                <div key={cat.title} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="text-lg font-semibold">{cat.title}</div>
-                    <span className="text-2xl">{cat.icon}</span>
+                <div
+                  key={cat.title}
+                  className={`${sharedCardClass} border-t-2 border-t-fuchsia-400/30`}
+                >
+                  <div className={sharedCardContentClass}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-fuchsia-200">Category</p>
+                        <div className="text-lg font-semibold">{cat.title}</div>
+                      </div>
+                      <span className="text-2xl">{cat.icon}</span>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-neutral-300">{cat.description}</p>
+                    <p className="mt-4 text-xs uppercase tracking-wider text-neutral-400">Top requests</p>
+                    <p className="text-sm leading-6 text-neutral-300">
+                      {cat.items.slice(0, 2).join(" • ")}
+                    </p>
                   </div>
-                  <p className="mt-2 text-sm text-neutral-300">{cat.description}</p>
-                  <p className="mt-4 text-xs uppercase tracking-[0.2em] text-neutral-400">Top requests</p>
-                  <p className="mt-2 text-sm text-neutral-300">{cat.items.slice(0, 2).join(" • ")}</p>
                 </div>
               ))}
             </div>
@@ -278,10 +300,23 @@ export default function Page() {
 
             <div className="grid gap-5 md:grid-cols-3">
               {testimonials.slice(0, 3).map((testimonial) => (
-                <div key={testimonial.name} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                  <p className="text-sm text-neutral-300 leading-6">“{testimonial.quote}”</p>
-                  <div className="mt-4 text-sm font-semibold text-white">{testimonial.name}</div>
-                  <div className="text-xs text-neutral-400">{testimonial.service}</div>
+                <div
+                  key={testimonial.name}
+                  className={`${sharedCardClass} border-t-2 border-t-sky-400/30`}
+                >
+                  <div className={sharedCardContentClass}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-sky-200">Testimonial</p>
+                        <div className="text-lg font-semibold">{testimonial.name}</div>
+                      </div>
+                      <span className="text-2xl">💬</span>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-neutral-300">“{testimonial.quote}”</p>
+                    <div className="text-xs uppercase tracking-wider text-neutral-400">
+                      {testimonial.service}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
