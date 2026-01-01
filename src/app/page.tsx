@@ -11,21 +11,85 @@ const WHATSAPP_LINK = `https://wa.me/${PHONE_INTL}?text=${encodeURIComponent(
 
 const services = [
   {
-    title: "Spa",
+    title: "Spa Therapy",
+    description: "Slow, restorative bodywork for full-body renewal.",
+    icon: "💆🏾‍♀️",
     items: ["Swedish Massage", "Deep Tissue Massage", "Hot Stone Massage", "Body Scrub", "Body Wrap"],
   },
   {
-    title: "Beauty",
+    title: "Beauty & Glow",
+    description: "Skincare and makeup that leaves you luminous.",
+    icon: "✨",
     items: ["Facials", "Skincare Consultation", "Lash Services", "Brow Shaping", "Makeup (On request)"],
   },
   {
-    title: "Salon",
+    title: "Hair Studio",
+    description: "Protective styles, treatments, and polished looks.",
+    icon: "💇🏾‍♀️",
     items: ["Wash & Blow Dry", "Braids", "Wig Install", "Treatment", "Styling"],
   },
   {
-    title: "Nails",
+    title: "Nail Lounge",
+    description: "Fresh sets, clean care, and artful finishing.",
+    icon: "💅🏾",
     items: ["Manicure", "Pedicure", "Gel Nails", "Acrylic Nails", "Nail Art"],
   },
+];
+
+const highlights = [
+  { label: "Happy Clients", value: "500+" },
+  { label: "Years of Care", value: "8+" },
+  { label: "Services Weekly", value: "120" },
+  { label: "Weekend Slots", value: "Sat Only" },
+];
+
+const rituals = [
+  {
+    title: "Glow Reset",
+    time: "90 min",
+    desc: "A facial + back massage ritual to brighten and reset skin.",
+    includes: ["Deep cleanse", "Hydrating mask", "Aromatherapy massage"],
+  },
+  {
+    title: "Royal Relax",
+    time: "120 min",
+    desc: "Full body scrub followed by a hot stone release massage.",
+    includes: ["Body polish", "Hot stones", "Herbal tea"],
+  },
+  {
+    title: "Polish & Poise",
+    time: "75 min",
+    desc: "Signature mani-pedi with gel finish and nail art accents.",
+    includes: ["Cuticle care", "Gel polish", "Nail art"],
+  },
+];
+
+const testimonials = [
+  {
+    name: "Akosua B.",
+    service: "Hot Stone Massage",
+    quote:
+      "The calmest massage I have ever had. The space is clean, and the team made me feel so relaxed.",
+  },
+  {
+    name: "Esi M.",
+    service: "Gel Manicure",
+    quote: "My nails lasted for weeks and the attention to detail was amazing. I keep coming back.",
+  },
+  {
+    name: "Naa D.",
+    service: "Makeup Session",
+    quote: "Flawless makeup for my event. They listened to exactly what I wanted.",
+  },
+];
+
+const gallery = [
+  { title: "Spa Suites", tag: "Relaxing space", color: "from-emerald-400/30 via-transparent" },
+  { title: "Skin Glow", tag: "Facials", color: "from-amber-300/30 via-transparent" },
+  { title: "Nail Art", tag: "Creative sets", color: "from-pink-400/30 via-transparent" },
+  { title: "Braids", tag: "Protective styles", color: "from-indigo-400/30 via-transparent" },
+  { title: "Bridal", tag: "Makeup", color: "from-rose-400/30 via-transparent" },
+  { title: "Wellness", tag: "Self-care", color: "from-cyan-400/30 via-transparent" },
 ];
 
 function Container({ children }: { children: React.ReactNode }) {
@@ -61,11 +125,11 @@ export default function Page() {
               <a className="hover:text-white" href="#services">
                 Services
               </a>
+              <a className="hover:text-white" href="#rituals">
+                Signature Rituals
+              </a>
               <a className="hover:text-white" href="#gallery">
                 Gallery
-              </a>
-              <a className="hover:text-white" href="#about">
-                About
               </a>
               <a className="hover:text-white" href="#contact">
                 Contact
@@ -86,7 +150,8 @@ export default function Page() {
 
       <main>
         <section className="relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.12),transparent_60%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.14),transparent_60%)]" />
+          <div className="pointer-events-none absolute left-1/2 top-24 h-64 w-64 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
           <Container>
             <div className="py-14 sm:py-20">
               <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
@@ -100,8 +165,8 @@ export default function Page() {
                     Relax. Glow. Restore.
                   </h1>
                   <p className="mt-4 text-neutral-300 text-base sm:text-lg">
-                    Welcome to <span className="text-white font-semibold">Glittering Spa</span> — your calm
-                    space for premium spa, beauty, salon and nail services in Awoshie (Baah Yard).
+                    Welcome to <span className="text-white font-semibold">Glittering Spa</span> — your calm space for
+                    premium spa, beauty, salon and nail services in Awoshie (Baah Yard).
                   </p>
 
                   <div className="mt-6 flex flex-col sm:flex-row gap-3">
@@ -121,15 +186,15 @@ export default function Page() {
                     </a>
                   </div>
 
-                  <div className="mt-6 grid grid-cols-2 gap-3 text-sm text-neutral-300">
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <div className="text-white font-semibold">Location</div>
-                      <div className="mt-1">{LOCATION}</div>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <div className="text-white font-semibold">Bookings</div>
-                      <div className="mt-1">WhatsApp / Call</div>
-                    </div>
+                  <div className="mt-8 grid grid-cols-2 gap-3 text-sm text-neutral-300">
+                    {highlights.map((item) => (
+                      <div key={item.label} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                        <div className="text-white text-lg font-semibold">{item.value}</div>
+                        <div className="mt-1 text-xs uppercase tracking-[0.2em] text-neutral-400">
+                          {item.label}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -156,6 +221,11 @@ export default function Page() {
                     ))}
                   </div>
 
+                  <div className="mt-6 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-3 text-sm text-neutral-200">
+                    <div className="font-semibold text-white">Same-day bookings available</div>
+                    <div className="text-xs text-neutral-300">Chat with us on WhatsApp to confirm availability.</div>
+                  </div>
+
                   <a
                     href={WHATSAPP_LINK}
                     target="_blank"
@@ -174,6 +244,37 @@ export default function Page() {
           </Container>
         </section>
 
+        <section className="border-t border-white/10 py-14 sm:py-20">
+          <Container>
+            <SectionTitle
+              title="Why clients love Glittering Spa"
+              subtitle="Calm vibes, premium products, and a welcoming team that listens."
+            />
+
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  title: "Thoughtful Experience",
+                  desc: "Every visit is customized, from scent and music to the pressure you prefer.",
+                },
+                {
+                  title: "Clean + Serene",
+                  desc: "We keep our studio spotless so you can fully relax and enjoy your treatment.",
+                },
+                {
+                  title: "Skilled Specialists",
+                  desc: "Our team focuses on detailed care, gentle touch, and noticeable results.",
+                },
+              ].map((item) => (
+                <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                  <div className="text-lg font-semibold">{item.title}</div>
+                  <p className="mt-3 text-sm text-neutral-300 leading-6">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+
         <section id="services" className="border-t border-white/10 py-14 sm:py-20">
           <Container>
             <SectionTitle
@@ -184,7 +285,11 @@ export default function Page() {
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {services.map((cat) => (
                 <div key={cat.title} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                  <div className="text-lg font-semibold">{cat.title}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-lg font-semibold">{cat.title}</div>
+                    <span className="text-2xl">{cat.icon}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-neutral-300">{cat.description}</p>
                   <ul className="mt-4 space-y-2 text-sm text-neutral-300">
                     {cat.items.map((it) => (
                       <li key={it} className="flex gap-2">
@@ -199,9 +304,35 @@ export default function Page() {
           </Container>
         </section>
 
+        <section id="rituals" className="border-t border-white/10 py-14 sm:py-20">
+          <Container>
+            <SectionTitle title="Signature Rituals" subtitle="Curated experiences designed for deep rest and glow." />
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {rituals.map((ritual) => (
+                <div key={ritual.title} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">{ritual.title}</h3>
+                    <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">{ritual.time}</span>
+                  </div>
+                  <p className="mt-3 text-sm text-neutral-300 leading-6">{ritual.desc}</p>
+                  <ul className="mt-4 space-y-2 text-sm text-neutral-300">
+                    {ritual.includes.map((item) => (
+                      <li key={item} className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+
         <section id="gallery" className="border-t border-white/10 py-14 sm:py-20">
           <Container>
-            <SectionTitle title="Gallery" subtitle="See our latest work on Instagram." />
+            <SectionTitle title="Gallery" subtitle="A glimpse of our glow-ups and calming spaces." />
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
               <a
@@ -213,13 +344,19 @@ export default function Page() {
                 Visit Instagram: @{INSTAGRAM} <span aria-hidden>↗</span>
               </a>
 
-              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                {Array.from({ length: 6 }).map((_, i) => (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {gallery.map((item) => (
                   <div
-                    key={i}
-                    className="aspect-square rounded-xl border border-white/10 bg-neutral-950/50"
-                    title="Add a photo here"
-                  />
+                    key={item.title}
+                    className={`relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br ${item.color} to-neutral-950/60 p-5`}
+                  >
+                    <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.3),transparent_60%)]" />
+                    <div className="relative">
+                      <div className="text-sm uppercase tracking-[0.25em] text-neutral-300">{item.tag}</div>
+                      <div className="mt-2 text-lg font-semibold">{item.title}</div>
+                      <div className="mt-12 text-xs text-neutral-400">Add your photo here</div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -234,27 +371,58 @@ export default function Page() {
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
                 <h3 className="text-lg font-semibold">Our Promise</h3>
                 <p className="mt-3 text-sm text-neutral-300 leading-6">
-                  At Glittering Spa, we combine comfort, cleanliness, and professional care to give you results
-                  you can see and relaxation you can feel.
+                  At Glittering Spa, we combine comfort, cleanliness, and professional care to give you results you
+                  can see and relaxation you can feel.
                 </p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2 text-sm text-neutral-300">
+                  {["Premium products", "Gentle techniques", "Warm hospitality", "Clean environment"].map((item) => (
+                    <div key={item} className="rounded-xl border border-white/10 bg-neutral-950/40 p-3">
+                      {item}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
                 <h3 className="text-lg font-semibold">Opening Days</h3>
                 <div className="mt-3 text-sm text-neutral-300">
-                  {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((d, idx) => (
+                  {[
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                  ].map((d, idx) => (
                     <div
                       key={d}
-                      className={`flex items-center justify-between py-2 ${
-                        idx < 5 ? "border-b border-white/10" : ""
-                      }`}
+                      className={`flex items-center justify-between py-2 ${idx < 5 ? "border-b border-white/10" : ""}`}
                     >
                       <span>{d}</span>
                       <span>Open</span>
                     </div>
                   ))}
                 </div>
+                <div className="mt-6 rounded-xl border border-white/10 bg-neutral-950/40 p-4 text-xs text-neutral-300">
+                  Hours can be shared on WhatsApp — we’ll confirm your preferred time quickly.
+                </div>
               </div>
+            </div>
+          </Container>
+        </section>
+
+        <section className="border-t border-white/10 py-14 sm:py-20">
+          <Container>
+            <SectionTitle title="Client Love" subtitle="Words from clients who glow with us." />
+
+            <div className="grid gap-5 md:grid-cols-3">
+              {testimonials.map((testimonial) => (
+                <div key={testimonial.name} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                  <p className="text-sm text-neutral-300 leading-6">“{testimonial.quote}”</p>
+                  <div className="mt-4 text-sm font-semibold text-white">{testimonial.name}</div>
+                  <div className="text-xs text-neutral-400">{testimonial.service}</div>
+                </div>
+              ))}
             </div>
           </Container>
         </section>
