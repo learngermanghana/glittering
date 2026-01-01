@@ -1,12 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+﻿@import "tailwindcss";
 
-:root {
-  color-scheme: dark;
+:root{
+  --bg: #fbfbf9;
 }
 
-html,
-body {
-  height: 100%;
+body{
+  background: var(--bg);
+}
+
+h1,h2,h3{
+  letter-spacing: -0.02em;
 }
