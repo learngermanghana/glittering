@@ -21,10 +21,10 @@ function Container({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="mb-8">
+    <div className="mb-10">
       <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">Glittering Spa</p>
       <h2 className="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight text-white">{title}</h2>
-      {subtitle ? <p className="mt-2 text-neutral-300">{subtitle}</p> : null}
+      {subtitle ? <p className="mt-3 text-neutral-300 leading-7">{subtitle}</p> : null}
     </div>
   );
 }
@@ -73,11 +73,11 @@ export default function Page() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden border-b border-white/10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.35),transparent_60%)]" />
           <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-[120px]" />
           <Container>
-            <div className="py-16 sm:py-24">
+            <div className="py-16 sm:py-20">
               <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-neutral-200">
@@ -144,7 +144,7 @@ export default function Page() {
           </Container>
         </section>
 
-        <section className="border-t border-white/10 py-12 sm:py-16">
+        <section className="border-t border-white/10 bg-white/2 py-16 sm:py-20">
           <Container>
             <SectionTitle title="Professional care, premium results" subtitle="Everything you need to feel restored." />
 
@@ -175,7 +175,7 @@ export default function Page() {
           </Container>
         </section>
 
-        <section className="border-t border-white/10 py-12 sm:py-16">
+        <section className="border-t border-white/10 py-16 sm:py-20">
           <Container>
             <SectionTitle title="Top Packages" subtitle="Our most booked experiences for instant glow." />
 
@@ -201,7 +201,7 @@ export default function Page() {
           </Container>
         </section>
 
-        <section className="border-t border-white/10 py-12 sm:py-16">
+        <section className="border-t border-white/10 bg-neutral-950/40 py-16 sm:py-20">
           <Container>
             <SectionTitle title="Services preview" subtitle="A quick look at our most-requested categories." />
 
@@ -230,7 +230,7 @@ export default function Page() {
           </Container>
         </section>
 
-        <section className="border-t border-white/10 py-12 sm:py-16">
+        <section className="border-t border-white/10 py-16 sm:py-20">
           <Container>
             <SectionTitle title="Gallery highlight" subtitle="Real client glow-ups and salon moments." />
 
@@ -272,7 +272,7 @@ export default function Page() {
           </Container>
         </section>
 
-        <section className="border-t border-white/10 py-12 sm:py-16">
+        <section className="border-t border-white/10 bg-white/2 py-12">
           <Container>
             <SectionTitle title="Client reviews" subtitle="Five-star energy from clients who glow with us." />
 
@@ -288,7 +288,7 @@ export default function Page() {
           </Container>
         </section>
 
-        <section className="border-t border-white/10 py-12 sm:py-16">
+        <section className="border-t border-b border-white/10 bg-neutral-950/40 py-16 sm:py-20">
           <Container>
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
