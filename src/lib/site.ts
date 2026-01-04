@@ -123,6 +123,36 @@ export const categories = [
     desc: "Volume options for BBL injections.",
     items: ["60ml", "120ml", "180ml", "240ml", "300ml", "400ml", "500ml"],
   },
+  {
+    title: "Hair",
+    desc: "Braiding, installs, and wig services.",
+    items: ["Braiding", "Installation", "Retouching", "Washing", "Machine wig making"],
+  },
+  {
+    title: "Makeup",
+    desc: "Makeup services for every occasion.",
+    items: ["Walk in", "Wedding"],
+  },
+  {
+    title: "Lash Extension",
+    desc: "Customized lash looks.",
+    items: ["Classic", "Hybrid", "Volume", "Mega"],
+  },
+  {
+    title: "Pedicure",
+    desc: "Foot care with signature finishes.",
+    items: ["Standard", "Jelly", "Paraffin", "Signature"],
+  },
+  {
+    title: "Manicure",
+    desc: "Polished, clean nail care.",
+    items: ["Standard", "Jelly", "Paraffin", "Signature"],
+  },
+  {
+    title: "Nails 💅 art designs",
+    desc: "Creative nail enhancements and finishes.",
+    items: ["Acrylic", "Stick on", "Gel builder", "Gel polish"],
+  },
 ];
 
 export const packages = [
