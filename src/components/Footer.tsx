@@ -7,7 +7,10 @@ export function Footer() {
       <Container>
         <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between text-sm text-neutral-600">
           <div>
-            © {new Date().getFullYear()} {SITE.name} • {SITE.location}
+            <div>© {new Date().getFullYear()} {SITE.name} • {SITE.location}</div>
+            <div className="mt-1">
+              This was developed by Xenom IT Solutions (Founders Sedifex Inventory and Apzla Church Management, Falowen German Learning platform)
+            </div>
           </div>
           <div className="flex gap-4">
             <a className="hover:underline" href={`tel:+${SITE.phoneIntl}`}>Call</a>
