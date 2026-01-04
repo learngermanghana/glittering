@@ -5,8 +5,8 @@ import { Footer } from "@/components/Footer";
 import { WHATSAPP_LINK } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Glittering Spa | Awoshie",
-  description: "Spa • Beauty • Salon • Nails in Awoshie (Baah Yard). Book on WhatsApp.",
+  title: "Glittering Spa | Awoshie & Spintex",
+  description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

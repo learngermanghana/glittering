@@ -12,7 +12,7 @@ export default function AboutPage() {
           <p className="text-neutral-700 leading-7">
             Glittering Spa was founded by Gifty Mintaa in 2016 with a simple mission, to create a beauty and
             wellness space where women feel confident, relaxed, and truly cared for. What began as a single
-            branch has now grown into three vibrant locations across Awoshie and Spintex, built on trust,
+            branch has now grown into two vibrant locations across Awoshie and Spintex, built on trust,
             quality service, and consistent results.
           </p>
 

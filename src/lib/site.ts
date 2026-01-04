@@ -1,17 +1,30 @@
-﻿export const SITE = {
+export const SITE = {
   name: "Glittering Spa",
   phoneIntl: "233241094206",
   email: "giftysaforo8@gmail.com",
   instagram: "glittering_spa",
-  location: "Awoshie, Baah Yard",
+  location: "Awoshie & Spintex",
 };
+
+export const LOCATIONS = [
+  {
+    name: "Awoshie",
+    address: "Baah Yard, Near UVP Pub, Awoshie Traffic Light",
+    directionsLink:
+      "https://www.google.com/maps/dir//GLITTERING+SPA,+Baah+Yard,+Near+UVP+PUB,+Awoshie+Traffic+Light,+Awoshie/data=!4m6!4m5!1m1!4e2!1m2!1m1!1s0xfdf99bdf594a507:0x12fe8126a88cbb45?sa=X&ved=1t:57443&ictx=111",
+    mapQuery: "GLITTERING SPA, Baah Yard, Near UVP Pub, Awoshie Traffic Light, Awoshie",
+  },
+  {
+    name: "Spintex",
+    address: "Shell Signboard Traffic Signal Bus Stop, Spintex Rd, Accra",
+    directionsLink:
+      "https://www.google.com/maps/dir//JVPW%2BX4M+Glittering+Spa+Spintex,+Shell+Signboard+Traffic+Signal+Bus+Stop,+Spintex+Rd,+Accra/data=!4m6!4m5!1m1!4e2!1m2!1m1!1s0xfdf850026c8a5f1:0xac9c0de69ba13140?sa=X&ved=1t:57443&ictx=111",
+    mapQuery: "Glittering Spa Spintex, Shell Signboard Traffic Signal Bus Stop, Spintex Rd, Accra",
+  },
+];
 
 export const WHATSAPP_LINK = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
   "Hi Glittering Spa! I want to book a session.\nName: ____\nService: ____\nDate: ____\nTime: ____"
-)}`;
-
-export const DIRECTIONS_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-  "Glittering Spa, Awoshie Baah Yard"
 )}`;
 
 export const categories = [

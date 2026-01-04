@@ -1,7 +1,7 @@
 ﻿import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/Container";
-import { SITE, WHATSAPP_LINK, DIRECTIONS_LINK } from "@/lib/site";
+import { SITE, WHATSAPP_LINK, LOCATIONS } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
 
 export default function HomePage() {
@@ -9,6 +9,7 @@ export default function HomePage() {
   const featuredImages = galleryImages.length
     ? [...galleryImages].sort(() => 0.5 - Math.random()).slice(0, 3)
     : [];
+  const [awoshie, spintex] = LOCATIONS;
 
   return (
     <div className="relative">
@@ -44,12 +45,20 @@ export default function HomePage() {
               Book on WhatsApp
             </a>
             <a
-              href={DIRECTIONS_LINK}
+              href={awoshie.directionsLink}
               target="_blank"
               rel="noreferrer"
               className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold hover:bg-neutral-50 shadow-sm text-center"
             >
-              Get Directions
+              Get Directions (Awoshie)
+            </a>
+            <a
+              href={spintex.directionsLink}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold hover:bg-neutral-50 shadow-sm text-center"
+            >
+              Get Directions (Spintex)
             </a>
           </div>
 
