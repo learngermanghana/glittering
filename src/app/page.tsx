@@ -105,33 +105,20 @@ export default function HomePage() {
                 {
                   quote: "The massage was heavenly and the space felt so calming. I walked out glowing.",
                   name: "A. Mensah",
-                  image:
-                    "https://github.com/learngermanghana/glittering/blob/main/public/gallery/pexels-lombejr-5187969.jpg?raw=1",
                 },
                 {
                   quote: "Impeccable service and attention to detail. My nails have never looked better!",
                   name: "R. Owusu",
-                  image:
-                    "https://github.com/learngermanghana/glittering/blob/main/public/gallery/pexels-lombejr-5324588.jpg?raw=1",
                 },
                 {
                   quote: "Friendly team, beautiful ambience, and my facial left me radiant.",
                   name: "K. Boateng",
-                  image:
-                    "https://github.com/learngermanghana/glittering/blob/main/public/gallery/pexels-shvetsa-3852148.jpg?raw=1",
                 },
               ].map((item) => (
                 <div key={item.name} className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-12 overflow-hidden rounded-full border border-white/70 shadow-sm">
-                      <img src={item.image} alt={`${item.name} testimonial`} className="h-full w-full object-cover" />
-                    </div>
-                    <div>
-                      <div className="text-brand-600 text-sm">★★★★★</div>
-                      <div className="text-sm font-semibold text-neutral-900">{item.name}</div>
-                    </div>
-                  </div>
+                  <div className="text-brand-600 text-sm">★★★★★</div>
                   <p className="mt-3 text-sm text-neutral-700 leading-6">“{item.quote}”</p>
+                  <div className="mt-4 text-sm font-semibold text-neutral-900">{item.name}</div>
                 </div>
               ))}
             </div>
