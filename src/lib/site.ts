@@ -27,6 +27,10 @@ export const WHATSAPP_LINK = `https://wa.me/${SITE.phoneIntl}?text=${encodeURICo
   "Hi Glittering Spa! I want to book a session.\nName: ____\nService: ____\nDate: ____\nTime: ____"
 )}`;
 
+export const SALES_WHATSAPP_LINK = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
+  "Hi Glittering Spa! I'm interested in your products.\nName: ____\nProduct: ____\nQuantity: ____"
+)}`;
+
 export const categories = [
   {
     title: "Skin Therapy",
@@ -126,4 +130,47 @@ export const packages = [
   { title: "Glow Facial", tag: "45–60 mins", desc: "Fresh skin, clean glow, feel confident." },
   { title: "Nails & Toes Combo", tag: "60–90 mins", desc: "Manicure + pedicure for a clean, classy look." },
   { title: "Self-Care Day", tag: "2–3 hours", desc: "A complete pamper session (custom to your needs)." },
+];
+
+export const products = [
+  {
+    name: "Radiance Body Scrub",
+    description: "Gentle exfoliation for a smooth, glowing finish.",
+    image: "/products/2.jpeg",
+  },
+  {
+    name: "Glow Body Butter",
+    description: "Deep moisture for soft, nourished skin all day.",
+    image: "/products/3.jpeg",
+  },
+  {
+    name: "Brightening Soap Bar",
+    description: "Daily cleanser for a refreshed, even glow.",
+    image: "/products/4.jpeg",
+  },
+  {
+    name: "Nourishing Oil Blend",
+    description: "Lightweight oil to lock in moisture and shine.",
+    image: "/products/5.jpeg",
+  },
+  {
+    name: "Clarifying Face Wash",
+    description: "Balancing cleanse for smooth, clear skin.",
+    image: "/products/6.jpeg",
+  },
+  {
+    name: "Hydrating Face Cream",
+    description: "Soothing hydration with a dewy finish.",
+    image: "/products/7.jpeg",
+  },
+  {
+    name: "Cocoa Glow Lotion",
+    description: "Silky lotion for radiant, cocoa-soft skin.",
+    image: "/products/8.jpeg",
+  },
+  {
+    name: "Luxury Skin Serum",
+    description: "Targeted care for a luminous complexion.",
+    image: "/products/9.jpeg",
+  },
 ];

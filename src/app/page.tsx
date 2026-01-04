@@ -1,7 +1,7 @@
 ﻿import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/Container";
-import { SITE, WHATSAPP_LINK, LOCATIONS } from "@/lib/site";
+import { SITE, WHATSAPP_LINK, LOCATIONS, products, SALES_WHATSAPP_LINK } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
 
 export default function HomePage() {
@@ -91,10 +91,10 @@ export default function HomePage() {
             </div>
 
             <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-              <div className="text-sm text-neutral-500">Popular</div>
-              <div className="mt-1 text-lg font-semibold">Packages for quick booking</div>
-              <Link className="mt-4 inline-block text-sm font-semibold text-brand-800 hover:underline" href="/packages">
-                View packages →
+              <div className="text-sm text-neutral-500">Products</div>
+              <div className="mt-1 text-lg font-semibold">Glow essentials and best-sellers</div>
+              <Link className="mt-4 inline-block text-sm font-semibold text-brand-800 hover:underline" href="/products">
+                Explore products →
               </Link>
             </div>
 
@@ -137,6 +137,57 @@ export default function HomePage() {
               </div>
             </div>
           ) : null}
+
+          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm text-neutral-500">Products</div>
+                <div className="mt-1 text-lg font-semibold">Sample products our clients love</div>
+                <p className="mt-2 text-sm text-neutral-600">
+                  Browse a few favorites and chat with our sales team for availability.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/products"
+                  className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold hover:bg-neutral-50 shadow-sm"
+                >
+                  View all products
+                </Link>
+                <a
+                  href={SALES_WHATSAPP_LINK}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-900 shadow-sm"
+                >
+                  Talk to our sales team
+                </a>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              {products.slice(0, 3).map((product) => (
+                <div
+                  key={product.name}
+                  className="overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
+                >
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <div className="text-sm font-semibold text-neutral-900">{product.name}</div>
+                    <p className="mt-1 text-xs text-neutral-600">{product.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

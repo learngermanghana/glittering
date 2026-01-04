@@ -8,7 +8,7 @@ const routes = [
   "/book",
   "/contact",
   "/gallery",
-  "/packages",
+  "/products",
   "/services",
   "/the-story",
 ];
