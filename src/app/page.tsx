@@ -90,6 +90,39 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+
+          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm text-neutral-500">Testimonials</div>
+                <div className="mt-1 text-lg font-semibold">Loved by our guests</div>
+              </div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-brand-700">5.0 Average Rating</div>
+            </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
+              {[
+                {
+                  quote: "The massage was heavenly and the space felt so calming. I walked out glowing.",
+                  name: "A. Mensah",
+                },
+                {
+                  quote: "Impeccable service and attention to detail. My nails have never looked better!",
+                  name: "R. Owusu",
+                },
+                {
+                  quote: "Friendly team, beautiful ambience, and my facial left me radiant.",
+                  name: "K. Boateng",
+                },
+              ].map((item) => (
+                <div key={item.name} className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
+                  <div className="text-brand-600 text-sm">★★★★★</div>
+                  <p className="mt-3 text-sm text-neutral-700 leading-6">“{item.quote}”</p>
+                  <div className="mt-4 text-sm font-semibold text-neutral-900">{item.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
       </Container>
     </div>
