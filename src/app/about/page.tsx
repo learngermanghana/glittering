@@ -1,4 +1,4 @@
-﻿import { Container } from "@/components/Container";
+import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SITE, WHATSAPP_LINK } from "@/lib/site";
 
@@ -10,13 +10,24 @@ export default function AboutPage() {
 
         <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
           <p className="text-neutral-700 leading-7">
-            At {SITE.name}, we combine comfort, cleanliness, and professional care to give you results you can
-            see and relaxation you can feel. Whether you’re coming for spa therapy, beauty, salon services, or
-            nails — we’ll make your experience smooth and enjoyable.
+            Glittering Spa was founded by Gifty Mintaa in 2016 with a simple mission, to create a beauty and
+            wellness space where women feel confident, relaxed, and truly cared for. What began as a single
+            branch has now grown into three vibrant locations across Awoshie and Spintex, built on trust,
+            quality service, and consistent results.
           </p>
 
           <p className="mt-4 text-neutral-700 leading-7">
-            Location: <span className="font-semibold">{SITE.location}</span>. We’re open <span className="font-semibold">Mon–Sat</span>.
+            Gifty’s motivation has always been to empower women through self-care. She believes that beauty is
+            more than appearance, it is confidence, comfort, and emotional well-being. Leading the business has
+            come with challenges, especially managing multiple roles and responsibilities as the brand expanded,
+            but her dedication and passion have remained unwavering.
+          </p>
+
+          <p className="mt-4 text-neutral-700 leading-7">
+            Today, Glittering Spa is supported by a team of about 19 skilled professionals, all trained to
+            deliver excellent customer care, hygiene, and modern beauty services. Under Gifty’s leadership, the
+            spa continues to grow while staying true to its purpose — to inspire confidence, uplift women, and
+            make every client feel beautiful inside and out.
           </p>
 
           <a
