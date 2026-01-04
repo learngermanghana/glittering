@@ -17,13 +17,35 @@ const trainingWhatsappLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURICo
   "Hi Glittering Spa! I would like to learn more about your training school.\nName: ____\nCourse interest: ____\nAvailability: ____"
 )}`;
 
+const courseDurations = [
+  { label: "3 months", detail: "Intensive" },
+  { label: "6 months", detail: "Advance" },
+  { label: "1 year", detail: "Professional" },
+  { label: "2 years", detail: "Diploma" },
+];
+
+const courseList = [
+  "Nail / pedicure",
+  "Makeup / gele tying",
+  "Lashe extensions",
+  "Microblading brows",
+  "Facial treatment",
+  "Waxing",
+  "Massage",
+  "Body piercing",
+  "Machine wig making",
+  "Bridal hairstyling",
+  "Hair dressing",
+  "Locks",
+];
+
 export default function TrainingPage() {
   return (
     <Container>
       <section className="py-12 sm:py-16">
         <SectionTitle
           title="Glittering Spa Training School"
-          subtitle="A dedicated academy created to equip future beauty professionals with real-world skills."
+          subtitle="Admissions are open for learners ready to grow into confident beauty professionals."
         />
 
         <div className="rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
@@ -42,6 +64,12 @@ export default function TrainingPage() {
                 that define the Glittering Spa experience. We focus on confidence, professionalism, and hands-on
                 readiness for the workplace.
               </p>
+              <div className="mt-6 rounded-2xl border border-black/10 bg-neutral-50 p-4">
+                <p className="text-sm font-semibold text-brand-950">Admission is open</p>
+                <p className="mt-2 text-sm text-neutral-700">
+                  Shorter courses are available for students who prefer a focused curriculum.
+                </p>
+              </div>
               <div className="mt-6 grid gap-3 text-sm text-neutral-700 sm:grid-cols-2">
                 {[
                   "Facial and skin therapy fundamentals",
@@ -65,6 +93,31 @@ export default function TrainingPage() {
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 45vw"
               />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+            <h3 className="text-xl font-semibold">Course duration</h3>
+            <div className="mt-4 space-y-3 text-sm text-neutral-700">
+              {courseDurations.map((course) => (
+                <div key={course.label} className="flex items-center justify-between gap-4">
+                  <span className="font-semibold text-brand-950">{course.label}</span>
+                  <span>{course.detail}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+            <h3 className="text-xl font-semibold">Courses</h3>
+            <div className="mt-4 grid gap-3 text-sm text-neutral-700 sm:grid-cols-2">
+              {courseList.map((course) => (
+                <div key={course} className="flex items-start gap-2">
+                  <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-brand-700" />
+                  <span>{course}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
