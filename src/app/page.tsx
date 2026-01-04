@@ -1,8 +1,15 @@
-﻿import Link from "next/link";
+﻿import Image from "next/image";
+import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SITE, WHATSAPP_LINK, DIRECTIONS_LINK } from "@/lib/site";
+import { getGalleryImages } from "@/lib/gallery";
 
 export default function HomePage() {
+  const galleryImages = getGalleryImages();
+  const featuredImages = galleryImages.length
+    ? [...galleryImages].sort(() => 0.5 - Math.random()).slice(0, 3)
+    : [];
+
   return (
     <div className="relative">
       {/* subtle background glow */}
@@ -90,6 +97,37 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+
+          {featuredImages.length ? (
+            <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm text-neutral-500">Gallery</div>
+                  <div className="mt-1 text-lg font-semibold">A peek at our latest looks</div>
+                </div>
+                <Link className="text-sm font-semibold text-brand-800 hover:underline" href="/gallery">
+                  View full gallery →
+                </Link>
+              </div>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                {featuredImages.map((src, index) => (
+                  <div
+                    key={`${src}-${index}`}
+                    className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
+                  >
+                    <Image
+                      src={src}
+                      alt={`Featured gallery image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
