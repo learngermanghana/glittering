@@ -8,6 +8,7 @@ import { Container } from "@/components/Container";
 
 const nav = [
   { href: "/", label: "Home" },
+  { href: "/book", label: "Book" },
   { href: "/services", label: "Services" },
   { href: "/packages", label: "Packages" },
   { href: "/gallery", label: "Gallery" },
