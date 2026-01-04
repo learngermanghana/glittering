@@ -48,7 +48,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-neutral-50 text-neutral-900 antialiased">
+      <body className="min-h-screen bg-rose-100 text-rose-950 antialiased">
         <Navbar />
         <main className="min-h-[70vh]">{children}</main>
         <Footer />
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href={WHATSAPP_LINK}
           target="_blank"
           rel="noreferrer"
-          className="fixed bottom-5 right-5 z-50 rounded-full bg-neutral-900 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-neutral-800"
+          className="fixed bottom-5 right-5 z-50 rounded-full bg-rose-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-rose-800"
         >
           WhatsApp Booking
         </a>
