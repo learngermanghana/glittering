@@ -119,6 +119,16 @@ export const categories = [
     ],
   },
   {
+    title: "Piercing",
+    desc: "Professional piercing services.",
+    items: ["Ear piercing", "Facial piercing", "Oral piercing", "Body piercing"],
+  },
+  {
+    title: "Brows",
+    desc: "Brow shaping and enhancement services.",
+    items: ["Brow lamination", "Micro blading", "Tint"],
+  },
+  {
     title: "BBL Injections",
     desc: "Volume options for BBL injections.",
     items: ["60ml", "120ml", "180ml", "240ml", "300ml", "400ml", "500ml"],
