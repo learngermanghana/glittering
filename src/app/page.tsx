@@ -23,7 +23,7 @@ export default function HomePage() {
         <section className="py-12 sm:py-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
-            Open Mon–Sat • {SITE.location}
+            Open Mon–Sat 7am–8pm • Sun 12–8pm • {SITE.location}
           </div>
 
           <h1 className="mt-6 text-4xl sm:text-6xl font-semibold tracking-tight">
