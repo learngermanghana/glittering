@@ -10,7 +10,6 @@ const routes = [
   "/gallery",
   "/products",
   "/services",
-  "/the-story",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
