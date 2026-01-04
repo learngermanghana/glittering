@@ -9,6 +9,7 @@ export default function HomePage() {
   const featuredImages = galleryImages.length
     ? [...galleryImages].sort(() => 0.5 - Math.random()).slice(0, 3)
     : [];
+  const trainingPreviewImages = ["/training/1.jpeg", "/training/2.jpeg", "/training/3.jpeg"];
   const [awoshie, spintex] = LOCATIONS;
 
   return (
@@ -137,6 +138,38 @@ export default function HomePage() {
               </div>
             </div>
           ) : null}
+
+          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm text-neutral-500">Training School</div>
+                <div className="mt-1 text-lg font-semibold">Learn with the Glittering Spa academy</div>
+                <p className="mt-2 text-sm text-neutral-600">
+                  Hands-on training in beauty, wellness, and professional spa services.
+                </p>
+              </div>
+              <Link className="text-sm font-semibold text-brand-800 hover:underline" href="/training">
+                Explore training →
+              </Link>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              {trainingPreviewImages.map((src, index) => (
+                <div
+                  key={`${src}-${index}`}
+                  className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
+                >
+                  <Image
+                    src={src}
+                    alt={`Training preview ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

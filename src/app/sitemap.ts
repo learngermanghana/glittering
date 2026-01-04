@@ -10,6 +10,7 @@ const routes = [
   "/gallery",
   "/products",
   "/services",
+  "/training",
   "/the-story",
 ];
 
