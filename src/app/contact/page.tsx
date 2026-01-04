@@ -70,7 +70,13 @@ export default function ContactPage() {
             <div className="mt-4 space-y-3 text-sm">
               <div className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
                 <div className="text-xs text-neutral-500">Days</div>
-                <div className="font-semibold">Mon – Sat</div>
+                <div className="font-semibold">Mon – Sun</div>
+              </div>
+
+              <div className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
+                <div className="text-xs text-neutral-500">Hours</div>
+                <div className="font-semibold">Mon – Sat: 7am – 8pm</div>
+                <div className="text-xs text-neutral-600">Sun: 12pm – 8pm</div>
               </div>
 
               <div className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
