@@ -1,6 +1,6 @@
 ﻿import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
-import { categories, packages, WHATSAPP_LINK } from "@/lib/site";
+import { categories, packages, SITE, WHATSAPP_LINK } from "@/lib/site";
 
 export default function ServicesPage() {
   return (
@@ -60,6 +60,42 @@ export default function ServicesPage() {
                 </a>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="mt-12">
+          <SectionTitle
+            title="See proof on social media"
+            subtitle="Our services are showcased in photos and videos online."
+          />
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+              <div className="text-lg font-semibold">Instagram</div>
+              <p className="mt-2 text-sm text-neutral-600">
+                Browse recent transformations, client videos, and behind-the-scenes updates.
+              </p>
+              <a
+                href={`https://instagram.com/${SITE.instagram}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
+              >
+                Visit Instagram @{SITE.instagram}
+              </a>
+            </div>
+            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+              <div className="text-lg font-semibold">Gallery</div>
+              <p className="mt-2 text-sm text-neutral-600">
+                See curated photo highlights from recent appointments and makeovers.
+              </p>
+              <a
+                href="/gallery"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
+              >
+                View photo gallery
+              </a>
+            </div>
           </div>
         </div>
       </section>
