@@ -174,43 +174,43 @@ export const packages = [
 
 export const products = [
   {
-    name: "Radiance Body Scrub",
-    description: "Gentle exfoliation for a smooth, glowing finish.",
+    name: "BBL & Maca Gummies",
+    description: "Gummy supplements with multiple blend options for body curves.",
     image: "/products/2.jpeg",
   },
   {
-    name: "Glow Body Butter",
-    description: "Deep moisture for soft, nourished skin all day.",
+    name: "Aguaje Maca Gummies",
+    description: "Max strength aguaje gummy blend for curves and glow.",
     image: "/products/3.jpeg",
   },
   {
-    name: "Brightening Soap Bar",
-    description: "Daily cleanser for a refreshed, even glow.",
+    name: "28 Days Detox Tea Set",
+    description: "Flat tummy tea paired with detox capsules for digestion.",
     image: "/products/4.jpeg",
   },
   {
-    name: "Nourishing Oil Blend",
-    description: "Lightweight oil to lock in moisture and shine.",
+    name: "Flat Tummy Tea with Moringa",
+    description: "Night-boost tea blend focused on appetite support.",
     image: "/products/5.jpeg",
   },
   {
-    name: "Clarifying Face Wash",
-    description: "Balancing cleanse for smooth, clear skin.",
+    name: "Dr. Rashel SPF 60+ Sun Cream",
+    description: "Anti-aging sunscreen cream with moisture support.",
     image: "/products/6.jpeg",
   },
   {
-    name: "Hydrating Face Cream",
-    description: "Soothing hydration with a dewy finish.",
+    name: "Gluta Berry Set",
+    description: "Glutathione blend for brightening and antioxidant support.",
     image: "/products/7.jpeg",
   },
   {
-    name: "Cocoa Glow Lotion",
-    description: "Silky lotion for radiant, cocoa-soft skin.",
+    name: "Butt Booster Capsules",
+    description: "Firming and rounding supplement blend for curves.",
     image: "/products/8.jpeg",
   },
   {
-    name: "Luxury Skin Serum",
-    description: "Targeted care for a luminous complexion.",
+    name: "Fruit Vitamin Effervescents",
+    description: "Biotin, apple cider, vitamin C, and glow-support tablets.",
     image: "/products/9.jpeg",
   },
 ];

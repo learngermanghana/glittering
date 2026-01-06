@@ -6,7 +6,7 @@ export default function ServicesPage() {
   return (
     <Container>
       <section className="py-12 sm:py-16">
-        <SectionTitle title="Services" subtitle="No prices yet — we can add them anytime." />
+        <SectionTitle title="Services" />
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {categories.map((c) => (
