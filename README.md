@@ -20,6 +20,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Instagram feed
+
+To show the Instagram section on the homepage, provide a valid Instagram Graph API access token:
+
+```bash
+INSTAGRAM_ACCESS_TOKEN=your_token_here
+```
+
+### Getting an Instagram Graph API access token
+
+1. **Ensure you have the right account type.** The Instagram Graph API requires an **Instagram Business or Creator account** that is connected to a **Facebook Page**. Personal accounts will not work.
+2. **Create a Meta app.** Go to the [Meta for Developers](https://developers.facebook.com/) dashboard, create a new app, and add the **Instagram Graph API** product.
+3. **Connect your Instagram account.** In the app dashboard, connect your Instagram Business/Creator account (via the linked Facebook Page).
+4. **Generate a User Access Token** with the `instagram_basic` permission (and any others you need). For development, you can use the Graph API Explorer. For production, implement OAuth and token refresh.
+5. **Copy the token** into your environment as `INSTAGRAM_ACCESS_TOKEN`.
+
+For more details, see the official Meta docs: [Instagram Graph API overview](https://developers.facebook.com/docs/instagram-api/).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
