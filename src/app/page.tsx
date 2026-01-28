@@ -3,14 +3,16 @@ import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SITE, WHATSAPP_LINK, LOCATIONS, products, SALES_WHATSAPP_LINK } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
+import { getInstagramMedia } from "@/lib/instagram";
 
-export default function HomePage() {
+export default async function HomePage() {
   const galleryImages = getGalleryImages();
   const featuredImages = galleryImages.length
     ? [...galleryImages].sort(() => 0.5 - Math.random()).slice(0, 3)
     : [];
   const trainingPreviewImages = ["/training/1.jpeg", "/training/2.jpeg", "/training/3.jpeg"];
   const [awoshie, spintex] = LOCATIONS;
+  const instagramPosts = await getInstagramMedia(6);
 
   return (
     <div className="relative">
@@ -220,6 +222,61 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm text-neutral-500">Instagram</div>
+                <div className="mt-1 text-lg font-semibold">Follow our latest updates</div>
+                <p className="mt-2 text-sm text-neutral-600">Fresh looks, client glow-ups, and behind-the-scenes.</p>
+              </div>
+              <a
+                href={`https://instagram.com/${SITE.instagram}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-semibold text-brand-800 hover:underline"
+              >
+                Visit Instagram @{SITE.instagram} →
+              </a>
+            </div>
+
+            {instagramPosts.length ? (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {instagramPosts.map((post) => {
+                  const imageSrc = post.media_type === "VIDEO" ? post.thumbnail_url : post.media_url;
+
+                  if (!imageSrc) {
+                    return null;
+                  }
+
+                  return (
+                    <a
+                      key={post.id}
+                      href={post.permalink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
+                    >
+                      <div className="relative aspect-[4/3]">
+                        <Image
+                          src={imageSrc}
+                          alt={post.caption ? post.caption.slice(0, 80) : "Instagram post"}
+                          fill
+                          className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      </div>
+                      {post.caption ? <div className="p-4 text-xs text-neutral-600">{post.caption}</div> : null}
+                    </a>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mt-6 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-6 text-sm text-neutral-600">
+                Connect Instagram to show the latest posts here.
+              </div>
+            )}
           </div>
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
