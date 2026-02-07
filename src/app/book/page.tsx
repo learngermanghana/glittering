@@ -14,6 +14,8 @@ export default function BookPage() {
     date: "",
     time: "",
     phone: "",
+    branch: "",
+    paymentConfirmed: false,
   });
 
   const whatsappLink = useMemo(() => {
@@ -24,6 +26,8 @@ export default function BookPage() {
       `Date: ${formData.date || "____"}`,
       `Time: ${formData.time || "____"}`,
       `Phone: ${formData.phone || "____"}`,
+      `Branch: ${formData.branch || "____"}`,
+      `Payment screenshot: ${formData.paymentConfirmed ? "Yes" : "No"}`,
     ].join("\n");
 
     return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(message)}`;
@@ -32,6 +36,16 @@ export default function BookPage() {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   return (
@@ -110,6 +124,33 @@ export default function BookPage() {
               </label>
             </div>
 
+            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-neutral-700">
+                Preferred Branch
+                <select
+                  name="branch"
+                  value={formData.branch}
+                  onChange={handleSelectChange}
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                >
+                  <option value="">Select a branch</option>
+                  <option value="Awoshie">Awoshie</option>
+                  <option value="Spintex">Spintex</option>
+                </select>
+              </label>
+
+              <label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm">
+                <input
+                  name="paymentConfirmed"
+                  checked={formData.paymentConfirmed}
+                  onChange={handleCheckboxChange}
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300"
+                />
+                Payment screenshot ready
+              </label>
+            </div>
+
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <a
                 href={whatsappLink}
@@ -138,6 +179,35 @@ export default function BookPage() {
               {"\n"}Date: {formData.date || "____"}
               {"\n"}Time: {formData.time || "____"}
               {"\n"}Phone: {formData.phone || "____"}
+              {"\n"}Branch: {formData.branch || "____"}
+              {"\n"}Payment screenshot: {formData.paymentConfirmed ? "Yes" : "No"}
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700">
+              <h3 className="text-sm font-semibold text-neutral-900">Payment details</h3>
+              <p className="mt-2 text-xs text-neutral-500">
+                Use the details below to make payment and keep a screenshot ready to share on WhatsApp.
+              </p>
+              <div className="mt-4 space-y-4 text-xs sm:text-sm">
+                <div>
+                  <p className="font-semibold text-neutral-900">General accounts</p>
+                  <p>Account Name: Glittering nails and makeover OR Gifty Mintaa Saforo</p>
+                  <p>Merchant ID: *824873 (Choose Momopay Option 2)</p>
+                  <p>Bank: Fidelity Bank — 2400777697112</p>
+                  <p>Account Name: Glittering nails and makeover</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-neutral-900">Awoshie branch</p>
+                  <p>Momo: 0598611996</p>
+                  <p>Awoshie Spa Branch Momo: 0270763296</p>
+                  <p>Account Name: Gifty Mintaa Saforo</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-neutral-900">Spintex branch</p>
+                  <p>Momo: 0530530852</p>
+                  <p>Account Name: Glittering nails and makeover</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
