@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { SITE, WHATSAPP_LINK } from "@/lib/site";
+import { BOOKING_URL, SITE } from "@/lib/site";
 import { Container } from "@/components/Container";
 
 const nav = [
@@ -54,7 +54,7 @@ export function Navbar() {
           </nav>
 
           <a
-            href={WHATSAPP_LINK}
+            href={BOOKING_URL}
             target="_blank"
             rel="noreferrer"
             className="hidden md:inline-flex rounded-2xl bg-rose-700 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:bg-rose-800"
@@ -92,7 +92,7 @@ export function Navbar() {
                 );
               })}
               <a
-                href={WHATSAPP_LINK}
+                href={BOOKING_URL}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-2 inline-flex items-center justify-center rounded-2xl bg-rose-700 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:bg-rose-800"
