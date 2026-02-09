@@ -15,7 +15,14 @@ export default function BookPage() {
     time: "",
     phone: "",
     branch: "",
+    sessionDuration: "60 minutes",
+    therapistPreference: "Female",
+    contactMethod: "WhatsApp",
+    depositAmount: "",
+    paymentMethod: "Momo",
+    notes: "",
     paymentConfirmed: false,
+    cancellationAccepted: false,
   });
 
   const whatsappLink = useMemo(() => {
@@ -27,7 +34,14 @@ export default function BookPage() {
       `Time: ${formData.time || "____"}`,
       `Phone: ${formData.phone || "____"}`,
       `Branch: ${formData.branch || "____"}`,
+      `Session type: ${formData.sessionDuration || "____"}`,
+      `Therapist preference: ${formData.therapistPreference || "____"}`,
+      `Deposit amount: ${formData.depositAmount || "____"}`,
+      `Payment method: ${formData.paymentMethod || "____"}`,
+      `Contact method: ${formData.contactMethod || "____"}`,
+      `Notes: ${formData.notes || "____"}`,
       `Payment screenshot: ${formData.paymentConfirmed ? "Yes" : "No"}`,
+      `Cancellation policy accepted: ${formData.cancellationAccepted ? "Yes" : "No"}`,
     ].join("\n");
 
     return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(message)}`;
@@ -48,16 +62,21 @@ export default function BookPage() {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
+  const handleTextareaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   return (
     <Container>
-      <section className="py-12 sm:py-16">
+      <section className="rounded-[32px] bg-[#ffe6ea] px-4 py-12 sm:px-8 sm:py-16">
         <SectionTitle
           title="Book a Session"
           subtitle="Fill the details below and we’ll open WhatsApp with your booking message."
         />
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <form className="rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
+          <form className="rounded-3xl border border-black/10 bg-white p-6 shadow-lg sm:p-8">
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="text-sm font-semibold text-neutral-700">
                 Name
@@ -139,6 +158,96 @@ export default function BookPage() {
                 </select>
               </label>
 
+              <label className="text-sm font-semibold text-neutral-700">
+                Session Type / Duration
+                <select
+                  name="sessionDuration"
+                  value={formData.sessionDuration}
+                  onChange={handleSelectChange}
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                >
+                  <option value="30 minutes">30 minutes</option>
+                  <option value="45 minutes">45 minutes</option>
+                  <option value="60 minutes">60 minutes</option>
+                  <option value="90 minutes">90 minutes</option>
+                  <option value="120 minutes">120 minutes</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-neutral-700">
+                Therapist Preference
+                <select
+                  name="therapistPreference"
+                  value={formData.therapistPreference}
+                  onChange={handleSelectChange}
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                >
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="No preference">No preference</option>
+                </select>
+              </label>
+
+              <label className="text-sm font-semibold text-neutral-700">
+                Preferred Contact Method
+                <select
+                  name="contactMethod"
+                  value={formData.contactMethod}
+                  onChange={handleSelectChange}
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                >
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Phone call">Phone call</option>
+                  <option value="SMS">SMS</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-neutral-700">
+                Deposit Amount (if paid)
+                <input
+                  name="depositAmount"
+                  value={formData.depositAmount}
+                  onChange={handleChange}
+                  placeholder="e.g. 100 GHS"
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  type="text"
+                />
+              </label>
+
+              <label className="text-sm font-semibold text-neutral-700">
+                Payment Method
+                <select
+                  name="paymentMethod"
+                  value={formData.paymentMethod}
+                  onChange={handleSelectChange}
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                >
+                  <option value="Momo">Momo</option>
+                  <option value="Bank transfer">Bank transfer</option>
+                  <option value="Cash">Cash</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-5">
+              <label className="text-sm font-semibold text-neutral-700">
+                Notes / Special requests
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleTextareaChange}
+                  placeholder="Share allergies or anything we should know."
+                  rows={4}
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm">
                 <input
                   name="paymentConfirmed"
@@ -149,7 +258,21 @@ export default function BookPage() {
                 />
                 Payment screenshot ready
               </label>
+              <label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm">
+                <input
+                  name="cancellationAccepted"
+                  checked={formData.cancellationAccepted}
+                  onChange={handleCheckboxChange}
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300"
+                />
+                I agree to the no-refund policy after payment
+              </label>
             </div>
+
+            <p className="mt-4 text-xs text-neutral-500">
+              Note: Payments are non-refundable after confirmation.
+            </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <a
@@ -166,7 +289,7 @@ export default function BookPage() {
             </div>
           </form>
 
-          <div className="rounded-3xl border border-black/10 bg-neutral-50 p-6 sm:p-8 shadow-sm">
+          <div className="rounded-3xl border border-black/10 bg-neutral-50 p-6 shadow-lg sm:p-8">
             <h2 className="text-lg font-semibold">Booking details preview</h2>
             <p className="mt-2 text-sm text-neutral-600">
               This is what we’ll send to WhatsApp based on your entries.
@@ -180,7 +303,14 @@ export default function BookPage() {
               {"\n"}Time: {formData.time || "____"}
               {"\n"}Phone: {formData.phone || "____"}
               {"\n"}Branch: {formData.branch || "____"}
+              {"\n"}Session type: {formData.sessionDuration || "____"}
+              {"\n"}Therapist preference: {formData.therapistPreference || "____"}
+              {"\n"}Deposit amount: {formData.depositAmount || "____"}
+              {"\n"}Payment method: {formData.paymentMethod || "____"}
+              {"\n"}Contact method: {formData.contactMethod || "____"}
+              {"\n"}Notes: {formData.notes || "____"}
               {"\n"}Payment screenshot: {formData.paymentConfirmed ? "Yes" : "No"}
+              {"\n"}Cancellation policy accepted: {formData.cancellationAccepted ? "Yes" : "No"}
             </div>
 
             <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700">
@@ -211,6 +341,14 @@ export default function BookPage() {
             </div>
           </div>
         </div>
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noreferrer"
+          className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-rose-700 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-rose-800"
+        >
+          WhatsApp Booking
+        </a>
       </section>
     </Container>
   );
