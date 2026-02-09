@@ -14,6 +14,7 @@ export default function BookPage() {
     date: "",
     time: "",
     phone: "",
+    email: "",
     branch: "",
     sessionDuration: "60 minutes",
     therapistPreference: "Female",
@@ -33,6 +34,7 @@ export default function BookPage() {
       `Date: ${formData.date || "____"}`,
       `Time: ${formData.time || "____"}`,
       `Phone: ${formData.phone || "____"}`,
+      `Email: ${formData.email || "____"}`,
       `Branch: ${formData.branch || "____"}`,
       `Session type: ${formData.sessionDuration || "____"}`,
       `Therapist preference: ${formData.therapistPreference || "____"}`,
@@ -235,6 +237,20 @@ export default function BookPage() {
 
             <div className="mt-5">
               <label className="text-sm font-semibold text-neutral-700">
+                Email
+                <input
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Email address"
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  type="email"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5">
+              <label className="text-sm font-semibold text-neutral-700">
                 Notes / Special requests
                 <textarea
                   name="notes"
@@ -302,6 +318,7 @@ export default function BookPage() {
               {"\n"}Date: {formData.date || "____"}
               {"\n"}Time: {formData.time || "____"}
               {"\n"}Phone: {formData.phone || "____"}
+              {"\n"}Email: {formData.email || "____"}
               {"\n"}Branch: {formData.branch || "____"}
               {"\n"}Session type: {formData.sessionDuration || "____"}
               {"\n"}Therapist preference: {formData.therapistPreference || "____"}
