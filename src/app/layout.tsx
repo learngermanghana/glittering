@@ -1,8 +1,8 @@
 ﻿import type { Metadata } from "next";
 import "./globals.css";
+import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { WHATSAPP_LINK } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Glittering Spa | Awoshie & Spintex",
@@ -53,14 +53,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="min-h-[70vh]">{children}</main>
         <Footer />
 
-        <a
-          href={WHATSAPP_LINK}
-          target="_blank"
-          rel="noreferrer"
+        <Link
+          href="/book"
           className="fixed bottom-5 right-5 z-50 rounded-full bg-rose-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-rose-800"
         >
-          WhatsApp Booking
-        </a>
+          Book Now
+        </Link>
       </body>
     </html>
   );
