@@ -8,6 +8,19 @@ export const metadata: Metadata = {
   title: "Glittering Spa | Awoshie & Spintex",
   description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
   metadataBase: new URL("https://www.glitteringmedspa.com"),
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      noimageindex: false,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   alternates: {
     canonical: "/",
   },
