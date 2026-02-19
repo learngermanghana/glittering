@@ -1,4 +1,8 @@
-const BLOG_FEED_URL = "https://blog.glitteringmedspa.com/feed.xml";
+const BLOG_FEED_URLS = [
+  process.env.BLOG_FEED_URL,
+  "https://blog.glitteringmedspa.com/feed/",
+  "https://blog.glitteringmedspa.com/feed.xml",
+].filter((url): url is string => Boolean(url));
 
 export type BlogPost = {
   title: string;
@@ -45,21 +49,31 @@ function parseFeed(xml: string) {
   });
 }
 
-export async function getBlogPosts(limit?: number): Promise<BlogPost[]> {
-  try {
-    const response = await fetch(BLOG_FEED_URL, {
-      next: { revalidate: 60 * 30 },
-    });
+async function fetchFeed(url: string) {
+  const response = await fetch(url, {
+    next: { revalidate: 60 * 30 },
+  });
 
-    if (!response.ok) {
-      return [];
-    }
-
-    const xml = await response.text();
-    const posts = parseFeed(xml).filter((post) => post.title && post.link);
-
-    return typeof limit === "number" ? posts.slice(0, limit) : posts;
-  } catch {
+  if (!response.ok) {
     return [];
   }
+
+  const xml = await response.text();
+  return parseFeed(xml).filter((post) => post.title && post.link);
+}
+
+export async function getBlogPosts(limit?: number): Promise<BlogPost[]> {
+  for (const url of BLOG_FEED_URLS) {
+    try {
+      const posts = await fetchFeed(url);
+
+      if (posts.length > 0) {
+        return typeof limit === "number" ? posts.slice(0, limit) : posts;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return [];
 }
