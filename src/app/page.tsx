@@ -3,14 +3,14 @@ import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SITE, WHATSAPP_LINK, LOCATIONS, products, SALES_WHATSAPP_LINK } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
+import { getBlogPosts } from "@/lib/blog";
 
 export default async function HomePage() {
   const galleryImages = getGalleryImages();
-  const featuredImages = galleryImages.length
-    ? [...galleryImages].sort(() => 0.5 - Math.random()).slice(0, 3)
-    : [];
+  const featuredImages = galleryImages.slice(0, 3);
   const trainingPreviewImages = ["/training/1.jpeg", "/training/2.jpeg", "/training/3.jpeg"];
   const [awoshie, spintex] = LOCATIONS;
+  const latestPosts = await getBlogPosts(3);
 
   return (
     <div className="relative">
@@ -220,6 +220,45 @@ export default async function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+
+
+          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm text-neutral-500">Blog</div>
+                <div className="mt-1 text-lg font-semibold">Latest from Glittering Med Spa</div>
+                <p className="mt-2 text-sm text-neutral-600">
+                  Read our newest skincare and wellness articles.
+                </p>
+              </div>
+              <Link className="text-sm font-semibold text-brand-800 hover:underline" href="/blog">
+                View all blog posts →
+              </Link>
+            </div>
+
+            {latestPosts.length ? (
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                {latestPosts.map((post) => (
+                  <article key={post.link} className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
+                    <h3 className="text-sm font-semibold text-neutral-900">{post.title}</h3>
+                    <p className="mt-2 text-xs leading-5 text-neutral-600 line-clamp-4">{post.summary}</p>
+                    <a
+                      href={post.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex text-xs font-semibold text-brand-800 hover:underline"
+                    >
+                      Read article →
+                    </a>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-6 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-6 text-sm text-neutral-600">
+                Blog posts are temporarily unavailable.
+              </div>
+            )}
           </div>
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
