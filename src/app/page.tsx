@@ -64,11 +64,11 @@ export default async function HomePage() {
           </div>
 
           {/* green band like your sample */}
-          <div className="mt-10 rounded-3xl bg-brand-900 text-white p-6 sm:p-8 shadow-sm">
+          <div className="mt-10 rounded-3xl bg-brand-900 text-brand-50 p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <div className="text-lg font-semibold">Need a quick booking?</div>
-                <div className="text-white/80 text-sm">Message us and we’ll confirm time + service.</div>
+                <div className="text-lg font-semibold text-gold-500">Need a quick booking?</div>
+                <div className="text-brand-100 text-sm">Message us and we’ll confirm time + service.</div>
               </div>
               <a
                 href={WHATSAPP_LINK}
