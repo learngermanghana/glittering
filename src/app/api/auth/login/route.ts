@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await verifyFirebaseIdToken(loginPayload.idToken as string);
+    await verifyFirebaseIdToken(String(loginPayload.idToken));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unauthorized Sedifex account";
     return NextResponse.json({ error: message }, { status: 403 });
@@ -50,14 +50,17 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({ ok: true });
 
+  const expiresIn = Number(loginPayload.expiresIn ?? 3600);
+  const maxAge = Math.max(60, expiresIn - 30); // small buffer
+
   response.cookies.set({
     name: getSessionCookieName(),
-    value: loginPayload.idToken as string,
+    value: String(loginPayload.idToken),
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax", // change to "strict" if you don't need cross-site redirects
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: Number(loginPayload.expiresIn ?? 3600),
+    maxAge,
   });
 
   return response;
