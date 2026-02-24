@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { LoginForm } from "@/components/LoginForm";
 import { BookingSyncForm } from "@/components/BookingSyncForm";
 import { TeamToolsNav } from "@/components/TeamToolsNav";
 import { getTeamSession } from "@/lib/auth";
+import { TeamSessionActions } from "@/components/TeamSessionActions";
 
 export default async function LoginPage() {
   const session = await getTeamSession();
