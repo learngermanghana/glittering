@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { getSessionCookieName, verifyFirebaseIdToken } from "@/lib/auth";
 
-const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const firebaseApiKey = process.env.FIREBASE_SERVER_API_KEY ?? process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
 export async function POST(request: Request) {
   if (!firebaseApiKey) {
-    return NextResponse.json({ error: "Missing NEXT_PUBLIC_FIREBASE_API_KEY." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Missing FIREBASE_SERVER_API_KEY (or fallback NEXT_PUBLIC_FIREBASE_API_KEY)." },
+      { status: 500 }
+    );
   }
 
   const { email, password } = (await request.json()) as { email?: string; password?: string };
