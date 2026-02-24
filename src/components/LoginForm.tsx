@@ -28,7 +28,7 @@ export function LoginForm() {
         throw new Error(payload.error ?? "Unable to sign in");
       }
 
-      router.push("/sms");
+      router.push("/login");
       router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to sign in";
