@@ -12,11 +12,27 @@ export function BulkSmsForm({ customers }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
 
   const optedInCustomers = useMemo(
     () => customers.filter((customer) => customer.marketingOptIn !== false && customer.phone),
     [customers]
   );
+
+  const filteredCustomers = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return optedInCustomers;
+
+    return optedInCustomers.filter((customer) => {
+      const fullName = customer.fullName?.toLowerCase() ?? "";
+      const phone = customer.phone?.toLowerCase() ?? "";
+      const email = customer.email?.toLowerCase() ?? "";
+
+      return (
+        fullName.includes(normalizedQuery) || phone.includes(normalizedQuery) || email.includes(normalizedQuery)
+      );
+    });
+  }, [optedInCustomers, query]);
 
   function toggleCustomer(phone: string) {
     setSelected((existing) =>
@@ -49,42 +65,93 @@ export function BulkSmsForm({ customers }: Props) {
     }
   }
 
-  return (
-    <div className="mt-8 rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-      <p className="text-sm text-neutral-600">Select customers from Firebase and send a Hubtel campaign.</p>
+  function selectVisibleCustomers() {
+    setSelected(Array.from(new Set(filteredCustomers.map((customer) => customer.phone))));
+  }
 
-      <div className="mt-4 max-h-56 space-y-2 overflow-auto rounded-2xl border border-neutral-200 p-4">
-        {optedInCustomers.map((customer) => (
-          <label key={customer.id ?? customer.phone} className="flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={selected.includes(customer.phone)}
-              onChange={() => toggleCustomer(customer.phone)}
-            />
-            <span>
-              {customer.fullName} - {customer.phone}
-            </span>
-          </label>
-        ))}
+  function clearSelection() {
+    setSelected([]);
+  }
+
+  return (
+    <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
+      <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-neutral-600">Select recipients synced from Firebase.</p>
+          <div className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-900">
+            {selected.length} selected
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by name, phone, or email"
+            className="w-full flex-1 rounded-2xl border border-neutral-300 px-4 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={selectVisibleCustomers}
+            className="rounded-2xl border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+          >
+            Select visible
+          </button>
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="rounded-2xl border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+          >
+            Clear
+          </button>
+        </div>
+
+        <div className="mt-4 max-h-72 space-y-2 overflow-auto rounded-2xl border border-neutral-200 p-4">
+          {filteredCustomers.length ? (
+            filteredCustomers.map((customer) => (
+              <label
+                key={customer.id ?? customer.phone}
+                className="flex items-start gap-3 rounded-xl border border-transparent p-2 text-sm hover:border-neutral-200"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.includes(customer.phone)}
+                  onChange={() => toggleCustomer(customer.phone)}
+                  className="mt-1"
+                />
+                <span className="flex flex-col">
+                  <span className="font-medium text-neutral-900">{customer.fullName || "Unnamed customer"}</span>
+                  <span className="text-neutral-600">{customer.phone}</span>
+                </span>
+              </label>
+            ))
+          ) : (
+            <p className="text-sm text-neutral-500">No customers match your search.</p>
+          )}
+        </div>
       </div>
 
-      <textarea
-        value={message}
-        onChange={(event) => setMessage(event.target.value)}
-        placeholder="Type your campaign message"
-        className="mt-4 min-h-28 w-full rounded-2xl border border-neutral-300 p-4"
-      />
+      <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+        <p className="text-sm text-neutral-600">Write your campaign and send with Hubtel.</p>
+        <textarea
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          placeholder="Type your campaign message"
+          className="mt-4 min-h-40 w-full rounded-2xl border border-neutral-300 p-4"
+        />
 
-      <button
-        type="button"
-        onClick={submitCampaign}
-        disabled={loading || !message.trim() || selected.length === 0}
-        className="mt-4 rounded-2xl bg-brand-950 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
-      >
-        {loading ? "Sending..." : `Send bulk SMS (${selected.length})`}
-      </button>
+        <button
+          type="button"
+          onClick={submitCampaign}
+          disabled={loading || !message.trim() || selected.length === 0}
+          className="mt-4 w-full rounded-2xl bg-brand-950 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {loading ? "Sending..." : `Send bulk SMS (${selected.length})`}
+        </button>
 
-      {status ? <p className="mt-3 text-sm text-neutral-700">{status}</p> : null}
+        {status ? <p className="mt-3 text-sm text-neutral-700">{status}</p> : null}
+      </div>
     </div>
   );
 }
