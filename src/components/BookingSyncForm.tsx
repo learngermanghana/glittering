@@ -51,7 +51,8 @@ export function BookingSyncForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+    <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-3xl border border-black/10 bg-white p-6 shadow-sm"
+      aria-describedby="booking-form-hint">
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Name" value={data.name} onChange={(value) => updateField("name", value)} required />
         <Field label="Email" type="email" value={data.email} onChange={(value) => updateField("email", value)} required />
@@ -60,10 +61,14 @@ export function BookingSyncForm() {
         <Field label="Time" type="time" value={data.time} onChange={(value) => updateField("time", value)} required />
       </div>
 
+      <p id="booking-form-hint" className="text-sm text-neutral-600">
+        Complete all fields, then tap <span className="font-semibold text-neutral-900">Save booking to Google Sheet</span>.
+      </p>
+
       <button
         type="submit"
         disabled={loading || !canSubmit}
-        className="w-full rounded-2xl bg-brand-950 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-900 disabled:opacity-60"
+        className="w-full rounded-2xl bg-neutral-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-500"
       >
         {loading ? "Syncing..." : "Save booking to Google Sheet"}
       </button>

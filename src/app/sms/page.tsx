@@ -5,6 +5,7 @@ import { BulkSmsForm } from "@/components/BulkSmsForm";
 import { TeamToolsNav } from "@/components/TeamToolsNav";
 import { getCustomers } from "@/lib/crm";
 import { getTeamSession } from "@/lib/auth";
+import { TeamSessionActions } from "@/components/TeamSessionActions";
 
 export default async function SmsPage() {
   const session = await getTeamSession();
@@ -21,9 +22,10 @@ export default async function SmsPage() {
       <section className="py-12 sm:py-16">
         <SectionTitle
           title="Bulk SMS Campaigns"
-          subtitle={`Signed in as ${session.email ?? "Sedifex user"}. Store: ${session.resolvedStoreId}. Pull your customer list from Firebase and send campaign SMS with Hubtel.`}
+          subtitle={`Signed in as ${session.email ?? "Sedifex user"}. Store: ${session.resolvedStoreId}. Use the tabs below to switch between Booking Sync and Bulk SMS quickly.`}
         />
         <TeamToolsNav active="sms" />
+        <TeamSessionActions />
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">

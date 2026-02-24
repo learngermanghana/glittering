@@ -133,7 +133,7 @@ export function BulkSmsForm({ customers }: Props) {
       </div>
 
       <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-        <p className="text-sm text-neutral-600">Write your campaign and send with Hubtel.</p>
+        <p className="text-sm text-neutral-600">Write your campaign, select recipients, then tap Send bulk SMS.</p>
         <textarea
           value={message}
           onChange={(event) => setMessage(event.target.value)}
@@ -145,7 +145,7 @@ export function BulkSmsForm({ customers }: Props) {
           type="button"
           onClick={submitCampaign}
           disabled={loading || !message.trim() || selected.length === 0}
-          className="mt-4 w-full rounded-2xl bg-brand-950 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+          className="mt-4 w-full rounded-2xl bg-neutral-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-500"
         >
           {loading ? "Sending..." : `Send bulk SMS (${selected.length})`}
         </button>
