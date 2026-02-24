@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
 import { getSessionCookieName, verifyFirebaseIdToken } from "@/lib/auth";
 
-const firebaseApiKey = process.env.FIREBASE_SERVER_API_KEY ?? process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+// Prefer server-scoped key; allow public-key fallback only outside production.
+const firebaseApiKey =
+  process.env.FIREBASE_SERVER_API_KEY ??
+  (process.env.NODE_ENV === "production" ? undefined : process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 
 export async function POST(request: Request) {
   if (!firebaseApiKey) {
     return NextResponse.json(
-      { error: "Missing FIREBASE_SERVER_API_KEY (or fallback NEXT_PUBLIC_FIREBASE_API_KEY)." },
+      {
+        error:
+          process.env.NODE_ENV === "production"
+            ? "Missing FIREBASE_SERVER_API_KEY."
+            : "Missing FIREBASE_SERVER_API_KEY (or fallback NEXT_PUBLIC_FIREBASE_API_KEY).",
+      },
       { status: 500 }
     );
   }
