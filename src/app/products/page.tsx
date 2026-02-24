@@ -1,9 +1,11 @@
 ﻿import Image from "next/image";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
-import { products, SALES_WHATSAPP_LINK } from "@/lib/site";
+import { SALES_WHATSAPP_LINK } from "@/lib/site";
+import { getProducts } from "@/lib/crm";
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const products = await getProducts();
   return (
     <Container>
       <section className="py-12 sm:py-16">

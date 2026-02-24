@@ -1,0 +1,75 @@
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { getSessionCookieName, verifyFirebaseIdToken } from "@/lib/auth";
+
+type Payload = {
+  recipients?: string[];
+  message?: string;
+};
+
+export async function POST(request: Request) {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get(getSessionCookieName())?.value;
+
+  if (!sessionToken) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  try {
+    await verifyFirebaseIdToken(sessionToken);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  const body = (await request.json()) as Payload;
+  const recipients = body.recipients ?? [];
+  const message = body.message?.trim();
+
+  if (!message || recipients.length === 0) {
+    return NextResponse.json({ error: "Message and at least one recipient are required." }, { status: 400 });
+  }
+
+  const clientId = process.env.HUBTEL_CLIENT_ID;
+  const clientSecret = process.env.HUBTEL_CLIENT_SECRET;
+  const senderId = process.env.HUBTEL_SENDER_ID;
+
+  if (!clientId || !clientSecret || !senderId) {
+    return NextResponse.json(
+      {
+        error: "Missing Hubtel credentials. Add HUBTEL_CLIENT_ID, HUBTEL_CLIENT_SECRET, HUBTEL_SENDER_ID.",
+      },
+      { status: 500 }
+    );
+  }
+
+  const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const results = await Promise.all(
+    recipients.map(async (to) => {
+      const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authHeader}`,
+        },
+        body: JSON.stringify({
+          From: senderId,
+          To: to,
+          Content: message,
+        }),
+      });
+
+      return {
+        to,
+        ok: response.ok,
+      };
+    })
+  );
+
+  const sent = results.filter((item) => item.ok).length;
+  const failed = results.length - sent;
+
+  return NextResponse.json({
+    message: `Campaign complete. Sent: ${sent}, Failed: ${failed}`,
+    results,
+  });
+}

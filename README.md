@@ -52,3 +52,45 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Firebase login + data sync + Hubtel bulk SMS
+
+This project now includes:
+
+- `/login` for Sedifex Firebase Email/Password login.
+- `/products` reading from Firestore `products` collection (with static fallback).
+- `/sms` (team-only protected route) reading from Firestore `customers` collection and sending bulk SMS through Hubtel.
+
+### Environment variables
+
+```bash
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+HUBTEL_CLIENT_ID=...
+HUBTEL_CLIENT_SECRET=...
+HUBTEL_SENDER_ID=...
+NEXT_PUBLIC_SEDIFEX_STORE_ID=37mJqg20MjOriggaIaOOuahDsgj1
+SEDIFEX_WEBSITE_STORE_ID=37mJqg20MjOriggaIaOOuahDsgj1
+```
+
+### Firestore collections expected
+
+- `products`
+  - `name` (string)
+  - `description` (string)
+  - `image` (string URL/path)
+  - `price` (number, optional)
+- `customers`
+  - `fullName` (string)
+  - `phone` (string in international format, e.g. `23324xxxxxxx`)
+  - `email` (string, optional)
+  - `marketingOptIn` (boolean, optional)
+
+### Flow
+
+1. Create Firebase Authentication users for your internal team.
+2. Team signs in at `/login` using Sedifex Firebase Authentication. Only users mapped to Glittering Spa store ID can access this website back-office.
+3. Public site pulls product records from Firestore and shows them on `/products`.
+4. Team opens `/sms` (protected), app resolves their `storeId` from Sedifex auth claim or `teamMembers/<uid>`, then loads/sends only that store data via `/api/sms/bulk`.
+
+> Important: `/sms` and `/api/sms/bulk` are protected with a server-side verified Firebase ID token in an HttpOnly cookie. Data access is tenant-scoped by `storeId` (claim or teamMembers doc) **and** restricted to this website's configured store (`SEDIFEX_WEBSITE_STORE_ID`).
