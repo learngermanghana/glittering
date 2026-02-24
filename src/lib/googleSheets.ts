@@ -6,12 +6,6 @@ type BookingRow = {
   branch: string;
   date: string;
   time: string;
-  confirmationSent: string;
-  confirmationSentAt: string;
-  reminderSent3d: string;
-  reminderSentAt3d: string;
-  emailNormalized: string;
-  emailIssue: string;
 };
 
 const TOKEN_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
@@ -20,7 +14,7 @@ function getEnv() {
   const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
   const privateKeyRaw = process.env.GOOGLE_SHEETS_PRIVATE_KEY;
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
-  const range = process.env.GOOGLE_SHEETS_BOOKINGS_RANGE ?? "Sheet1!A:K";
+  const range = process.env.GOOGLE_SHEETS_BOOKINGS_RANGE ?? "Sheet1!A:E";
 
   if (!clientEmail || !privateKeyRaw || !spreadsheetId) {
     throw new Error(
@@ -107,19 +101,7 @@ export async function appendBookingToGoogleSheet(row: BookingRow) {
       },
       body: JSON.stringify({
         values: [
-          [
-            row.name,
-            row.email,
-            row.branch,
-            row.date,
-            row.time,
-            row.confirmationSent,
-            row.confirmationSentAt,
-            row.reminderSent3d,
-            row.reminderSentAt3d,
-            row.emailNormalized,
-            row.emailIssue,
-          ],
+          [row.name, row.email, row.branch, row.date, row.time],
         ],
       }),
       cache: "no-store",

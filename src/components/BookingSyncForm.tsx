@@ -8,12 +8,6 @@ const defaultData = {
   branch: "",
   date: "",
   time: "",
-  confirmationSent: "",
-  confirmationSentAt: "",
-  reminderSent3d: "",
-  reminderSentAt3d: "",
-  emailNormalized: "",
-  emailIssue: "",
 };
 
 export function BookingSyncForm() {
@@ -64,36 +58,6 @@ export function BookingSyncForm() {
         <Field label="Branch" value={data.branch} onChange={(value) => updateField("branch", value)} required />
         <Field label="Date" type="date" value={data.date} onChange={(value) => updateField("date", value)} required />
         <Field label="Time" type="time" value={data.time} onChange={(value) => updateField("time", value)} required />
-        <Field
-          label="Confirmation Sent"
-          placeholder="Yes / No"
-          value={data.confirmationSent}
-          onChange={(value) => updateField("confirmationSent", value)}
-        />
-        <Field
-          label="Confirmation Sent At"
-          placeholder="2026-01-12 10:30"
-          value={data.confirmationSentAt}
-          onChange={(value) => updateField("confirmationSentAt", value)}
-        />
-        <Field
-          label="3d Reminder Sent"
-          placeholder="Yes / No"
-          value={data.reminderSent3d}
-          onChange={(value) => updateField("reminderSent3d", value)}
-        />
-        <Field
-          label="3d Sent At"
-          placeholder="2026-01-09 10:30"
-          value={data.reminderSentAt3d}
-          onChange={(value) => updateField("reminderSentAt3d", value)}
-        />
-        <Field
-          label="Email Normalized"
-          value={data.emailNormalized}
-          onChange={(value) => updateField("emailNormalized", value)}
-        />
-        <Field label="Email Issue" value={data.emailIssue} onChange={(value) => updateField("emailIssue", value)} />
       </div>
 
       <button

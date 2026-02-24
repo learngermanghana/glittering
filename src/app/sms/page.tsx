@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { BulkSmsForm } from "@/components/BulkSmsForm";
+import { TeamToolsNav } from "@/components/TeamToolsNav";
 import { getCustomers } from "@/lib/crm";
 import { getTeamSession } from "@/lib/auth";
 
@@ -22,6 +23,7 @@ export default async function SmsPage() {
           title="Bulk SMS Campaigns"
           subtitle={`Signed in as ${session.email ?? "Sedifex user"}. Store: ${session.resolvedStoreId}. Pull your customer list from Firebase and send campaign SMS with Hubtel.`}
         />
+        <TeamToolsNav active="sms" />
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">

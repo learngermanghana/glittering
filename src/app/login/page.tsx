@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { LoginForm } from "@/components/LoginForm";
 import { BookingSyncForm } from "@/components/BookingSyncForm";
+import { TeamToolsNav } from "@/components/TeamToolsNav";
 import { getTeamSession } from "@/lib/auth";
 
 export default async function LoginPage() {
@@ -11,17 +11,13 @@ export default async function LoginPage() {
   return (
     <Container>
       <section className="py-12 sm:py-16">
+        <TeamToolsNav active="booking" />
         {session ? (
           <>
             <SectionTitle
               title="Booking Sync"
               subtitle={`Signed in as ${session.email ?? "Sedifex user"}. Enter booking details to sync directly to Google Sheets.`}
             />
-            <div className="mt-4 flex flex-wrap gap-3 text-sm">
-              <Link href="/sms" className="rounded-2xl border border-neutral-300 px-4 py-2 hover:bg-neutral-50">
-                Open SMS tools
-              </Link>
-            </div>
             <BookingSyncForm />
           </>
         ) : (
