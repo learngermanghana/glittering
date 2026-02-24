@@ -21,6 +21,29 @@ export type Customer = {
   storeId?: string;
 };
 
+type FirestoreCustomerRecord = Partial<Customer> & {
+  name?: string;
+  displayName?: string;
+  customerName?: string;
+};
+
+function normalizeCustomer(record: FirestoreCustomerRecord): Customer {
+  const fullName =
+    record.fullName?.trim() ||
+    record.name?.trim() ||
+    record.displayName?.trim() ||
+    record.customerName?.trim() ||
+    "";
+
+  const phone = record.phone === undefined || record.phone === null ? "" : String(record.phone).trim();
+
+  return {
+    ...record,
+    fullName,
+    phone,
+  };
+}
+
 export async function getProducts(): Promise<Product[]> {
   try {
     if (!PUBLIC_STORE_ID) return fallbackProducts;
@@ -48,5 +71,6 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 export async function getCustomers(storeId: string) {
-  return queryFirestoreCollectionByStoreId<Customer>("customers", storeId);
+  const customers = await queryFirestoreCollectionByStoreId<FirestoreCustomerRecord>("customers", storeId);
+  return customers.map(normalizeCustomer);
 }
