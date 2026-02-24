@@ -17,6 +17,7 @@ const nav = [
   { href: "/about", label: "About" },
   { href: "/the-story", label: "The Story" },
   { href: "/contact", label: "Contact" },
+  { href: "/login", label: "Login" },
 ];
 
 export function Navbar() {

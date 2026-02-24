@@ -1,0 +1,53 @@
+import { NextResponse } from "next/server";
+import { getSessionCookieName, verifyFirebaseIdToken } from "@/lib/auth";
+
+const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+export async function POST(request: Request) {
+  if (!firebaseApiKey) {
+    return NextResponse.json({ error: "Missing NEXT_PUBLIC_FIREBASE_API_KEY." }, { status: 500 });
+  }
+
+  const { email, password } = (await request.json()) as { email?: string; password?: string };
+
+  if (!email || !password) {
+    return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
+  }
+
+  const loginResponse = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
+    }
+  );
+
+  const loginPayload = await loginResponse.json();
+
+  if (!loginResponse.ok || !loginPayload.idToken) {
+    const message = loginPayload?.error?.message ?? "Login failed";
+    return NextResponse.json({ error: message }, { status: 401 });
+  }
+
+  try {
+    await verifyFirebaseIdToken(loginPayload.idToken as string);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unauthorized Sedifex account";
+    return NextResponse.json({ error: message }, { status: 403 });
+  }
+
+  const response = NextResponse.json({ ok: true });
+
+  response.cookies.set({
+    name: getSessionCookieName(),
+    value: loginPayload.idToken as string,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: Number(loginPayload.expiresIn ?? 3600),
+  });
+
+  return response;
+}
