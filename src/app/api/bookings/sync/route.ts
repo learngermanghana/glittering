@@ -9,12 +9,6 @@ type Payload = {
   branch?: string;
   date?: string;
   time?: string;
-  confirmationSent?: string;
-  confirmationSentAt?: string;
-  reminderSent3d?: string;
-  reminderSentAt3d?: string;
-  emailNormalized?: string;
-  emailIssue?: string;
 };
 
 export async function POST(request: Request) {
@@ -47,12 +41,6 @@ export async function POST(request: Request) {
       branch: body.branch.trim(),
       date: body.date.trim(),
       time: body.time.trim(),
-      confirmationSent: body.confirmationSent?.trim() ?? "",
-      confirmationSentAt: body.confirmationSentAt?.trim() ?? "",
-      reminderSent3d: body.reminderSent3d?.trim() ?? "",
-      reminderSentAt3d: body.reminderSentAt3d?.trim() ?? "",
-      emailNormalized: body.emailNormalized?.trim() ?? "",
-      emailIssue: body.emailIssue?.trim() ?? "",
     });
 
     return NextResponse.json({ message: "Booking synced to Google Sheet." });
