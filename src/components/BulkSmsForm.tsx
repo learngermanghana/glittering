@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CAMPAIGN_HISTORY_KEY, buildCampaignHistoryEntry, type CampaignResult } from "@/lib/campaignHistory";
 import type { Customer } from "@/lib/crm";
 
 type Props = {
@@ -51,10 +52,18 @@ export function BulkSmsForm({ customers }: Props) {
         body: JSON.stringify({ message, recipients: selected }),
       });
 
-      const payload = (await response.json()) as { message?: string; error?: string };
+      const payload = (await response.json()) as { message?: string; error?: string; results?: CampaignResult[] };
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to send SMS");
+      }
+
+
+      if (payload.results?.length) {
+        const historyEntry = buildCampaignHistoryEntry(message, payload.results);
+        const existingRaw = window.localStorage.getItem(CAMPAIGN_HISTORY_KEY);
+        const existing = existingRaw ? (JSON.parse(existingRaw) as ReturnType<typeof buildCampaignHistoryEntry>[]) : [];
+        window.localStorage.setItem(CAMPAIGN_HISTORY_KEY, JSON.stringify([historyEntry, ...existing].slice(0, 30)));
       }
 
       setStatus(payload.message ?? "SMS sent successfully");
