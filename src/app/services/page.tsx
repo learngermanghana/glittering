@@ -1,11 +1,78 @@
-﻿import { Container } from "@/components/Container";
+import type { Metadata } from "next";
+import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
+import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { categories, packages, SITE, WHATSAPP_LINK } from "@/lib/site";
+import { buildPageMetadata, getAbsoluteUrl } from "@/lib/seo";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Services | Glittering Med Spa",
+  description: "Explore spa, beauty, salon, and nail services at Glittering Med Spa.",
+  path: "/services",
+});
 
 export default function ServicesPage() {
+  const servicesSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    provider: {
+      "@type": "Organization",
+      name: SITE.name,
+      url: getAbsoluteUrl("/"),
+    },
+    serviceType: "Spa, beauty, salon, and nails",
+    areaServed: "Accra, Ghana",
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: "Glittering Med Spa Services",
+      itemListElement: categories.slice(0, 8).map((category) => ({
+        "@type": "Offer",
+        itemOffered: {
+          "@type": "Service",
+          name: category.title,
+          description: category.desc,
+        },
+      })),
+    },
+  };
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "What services can I book at Glittering Med Spa?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "You can book spa, beauty, salon, nail, facial, massage, waxing, and body treatment services.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How do I make a booking?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Use the WhatsApp booking buttons on the page to send your preferred service, date, and time.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Do you have package options?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes, we offer popular bundles such as Relax & Reset, Glow Facial, Nails & Toes Combo, and Self-Care Day.",
+        },
+      },
+    ],
+  };
+
   return (
     <Container>
       <section className="py-12 sm:py-16">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(servicesSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
         <SectionTitle title="Services" />
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -98,6 +165,8 @@ export default function ServicesPage() {
             </div>
           </div>
         </div>
+
+        <SeoInternalLinks />
       </section>
     </Container>
   );

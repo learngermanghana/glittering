@@ -1,9 +1,18 @@
-﻿import Image from "next/image";
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SITE, WHATSAPP_LINK, LOCATIONS, products, SALES_WHATSAPP_LINK } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
 import { getBlogPosts } from "@/lib/blog";
+import { SeoInternalLinks } from "@/components/SeoInternalLinks";
+import { buildPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Glittering Spa | Awoshie & Spintex",
+  description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
+  path: "/",
+});
 
 export default async function HomePage() {
   const galleryImages = getGalleryImages();
@@ -282,6 +291,8 @@ export default async function HomePage() {
               Visit our Instagram to see the latest posts.
             </div>
           </div>
+
+          <SeoInternalLinks />
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

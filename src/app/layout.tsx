@@ -1,8 +1,9 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { organizationJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Glittering Spa | Awoshie & Spintex",
@@ -20,9 +21,6 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
-  },
-  alternates: {
-    canonical: "/",
   },
   keywords: [
     "Glittering Spa",
@@ -59,9 +57,12 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const organizationSchema = organizationJsonLd();
+
   return (
     <html lang="en">
       <body className="min-h-screen bg-rose-100 text-rose-950 antialiased">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <Navbar />
         <main className="min-h-[70vh]">{children}</main>
         <Footer />

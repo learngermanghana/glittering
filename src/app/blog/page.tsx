@@ -1,11 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/Container";
+import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { getBlogPosts } from "@/lib/blog";
+import { buildPageMetadata, getAbsoluteUrl } from "@/lib/seo";
 
-export const metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Blog | Glittering Med Spa",
   description: "Read skincare and wellness tips from Glittering Med Spa.",
-};
+  path: "/blog",
+});
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -24,9 +28,34 @@ function formatDate(value: string) {
 export default async function BlogPage() {
   const posts = await getBlogPosts();
 
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: posts.map((post, index) => ({
+      "@type": "Article",
+      position: index + 1,
+      headline: post.title,
+      description: post.summary,
+      datePublished: post.publishedAt,
+      author: {
+        "@type": "Organization",
+        name: "Glittering Med Spa",
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "Glittering Med Spa",
+      },
+      mainEntityOfPage: post.link,
+      url: post.link,
+    })),
+    url: getAbsoluteUrl("/blog"),
+  };
+
   return (
     <Container>
       <section className="py-12 sm:py-16">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+
         <div className="max-w-3xl">
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight">Blog</h1>
           <p className="mt-4 text-neutral-700 leading-7">
@@ -59,6 +88,8 @@ export default async function BlogPage() {
             </div>
           )}
         </div>
+
+        <SeoInternalLinks />
 
         <div className="mt-10">
           <Link href="/" className="text-sm font-semibold text-brand-800 hover:underline">
