@@ -18,6 +18,11 @@ type HubtelResponse = {
   errors?: Array<{ message?: string; field?: string; description?: string }>;
 };
 
+type SendAttempt = {
+  to: string;
+  payload: Record<string, string>;
+};
+
 function extractHubtelReason(payload: HubtelResponse | null, fallback: string): string {
   if (!payload) {
     return fallback;
@@ -82,6 +87,7 @@ export async function POST(request: Request) {
   const results = await Promise.all(
     recipients.map(async (recipient) => {
       const to = formatSmsAddress(recipient);
+      const normalizedRecipient = normalizePhoneE164(recipient);
 
       if (!to) {
         return {
@@ -91,38 +97,77 @@ export async function POST(request: Request) {
         };
       }
 
-      try {
-        const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Basic ${authHeader}`,
-          },
-          body: JSON.stringify({
+      const attempts: SendAttempt[] = [
+        {
+          to,
+          payload: {
             From: senderId,
             To: to,
             Content: message,
-          }),
+          },
+        },
+      ];
+
+      if (normalizedRecipient && normalizedRecipient !== to) {
+        attempts.push({
+          to: normalizedRecipient,
+          payload: {
+            From: senderId,
+            To: normalizedRecipient,
+            Content: message,
+          },
         });
+      }
 
-        const responseBody = await response.text();
+      // Some Hubtel tenants expect lowercase keys, so keep a final compatibility attempt.
+      attempts.push({
+        to,
+        payload: {
+          from: senderId,
+          to,
+          content: message,
+        },
+      });
 
-        let parsed: HubtelResponse | null = null;
-        try {
-          parsed = responseBody ? (JSON.parse(responseBody) as HubtelResponse) : null;
-        } catch {
-          parsed = null;
+      try {
+        for (let index = 0; index < attempts.length; index += 1) {
+          const attempt = attempts[index];
+          const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Basic ${authHeader}`,
+            },
+            body: JSON.stringify(attempt.payload),
+          });
+
+          const responseBody = await response.text();
+
+          let parsed: HubtelResponse | null = null;
+          try {
+            parsed = responseBody ? (JSON.parse(responseBody) as HubtelResponse) : null;
+          } catch {
+            parsed = null;
+          }
+
+          const reason = extractHubtelReason(
+            parsed,
+            responseBody || response.statusText || "Hubtel did not provide an error message"
+          );
+
+          if (response.ok || response.status !== 400 || index === attempts.length - 1) {
+            return {
+              to: attempt.to,
+              ok: response.ok,
+              reason: response.ok ? reason : `HTTP ${response.status}: ${reason}`,
+            };
+          }
         }
-
-        const reason = extractHubtelReason(
-          parsed,
-          responseBody || response.statusText || "Hubtel did not provide an error message"
-        );
 
         return {
           to,
-          ok: response.ok,
-          reason: response.ok ? reason : `HTTP ${response.status}: ${reason}`,
+          ok: false,
+          reason: "Hubtel request failed after all delivery format attempts",
         };
       } catch (error) {
         return {
