@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSessionCookieName, verifyFirebaseIdToken } from "@/lib/auth";
+import { fetchFirestoreDocument } from "@/lib/firebase";
 import { formatSmsAddress, normalizePhoneE164 } from "@/lib/phone";
 
 type Payload = {
@@ -22,6 +23,20 @@ type SendAttempt = {
   to: string;
   params: URLSearchParams;
 };
+
+type StoreDoc = {
+  bulkMessagingCredits?: number;
+};
+
+function estimateSmsSegments(message: string) {
+  const textLength = message.length;
+
+  if (textLength <= 160) {
+    return 1;
+  }
+
+  return Math.ceil(textLength / 153);
+}
 
 function addAttempt(
   attempts: SendAttempt[],
@@ -67,8 +82,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
+  let session: Awaited<ReturnType<typeof verifyFirebaseIdToken>>;
   try {
-    await verifyFirebaseIdToken(sessionToken);
+    session = await verifyFirebaseIdToken(sessionToken);
   } catch {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
@@ -83,6 +99,21 @@ export async function POST(request: Request) {
 
   if (recipients.some((recipient) => !recipient)) {
     return NextResponse.json({ error: "Each recipient must include a valid phone number." }, { status: 400 });
+  }
+
+  const store = await fetchFirestoreDocument<StoreDoc>("stores", session.resolvedStoreId);
+  const availableCredits = Math.max(0, store?.bulkMessagingCredits ?? 0);
+  const requiredCredits = recipients.length * estimateSmsSegments(message);
+
+  if (availableCredits < requiredCredits) {
+    return NextResponse.json(
+      {
+        error: "Insufficient Sedifex SMS credits. Please top up credits in Sedifex (Bulk SMS page) before sending.",
+        requiredCredits,
+        availableCredits,
+      },
+      { status: 402 }
+    );
   }
 
   const clientId = process.env.HUBTEL_CLIENT_ID;
