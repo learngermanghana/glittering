@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { LoginForm } from "@/components/LoginForm";
@@ -20,13 +19,14 @@ export default async function LoginPage() {
               subtitle={`Signed in as ${session.email ?? "Sedifex user"}. Enter booking details to sync directly to Google Sheets.`}
             />
             <TeamToolsNav active="booking" />
+            <TeamSessionActions />
             <BookingSyncForm />
           </>
         ) : (
           <>
             <SectionTitle
               title="Team Login"
-              subtitle="Sign in with your Glittering Spa Sedifex account, then use the Booking Sync and Bulk SMS tabs below."
+              subtitle="Sign in with your Glittering Spa Sedifex account, then use the Dashboard, Booking Sync, Bulk SMS, Campaigns, and Calendar tabs."
             />
             <TeamToolsNav active="booking" />
             <LoginForm />
