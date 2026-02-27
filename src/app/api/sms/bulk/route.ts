@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSessionCookieName, verifyFirebaseIdToken } from "@/lib/auth";
+import { formatSmsAddress, normalizePhoneE164 } from "@/lib/phone";
 
 type Payload = {
   recipients?: string[];
@@ -29,11 +30,15 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as Payload;
-  const recipients = body.recipients ?? [];
+  const recipients = (body.recipients ?? []).map((recipient) => normalizePhoneE164(recipient));
   const message = body.message?.trim();
 
   if (!message || recipients.length === 0) {
     return NextResponse.json({ error: "Message and at least one recipient are required." }, { status: 400 });
+  }
+
+  if (recipients.some((recipient) => !recipient)) {
+    return NextResponse.json({ error: "Each recipient must include a valid phone number." }, { status: 400 });
   }
 
   const clientId = process.env.HUBTEL_CLIENT_ID;
@@ -51,7 +56,17 @@ export async function POST(request: Request) {
 
   const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
   const results = await Promise.all(
-    recipients.map(async (to) => {
+    recipients.map(async (recipient) => {
+      const to = formatSmsAddress(recipient);
+
+      if (!to) {
+        return {
+          to: recipient,
+          ok: false,
+          reason: "Invalid recipient phone number",
+        };
+      }
+
       try {
         const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
           method: "POST",
