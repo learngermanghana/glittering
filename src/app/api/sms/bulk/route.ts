@@ -23,6 +23,21 @@ type SendAttempt = {
   payload: Record<string, string>;
 };
 
+function addAttempt(
+  attempts: SendAttempt[],
+  seenPayloads: Set<string>,
+  to: string,
+  payload: Record<string, string>
+) {
+  const key = JSON.stringify(payload);
+  if (seenPayloads.has(key)) {
+    return;
+  }
+
+  seenPayloads.add(key);
+  attempts.push({ to, payload });
+}
+
 function extractHubtelReason(payload: HubtelResponse | null, fallback: string): string {
   if (!payload) {
     return fallback;
@@ -97,37 +112,37 @@ export async function POST(request: Request) {
         };
       }
 
-      const attempts: SendAttempt[] = [
-        {
-          to,
-          payload: {
-            From: senderId,
-            To: to,
-            Content: message,
-          },
-        },
-      ];
+      const attempts: SendAttempt[] = [];
+      const seenPayloads = new Set<string>();
+
+      addAttempt(attempts, seenPayloads, to, {
+        From: senderId,
+        To: to,
+        Content: message,
+      });
 
       if (normalizedRecipient && normalizedRecipient !== to) {
-        attempts.push({
-          to: normalizedRecipient,
-          payload: {
-            From: senderId,
-            To: normalizedRecipient,
-            Content: message,
-          },
+        addAttempt(attempts, seenPayloads, normalizedRecipient, {
+          From: senderId,
+          To: normalizedRecipient,
+          Content: message,
         });
       }
 
       // Some Hubtel tenants expect lowercase keys, so keep a final compatibility attempt.
-      attempts.push({
+      addAttempt(attempts, seenPayloads, to, {
+        from: senderId,
         to,
-        payload: {
-          from: senderId,
-          to,
-          content: message,
-        },
+        content: message,
       });
+
+      if (normalizedRecipient && normalizedRecipient !== to) {
+        addAttempt(attempts, seenPayloads, normalizedRecipient, {
+          from: senderId,
+          to: normalizedRecipient,
+          content: message,
+        });
+      }
 
       try {
         for (let index = 0; index < attempts.length; index += 1) {
