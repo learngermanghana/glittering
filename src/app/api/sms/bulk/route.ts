@@ -7,6 +7,13 @@ type Payload = {
   message?: string;
 };
 
+type HubtelResponse = {
+  Message?: string;
+  message?: string;
+  Description?: string;
+  description?: string;
+};
+
 export async function POST(request: Request) {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(getSessionCookieName())?.value;
@@ -45,31 +52,57 @@ export async function POST(request: Request) {
   const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
   const results = await Promise.all(
     recipients.map(async (to) => {
-      const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${authHeader}`,
-        },
-        body: JSON.stringify({
-          From: senderId,
-          To: to,
-          Content: message,
-        }),
-      });
+      try {
+        const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${authHeader}`,
+          },
+          body: JSON.stringify({
+            From: senderId,
+            To: to,
+            Content: message,
+          }),
+        });
 
-      return {
-        to,
-        ok: response.ok,
-      };
+        let parsed: HubtelResponse | null = null;
+        try {
+          parsed = (await response.json()) as HubtelResponse;
+        } catch {
+          parsed = null;
+        }
+
+        const reason =
+          parsed?.Message ?? parsed?.message ?? parsed?.Description ?? parsed?.description ?? response.statusText;
+
+        return {
+          to,
+          ok: response.ok,
+          reason,
+        };
+      } catch (error) {
+        return {
+          to,
+          ok: false,
+          reason: error instanceof Error ? error.message : "Network request failed",
+        };
+      }
     })
   );
 
   const sent = results.filter((item) => item.ok).length;
   const failed = results.length - sent;
+  const failureSummary = results
+    .filter((item) => !item.ok)
+    .map((item) => `${item.to} (${item.reason ?? "Unknown error"})`)
+    .join(", ");
 
   return NextResponse.json({
-    message: `Campaign complete. Sent: ${sent}, Failed: ${failed}`,
+    message:
+      failed > 0
+        ? `Campaign complete. Sent: ${sent}, Failed: ${failed}. Failures: ${failureSummary}`
+        : `Campaign complete. Sent: ${sent}, Failed: ${failed}`,
     results,
   });
 }
