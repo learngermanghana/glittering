@@ -20,22 +20,22 @@ type HubtelResponse = {
 
 type SendAttempt = {
   to: string;
-  payload: Record<string, string>;
+  params: URLSearchParams;
 };
 
 function addAttempt(
   attempts: SendAttempt[],
   seenPayloads: Set<string>,
   to: string,
-  payload: Record<string, string>
+  params: URLSearchParams
 ) {
-  const key = JSON.stringify(payload);
+  const key = params.toString();
   if (seenPayloads.has(key)) {
     return;
   }
 
   seenPayloads.add(key);
-  attempts.push({ to, payload });
+  attempts.push({ to, params });
 }
 
 function extractHubtelReason(payload: HubtelResponse | null, fallback: string): string {
@@ -98,7 +98,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
   const results = await Promise.all(
     recipients.map(async (recipient) => {
       const to = formatSmsAddress(recipient);
@@ -115,45 +114,39 @@ export async function POST(request: Request) {
       const attempts: SendAttempt[] = [];
       const seenPayloads = new Set<string>();
 
-      addAttempt(attempts, seenPayloads, to, {
-        From: senderId,
-        To: to,
-        Content: message,
-      });
-
-      if (normalizedRecipient && normalizedRecipient !== to) {
-        addAttempt(attempts, seenPayloads, normalizedRecipient, {
-          From: senderId,
-          To: normalizedRecipient,
-          Content: message,
-        });
-      }
-
-      // Some Hubtel tenants expect lowercase keys, so keep a final compatibility attempt.
-      addAttempt(attempts, seenPayloads, to, {
-        from: senderId,
+      addAttempt(
+        attempts,
+        seenPayloads,
         to,
-        content: message,
-      });
+        new URLSearchParams({
+          clientid: clientId,
+          clientsecret: clientSecret,
+          from: senderId,
+          to,
+          content: message,
+        })
+      );
 
       if (normalizedRecipient && normalizedRecipient !== to) {
-        addAttempt(attempts, seenPayloads, normalizedRecipient, {
-          from: senderId,
-          to: normalizedRecipient,
-          content: message,
-        });
+        addAttempt(
+          attempts,
+          seenPayloads,
+          normalizedRecipient,
+          new URLSearchParams({
+            clientid: clientId,
+            clientsecret: clientSecret,
+            from: senderId,
+            to: normalizedRecipient,
+            content: message,
+          })
+        );
       }
 
       try {
         for (let index = 0; index < attempts.length; index += 1) {
           const attempt = attempts[index];
-          const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Basic ${authHeader}`,
-            },
-            body: JSON.stringify(attempt.payload),
+          const response = await fetch(`https://smsc.hubtel.com/v1/messages/send?${attempt.params.toString()}`, {
+            method: "GET",
           });
 
           const responseBody = await response.text();
