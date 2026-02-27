@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { BulkSmsForm } from "@/components/BulkSmsForm";
 import { TeamToolsNav } from "@/components/TeamToolsNav";
+import { SeoInternalLinks } from "@/components/SeoInternalLinks";
+import { buildPageMetadata } from "@/lib/seo";
 import { getCustomers } from "@/lib/crm";
 import { getTeamSession } from "@/lib/auth";
 import { TeamSessionActions } from "@/components/TeamSessionActions";
+export const metadata: Metadata = buildPageMetadata({
+  title: "Bulk SMS Campaigns | Glittering Med Spa",
+  description: "Manage audience messaging with Glittering Med Spa bulk SMS tools.",
+  path: "/sms",
+});
+
 
 export default async function SmsPage() {
   const session = await getTeamSession();
@@ -43,6 +52,8 @@ export default async function SmsPage() {
         </div>
 
         <BulkSmsForm customers={customers} />
+
+        <SeoInternalLinks />
       </section>
     </Container>
   );
