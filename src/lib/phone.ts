@@ -35,5 +35,11 @@ export function normalizePhoneE164(input: string, defaultCountryCode = DEFAULT_C
 }
 
 export function formatSmsAddress(input: string, defaultCountryCode = DEFAULT_COUNTRY_CODE): string {
-  return normalizePhoneE164(input.trim(), defaultCountryCode);
+  const normalized = normalizePhoneE164(input.trim(), defaultCountryCode);
+  if (!normalized) {
+    return "";
+  }
+
+  // Hubtel expects recipient values as international digits (e.g. 23324xxxxxxx), not +E.164.
+  return normalized.replace(/^\+/, "");
 }

@@ -13,7 +13,31 @@ type HubtelResponse = {
   message?: string;
   Description?: string;
   description?: string;
+  error?: string;
+  error_description?: string;
+  errors?: Array<{ message?: string; field?: string; description?: string }>;
 };
+
+function extractHubtelReason(payload: HubtelResponse | null, fallback: string): string {
+  if (!payload) {
+    return fallback;
+  }
+
+  const errorFromArray = payload.errors
+    ?.map((error) => error.message ?? error.description ?? error.field)
+    .find(Boolean);
+
+  return (
+    payload.Message ??
+    payload.message ??
+    payload.Description ??
+    payload.description ??
+    payload.error_description ??
+    payload.error ??
+    errorFromArray ??
+    fallback
+  );
+}
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -81,20 +105,24 @@ export async function POST(request: Request) {
           }),
         });
 
+        const responseBody = await response.text();
+
         let parsed: HubtelResponse | null = null;
         try {
-          parsed = (await response.json()) as HubtelResponse;
+          parsed = responseBody ? (JSON.parse(responseBody) as HubtelResponse) : null;
         } catch {
           parsed = null;
         }
 
-        const reason =
-          parsed?.Message ?? parsed?.message ?? parsed?.Description ?? parsed?.description ?? response.statusText;
+        const reason = extractHubtelReason(
+          parsed,
+          responseBody || response.statusText || "Hubtel did not provide an error message"
+        );
 
         return {
           to,
           ok: response.ok,
-          reason,
+          reason: response.ok ? reason : `HTTP ${response.status}: ${reason}`,
         };
       } catch (error) {
         return {
