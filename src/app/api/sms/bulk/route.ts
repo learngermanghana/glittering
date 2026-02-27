@@ -1,10 +1,18 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSessionCookieName, verifyFirebaseIdToken } from "@/lib/auth";
+import { formatSmsAddress, normalizePhoneE164 } from "@/lib/phone";
 
 type Payload = {
   recipients?: string[];
   message?: string;
+};
+
+type HubtelResponse = {
+  Message?: string;
+  message?: string;
+  Description?: string;
+  description?: string;
 };
 
 export async function POST(request: Request) {
@@ -22,11 +30,15 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as Payload;
-  const recipients = body.recipients ?? [];
+  const recipients = (body.recipients ?? []).map((recipient) => normalizePhoneE164(recipient));
   const message = body.message?.trim();
 
   if (!message || recipients.length === 0) {
     return NextResponse.json({ error: "Message and at least one recipient are required." }, { status: 400 });
+  }
+
+  if (recipients.some((recipient) => !recipient)) {
+    return NextResponse.json({ error: "Each recipient must include a valid phone number." }, { status: 400 });
   }
 
   const clientId = process.env.HUBTEL_CLIENT_ID;
@@ -44,32 +56,68 @@ export async function POST(request: Request) {
 
   const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
   const results = await Promise.all(
-    recipients.map(async (to) => {
-      const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${authHeader}`,
-        },
-        body: JSON.stringify({
-          From: senderId,
-          To: to,
-          Content: message,
-        }),
-      });
+    recipients.map(async (recipient) => {
+      const to = formatSmsAddress(recipient);
 
-      return {
-        to,
-        ok: response.ok,
-      };
+      if (!to) {
+        return {
+          to: recipient,
+          ok: false,
+          reason: "Invalid recipient phone number",
+        };
+      }
+
+      try {
+        const response = await fetch("https://sms.hubtel.com/v1/messages/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${authHeader}`,
+          },
+          body: JSON.stringify({
+            From: senderId,
+            To: to,
+            Content: message,
+          }),
+        });
+
+        let parsed: HubtelResponse | null = null;
+        try {
+          parsed = (await response.json()) as HubtelResponse;
+        } catch {
+          parsed = null;
+        }
+
+        const reason =
+          parsed?.Message ?? parsed?.message ?? parsed?.Description ?? parsed?.description ?? response.statusText;
+
+        return {
+          to,
+          ok: response.ok,
+          reason,
+        };
+      } catch (error) {
+        return {
+          to,
+          ok: false,
+          reason: error instanceof Error ? error.message : "Network request failed",
+        };
+      }
     })
   );
 
   const sent = results.filter((item) => item.ok).length;
   const failed = results.length - sent;
+  const failureSummary = results
+    .filter((item) => !item.ok)
+    .map((item) => `${item.to} (${item.reason ?? "Unknown error"})`)
+    .join(", ");
 
   return NextResponse.json({
-    message: `Campaign complete. Sent: ${sent}, Failed: ${failed}`,
+    message:
+      failed > 0
+        ? `Campaign complete. Sent: ${sent}, Failed: ${failed}. Failures: ${failureSummary}`
+        : `Campaign complete. Sent: ${sent}, Failed: ${failed}`,
     results,
   });
 }
