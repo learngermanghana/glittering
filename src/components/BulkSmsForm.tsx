@@ -8,12 +8,40 @@ type Props = {
   customers: Customer[];
 };
 
+const MESSAGE_TEMPLATES = [
+  {
+    id: "appointment-reminder",
+    label: "Appointment reminder",
+    message:
+      "Hi {{name}}, this is a reminder for your appointment at Glittering. Reply YES to confirm or call us if you need to reschedule.",
+  },
+  {
+    id: "flash-sale",
+    label: "Flash sale",
+    message:
+      "✨ Flash Sale at Glittering! Book today and get 20% off selected services this week only. Reply BOOK to secure your slot.",
+  },
+  {
+    id: "new-arrivals",
+    label: "New products",
+    message:
+      "New beauty products just landed at Glittering 💄 Visit us this week to shop our latest arrivals before they sell out!",
+  },
+  {
+    id: "thank-you",
+    label: "Thank you",
+    message:
+      "Thank you for choosing Glittering ✨ We loved having you! Reply to this message if you would like to book your next appointment.",
+  },
+] as const;
+
 export function BulkSmsForm({ customers }: Props) {
   const [message, setMessage] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
 
   const optedInCustomers = useMemo(
     () => customers.filter((customer) => customer.marketingOptIn !== false && customer.phone),
@@ -82,6 +110,14 @@ export function BulkSmsForm({ customers }: Props) {
     setSelected([]);
   }
 
+  function applyTemplate(templateId: string) {
+    const template = MESSAGE_TEMPLATES.find((item) => item.id === templateId);
+    if (!template) return;
+
+    setActiveTemplateId(template.id);
+    setMessage(template.message);
+  }
+
   return (
     <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
       <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
@@ -143,6 +179,27 @@ export function BulkSmsForm({ customers }: Props) {
 
       <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
         <p className="text-sm text-neutral-600">Write your campaign, select recipients, then tap Send bulk SMS.</p>
+
+        <div className="mt-4 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Message templates</p>
+          <div className="flex flex-wrap gap-2">
+            {MESSAGE_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                onClick={() => applyTemplate(template.id)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                  activeTemplateId === template.id
+                    ? "border-brand-500 bg-brand-50 text-brand-900"
+                    : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                }`}
+              >
+                {template.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <textarea
           value={message}
           onChange={(event) => setMessage(event.target.value)}
