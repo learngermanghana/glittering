@@ -2,6 +2,12 @@ const DEFAULT_BOOKINGS_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-gntdb0nctvlXVSiHc6h-ZDGKUj68gyyaWkrsaIzR6S8cjHmrvQMosYd1chikflzFGJoSxPE-1-Sy/pub?output=csv";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Accra" });
+const TIME_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Accra",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
 
 type BookingCsvRecord = Record<string, string>;
 
@@ -90,6 +96,19 @@ function readField(record: BookingCsvRecord, aliases: string[]) {
 function parseBookingDateTime(date: string, time: string) {
   if (!date) return null;
 
+  const excelDate = Number(date);
+  const excelTime = Number(time);
+  const hasExcelDate = Number.isFinite(excelDate) && excelDate > 0;
+  const hasExcelTime = Number.isFinite(excelTime) && excelTime >= 0 && excelTime < 1;
+
+  if (hasExcelDate) {
+    const midnightUtcMs = Date.UTC(1899, 11, 30);
+    const dateMs = Math.round(excelDate * 24 * 60 * 60 * 1000);
+    const timeMs = hasExcelTime ? Math.round(excelTime * 24 * 60 * 60 * 1000) : 0;
+    const fromSerial = new Date(midnightUtcMs + dateMs + timeMs);
+    if (!Number.isNaN(fromSerial.getTime())) return fromSerial;
+  }
+
   const direct = new Date(time ? `${date} ${time}` : date);
   if (!Number.isNaN(direct.getTime())) return direct;
 
@@ -126,6 +145,10 @@ export async function getSyncedBookings() {
   return records.map((record) => {
     const date = readField(record, ["date", "booking date", "preferred date"]);
     const time = readField(record, ["time", "booking time", "preferred time"]);
+    const dateTime = parseBookingDateTime(date, time);
+    const parsedTime = Number(time);
+    const normalizedTime =
+      Number.isFinite(parsedTime) && parsedTime >= 0 && parsedTime < 1 && dateTime ? TIME_FORMATTER.format(dateTime) : time;
 
     return {
       name: readField(record, ["name", "customer", "customer name"]),
@@ -135,8 +158,8 @@ export async function getSyncedBookings() {
       therapist: readField(record, ["therapist", "therapist preference", "staff"]),
       sessionType: readField(record, ["session type", "session type / duration", "duration", "sessionduration"]),
       date,
-      time,
-      dateTime: parseBookingDateTime(date, time),
+      time: normalizedTime,
+      dateTime,
     } satisfies SyncedBooking;
   });
 }
