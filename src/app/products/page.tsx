@@ -10,6 +10,29 @@ function stockText(quantity: number | null) {
   return `${quantity} in stock`;
 }
 
+const PRODUCT_IMAGE_BY_KEYWORD: Array<{ keywords: string[]; image: string }> = [
+  { keywords: ["sunscreen", "spf", "sun"], image: "/products/6.jpeg" },
+  { keywords: ["vitamin", "tablet", "effervescent"], image: "/products/9.jpeg" },
+  { keywords: ["detox", "tea", "moringa", "slim", "weight"], image: "/products/4.jpeg" },
+  { keywords: ["maca", "gummies", "gunnies"], image: "/products/3.jpeg" },
+  { keywords: ["bbl", "butt", "hip", "curve", "breast"], image: "/products/2.jpeg" },
+  { keywords: ["gluta", "whitening", "lightening"], image: "/products/7.jpeg" },
+  { keywords: ["soap", "cleanser"], image: "/products/10.jpeg" },
+  { keywords: ["scrub", "polish"], image: "/products/11.jpeg" },
+  { keywords: ["serum", "oil", "cream", "mask", "face set"], image: "/products/12.jpeg" },
+  { keywords: ["capsule", "burner", "lipo"], image: "/products/13.jpeg" },
+  { keywords: ["facial", "vajacial", "cleansing", "derma", "micro", "acne"], image: "/products/14.jpeg" },
+  { keywords: ["massage", "swedish", "hot stone", "bamboo"], image: "/products/15.jpeg" },
+  { keywords: ["wax", "bikini", "arm", "leg", "chest", "chin", "nose", "eyebrow"], image: "/products/16.jpeg" },
+  { keywords: ["injection", "infusion", "iv", "drip", "booster", "dissolving"], image: "/products/17.jpeg" },
+];
+
+function imageForProduct(productName: string) {
+  const normalizedName = productName.toLowerCase();
+  const matched = PRODUCT_IMAGE_BY_KEYWORD.find(({ keywords }) => keywords.some((keyword) => normalizedName.includes(keyword)));
+  return matched?.image ?? "/products/18.jpeg";
+}
+
 export default function ProductsPage() {
   return (
     <Container>
@@ -37,7 +60,7 @@ export default function ProductsPage() {
               <div key={`${product.product_name}-${index}`} className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
                 <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
                   <Image
-                    src="/products/product.jpeg"
+                    src={imageForProduct(product.product_name)}
                     alt={product.product_name}
                     fill
                     className="object-cover"
