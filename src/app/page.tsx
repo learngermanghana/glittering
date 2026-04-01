@@ -17,7 +17,6 @@ export const metadata: Metadata = buildPageMetadata({
 export default async function HomePage() {
   const galleryImages = getGalleryImages();
   const featuredImages = galleryImages.slice(0, 3);
-  const trainingPreviewImages = ["/training/1.jpeg", "/training/2.jpeg", "/training/3.jpeg"];
   const [awoshie, spintex] = LOCATIONS;
   const latestPosts = await getBlogPosts(3);
 
@@ -149,34 +148,24 @@ export default async function HomePage() {
           ) : null}
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="text-sm text-neutral-500">Training School</div>
-                <div className="mt-1 text-lg font-semibold">Learn with the Glittering Spa academy</div>
+                <div className="mt-1 text-lg font-semibold">Admissions now open</div>
                 <p className="mt-2 text-sm text-neutral-600">
-                  Hands-on training in beauty, wellness, and professional spa services.
+                  We now use a full registration process for apprentice enrollment with course durations, charges,
+                  guarantor details, health declaration, and bye-laws.
                 </p>
+                <div className="mt-4 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
+                  <p>• Courses include lashes, nails, makeup, facials, massage, wig making, and body therapy.</p>
+                  <p>• Training options run from two weeks to one year depending on your selected course.</p>
+                  <p>• Forms capture apprentice bio-data, guarantor details, and required starter items.</p>
+                  <p>• Graduation includes certification after full payment and completion.</p>
+                </div>
               </div>
               <Link className="text-sm font-semibold text-brand-800 hover:underline" href="/training">
-                Explore training →
+                Register for training →
               </Link>
-            </div>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {trainingPreviewImages.map((src, index) => (
-                <div
-                  key={`${src}-${index}`}
-                  className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
-                >
-                  <Image
-                    src={src}
-                    alt={`Training preview ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
-                  />
-                </div>
-              ))}
             </div>
           </div>
 
