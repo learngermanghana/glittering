@@ -173,7 +173,7 @@ export default function TrainingPage() {
             <div className="sm:col-span-2 flex flex-wrap gap-3 pt-2">
               <button
                 type="submit"
-                className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-900"
+                className="inline-flex items-center justify-center rounded-2xl border border-[#1da851] bg-[#25D366] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1da851] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1da851]/40"
               >
                 Send Registration on WhatsApp
               </button>
