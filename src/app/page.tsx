@@ -27,6 +27,15 @@ export default async function HomePage() {
   const featuredImages = galleryImages.slice(0, 3);
   const [awoshie, spintex] = LOCATIONS;
   const latestPosts = await getBlogPosts(3);
+  const promoMessageBase =
+    "Hi Glittering Med Spa! I want to register for the 50% OFF Services promo (April 1-April 15).";
+  const promoServicesLink = "/services";
+  const awoshiePromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
+    `${promoMessageBase}\nPreferred branch: Awoshie\nName: ____\nPhone: ____\nService of interest: ____`
+  )}`;
+  const spintexPromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
+    `${promoMessageBase}\nPreferred branch: Spintex\nName: ____\nPhone: ____\nService of interest: ____`
+  )}`;
 
   return (
     <div className="relative">
@@ -38,7 +47,45 @@ export default async function HomePage() {
 
       <Container>
         <section className="py-12 sm:py-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-neutral-700 shadow-sm">
+          <div className="rounded-3xl border border-red-200 bg-gradient-to-r from-red-50 via-white to-red-50 p-5 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Limited Campaign • April 1–April 15</p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
+                  Glittering Med Spa 50% OFF Services
+                </h2>
+                <p className="mt-2 text-sm text-neutral-700">
+                  Promo slots are filling quickly. Browse eligible services first, then register instantly via your preferred branch.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link
+                  href={promoServicesLink}
+                  className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-900"
+                >
+                  View promo services
+                </Link>
+                <a
+                  href={awoshiePromoLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
+                >
+                  Register now (Awoshie)
+                </a>
+                <a
+                  href={spintexPromoLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
+                >
+                  Register now (Spintex)
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
             Open Mon–Sat 7am–8pm • Sun 12–8pm • {SITE.location}
           </div>
