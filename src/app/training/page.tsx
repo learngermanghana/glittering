@@ -1,3 +1,7 @@
+"use client";
+
+import Image from "next/image";
+import { FormEvent } from "react";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SITE } from "@/lib/site";
@@ -9,6 +13,35 @@ const healthComplications = [
   "Eye Problem",
   "Blood Pressure",
   "Any Other? Specify",
+];
+
+const trainingGallery = ["/training/1.jpeg", "/training/2.jpeg", "/training/3.jpeg", "/training/4.jpeg"];
+
+const apprenticeFields = [
+  { key: "full_name", label: "Full Name" },
+  { key: "date_of_birth", label: "Date of Birth" },
+  { key: "place_of_birth", label: "Place of Birth" },
+  { key: "nationality", label: "Nationality" },
+  { key: "religion", label: "Religion" },
+  { key: "marital_status", label: "Marital Status" },
+  { key: "children_count", label: "Number of children (if any)" },
+  { key: "hometown", label: "Hometown" },
+  { key: "residence", label: "Residence" },
+  { key: "contact", label: "Contact" },
+  { key: "email", label: "Email" },
+  { key: "education", label: "Highest level of education" },
+  { key: "qualification_year", label: "Year Qualification" },
+  { key: "school_name", label: "Name of School" },
+  { key: "age", label: "Age" },
+  { key: "apprentice_sign_date", label: "Sign Date" },
+];
+
+const guarantorFields = [
+  { key: "guarantor_full_name", label: "Full Name" },
+  { key: "guarantor_relationship", label: "Relationship with Apprentice" },
+  { key: "guarantor_residence", label: "Residence" },
+  { key: "guarantor_contact", label: "Contact" },
+  { key: "guarantor_sign_date", label: "Sign Date" },
 ];
 
 const courseRows = [
@@ -38,40 +71,72 @@ const courseRows = [
 ];
 
 export default function TrainingPage() {
+  const whatsappNumber = SITE.phoneIntl.replace(/\D/g, "");
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    const studentDetails = apprenticeFields
+      .map(({ key, label }) => `${label}: ${String(formData.get(key) ?? "").trim() || "N/A"}`)
+      .join("\n");
+
+    const guarantorDetails = guarantorFields
+      .map(({ key, label }) => `${label}: ${String(formData.get(key) ?? "").trim() || "N/A"}`)
+      .join("\n");
+
+    const selectedHealthConditions = healthComplications
+      .filter((item) => formData.get(`health_${item}`) === "on")
+      .join(", ");
+
+    const message = [
+      "Hello Glittering Spa, I want to register for training.",
+      "",
+      "Apprentice Bio Data",
+      studentDetails,
+      "",
+      "Health Complications",
+      selectedHealthConditions || "None selected",
+      "",
+      "Guarantor Details",
+      guarantorDetails,
+    ].join("\n");
+
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <Container>
       <section className="py-12 sm:py-16">
         <SectionTitle
           title="Training School Registration"
-          subtitle="Join Glittering Spa School. Complete this registration form and submit it at our office to begin your apprenticeship process."
+          subtitle="Fill this form and click Send to share your registration details instantly on WhatsApp."
         />
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {trainingGallery.map((src, index) => (
+            <div key={src} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-white">
+              <Image
+                src={src}
+                alt={`Training photo ${index + 1}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              />
+            </div>
+          ))}
+        </div>
 
         <div className="mt-8 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
           <h2 className="text-xl font-semibold">Apprentice Bio Data</h2>
-          <form className="mt-6 grid gap-4 sm:grid-cols-2">
-            {[
-              "Full Name",
-              "Date of Birth",
-              "Place of Birth",
-              "Nationality",
-              "Religion",
-              "Marital Status",
-              "Number of children (if any)",
-              "Hometown",
-              "Residence",
-              "Contact",
-              "Email",
-              "Highest level of education",
-              "Year Qualification",
-              "Name of School",
-              "Age",
-              "Sign Date",
-            ].map((label) => (
-              <label key={label} className="text-sm text-neutral-700">
+          <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
+            {apprenticeFields.map(({ key, label }) => (
+              <label key={key} className="text-sm text-neutral-700">
                 <span className="mb-1 block font-medium">{label}</span>
                 <input
                   type="text"
-                  name={label}
+                  name={key}
                   className="w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700"
                 />
               </label>
@@ -82,7 +147,7 @@ export default function TrainingPage() {
               <div className="mt-3 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
                 {healthComplications.map((item) => (
                   <label key={item} className="flex items-center gap-2 text-sm text-neutral-700">
-                    <input type="checkbox" name={item} className="h-4 w-4 rounded border-black/20" />
+                    <input type="checkbox" name={`health_${item}`} className="h-4 w-4 rounded border-black/20" />
                     <span>{item}</span>
                   </label>
                 ))}
@@ -92,24 +157,30 @@ export default function TrainingPage() {
             <fieldset className="sm:col-span-2 rounded-2xl border border-black/10 p-4">
               <legend className="px-1 text-sm font-semibold">Guarantor Details</legend>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                {[
-                  "Full Name",
-                  "Relationship with Apprentice",
-                  "Residence",
-                  "Contact",
-                  "Sign Date",
-                ].map((label) => (
-                  <label key={`guarantor-${label}`} className="text-sm text-neutral-700">
+                {guarantorFields.map(({ key, label }) => (
+                  <label key={key} className="text-sm text-neutral-700">
                     <span className="mb-1 block font-medium">{label}</span>
                     <input
                       type="text"
-                      name={`guarantor-${label}`}
+                      name={key}
                       className="w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700"
                     />
                   </label>
                 ))}
               </div>
             </fieldset>
+
+            <div className="sm:col-span-2 flex flex-wrap gap-3 pt-2">
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-900"
+              >
+                Send Registration on WhatsApp
+              </button>
+              <span className="text-sm text-neutral-600">
+                This opens WhatsApp with your filled student details ready to send.
+              </span>
+            </div>
           </form>
         </div>
 

@@ -14,7 +14,7 @@ const nav = [
   { href: "/products", label: "Products" },
   { href: "/gallery", label: "Gallery" },
   { href: "/blog", label: "Blog" },
-  { href: "/training", label: "Training" },
+  { href: "/training", label: "Registration" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/login", label: "Login" },

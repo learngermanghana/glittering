@@ -226,24 +226,44 @@ export default async function HomePage() {
           ) : null}
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="text-sm text-neutral-500">Training School</div>
                 <div className="mt-1 text-lg font-semibold">Admissions now open</div>
                 <p className="mt-2 text-sm text-neutral-600">
-                  We now use a full registration process for apprentice enrollment with course durations, charges,
-                  guarantor details, health declaration, and bye-laws.
+                  Learn beauty and wellness skills with hands-on practice at Glittering Spa. Register now and send your
+                  student data directly to our WhatsApp in one click.
                 </p>
                 <div className="mt-4 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
                   <p>• Courses include lashes, nails, makeup, facials, massage, wig making, and body therapy.</p>
                   <p>• Training options run from two weeks to one year depending on your selected course.</p>
-                  <p>• Forms capture apprentice bio-data, guarantor details, and required starter items.</p>
-                  <p>• Graduation includes certification after full payment and completion.</p>
+                  <p>• Registration captures apprentice bio-data, guarantor details, and health declaration.</p>
+                  <p>• Submit fast on WhatsApp and our team will follow up with your start details.</p>
                 </div>
               </div>
-              <Link className="text-sm font-semibold text-brand-800 hover:underline" href="/training">
-                Register for training →
+              <Link
+                className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-900"
+                href="/training"
+              >
+                Register Now
               </Link>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              {["/training/5.jpeg", "/training/6.jpeg", "/training/7.jpeg"].map((src, index) => (
+                <div
+                  key={src}
+                  className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
+                >
+                  <Image
+                    src={src}
+                    alt={`Training highlight ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
