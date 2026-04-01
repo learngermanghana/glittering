@@ -44,95 +44,92 @@ export default async function HomePage() {
 
       <Container>
         <section className="py-12 sm:py-16">
-          <div className="overflow-hidden rounded-3xl border border-gold-500/50 bg-gradient-to-r from-brand-950 via-brand-900 to-brand-950 text-white shadow-lg">
-            <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
-              <div className="p-6 sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">Limited April Promo</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                  Glittering Med Spa 50% OFF Services
-                </h2>
-                <p className="mt-2 text-sm text-brand-100 sm:text-base">
-                  Offer runs from <span className="font-semibold text-white">April 1 - April 15</span>. Register now and
-                  choose your branch.
+          <div className="overflow-hidden rounded-3xl border border-brand-900/20 bg-brand-950 text-white shadow-lg">
+            <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="p-6 sm:p-8 lg:p-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">Welcome to Glittering Spa</p>
+                <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-6xl">Relax. Glow. Restore.</h1>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-brand-100 sm:text-lg">
+                  Premium self-care with Spa, Beauty, Salon and Nails in Awoshie and Spintex.
                 </p>
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <Link
-                    href="/services"
-                    className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
-                  >
-                    View promo services
-                  </Link>
+
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <a
-                    href={spintexPromoLink}
+                    href={WHATSAPP_LINK}
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
+                    className="rounded-2xl bg-white px-6 py-3 text-center text-sm font-semibold text-brand-950 hover:bg-white/90"
                   >
-                    Register now (Spintex)
+                    Book on WhatsApp
                   </a>
                   <a
-                    href={awoshiePromoLink}
+                    href={awoshie.directionsLink}
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
+                    className="rounded-2xl border border-white/40 bg-white/10 px-6 py-3 text-center text-sm font-semibold hover:bg-white/20"
                   >
-                    Register now (Awoshie)
+                    Get Directions (Awoshie)
+                  </a>
+                  <a
+                    href={spintex.directionsLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-2xl border border-white/40 bg-white/10 px-6 py-3 text-center text-sm font-semibold hover:bg-white/20"
+                  >
+                    Get Directions (Spintex)
                   </a>
                 </div>
               </div>
-              <div className="relative min-h-[220px]">
+              <div className="relative min-h-[260px]">
                 <Image
-                  src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1200&q=80"
-                  alt="Spa treatment room setup"
+                  src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1400&q=80"
+                  alt="Luxury spa treatment room with warm lighting"
                   fill
                   className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 35vw"
+                  sizes="(max-width: 1024px) 100vw, 40vw"
                   priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-950/60 to-transparent lg:bg-gradient-to-l" />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-950/70 via-brand-950/20 to-transparent lg:bg-gradient-to-l" />
               </div>
             </div>
           </div>
 
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-neutral-700 shadow-sm">
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
             Open Mon–Sat 7am–8pm • Sun 12–8pm • {SITE.location}
           </div>
 
-          <h1 className="mt-6 text-4xl sm:text-6xl font-semibold tracking-tight">
-            Relax. Glow. Restore.
-          </h1>
-
-          <p className="mt-4 max-w-2xl text-neutral-700 text-base sm:text-lg leading-7">
-            Welcome to <span className="font-semibold">{SITE.name}</span> — premium self-care with Spa, Beauty,
-            Salon and Nails.
-          </p>
-
-          <div className="mt-7 flex flex-col sm:flex-row gap-3">
-            <a
-              href={WHATSAPP_LINK}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-2xl bg-brand-950 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-900 shadow-sm text-center"
-            >
-              Book on WhatsApp
-            </a>
-            <a
-              href={awoshie.directionsLink}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold hover:bg-neutral-50 shadow-sm text-center"
-            >
-              Get Directions (Awoshie)
-            </a>
-            <a
-              href={spintex.directionsLink}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold hover:bg-neutral-50 shadow-sm text-center"
-            >
-              Get Directions (Spintex)
-            </a>
+          <div className="mt-8 overflow-hidden rounded-3xl border border-gold-500/40 bg-gradient-to-r from-brand-900 via-brand-900 to-brand-950 p-6 text-white shadow-sm sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">Limited April Promo</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Glittering Med Spa 50% OFF Services</h2>
+            <p className="mt-2 text-sm text-brand-100 sm:text-base">
+              Offer runs from <span className="font-semibold text-white">April 1 - April 15</span>. Register now and choose
+              your branch.
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                href="/services"
+                className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
+              >
+                View promo services
+              </Link>
+              <a
+                href={spintexPromoLink}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
+              >
+                Register now (Spintex)
+              </a>
+              <a
+                href={awoshiePromoLink}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
+              >
+                Register now (Awoshie)
+              </a>
+            </div>
           </div>
 
           {/* green band like your sample */}
