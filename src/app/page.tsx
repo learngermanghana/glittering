@@ -82,7 +82,7 @@ export default async function HomePage() {
               </div>
               <div className="relative min-h-[260px]">
                 <Image
-                  src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1400&q=80"
+                  src="/gallery/pexels-didsss-1830447.jpg"
                   alt="Luxury spa treatment room with warm lighting"
                   fill
                   className="object-cover"
