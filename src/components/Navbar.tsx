@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BOOKING_URL, SITE } from "@/lib/site";
@@ -28,8 +29,8 @@ export function Navbar() {
       <Container>
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-700 text-white shadow-sm shadow-rose-200">
-              ✨
+            <span className="relative h-10 w-10 overflow-hidden rounded-2xl border border-rose-300/80 bg-white shadow-sm shadow-rose-200">
+              <Image src="/logo-glittering.svg" alt="Glittering Spa logo" fill sizes="40px" className="object-cover" />
             </span>
             <div className="leading-tight">
               <div className="font-semibold tracking-tight">{SITE.name}</div>

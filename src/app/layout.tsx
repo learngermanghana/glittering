@@ -32,6 +32,11 @@ export const metadata: Metadata = {
     "massage",
     "facials",
   ],
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: ["/icon.svg"],
+    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
   openGraph: {
     title: "Glittering Spa | Awoshie & Spintex",
     description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
@@ -39,7 +44,7 @@ export const metadata: Metadata = {
     siteName: "Glittering Spa",
     images: [
       {
-        url: "/globe.svg",
+        url: "/logo-glittering.svg",
         width: 1200,
         height: 630,
         alt: "Glittering Spa",
@@ -52,7 +57,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Glittering Spa | Awoshie & Spintex",
     description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
-    images: ["/globe.svg"],
+    images: ["/logo-glittering.svg"],
   },
 };
 

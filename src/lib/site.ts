@@ -216,3 +216,27 @@ export const products = [
     image: "/products/9.jpeg",
   },
 ];
+
+export const topSellingServices = [
+  {
+    name: "Signature Facial",
+    category: "Facial Treatment",
+    summary: "Deep cleanse, hydration, and glow finish for all skin types.",
+  },
+  {
+    name: "Deep Tissue Massage",
+    category: "Massage",
+    summary: "Relieves body tension and helps clients recover from stress and fatigue.",
+  },
+  {
+    name: "Brazilian Wax",
+    category: "Waxing",
+    summary: "One of our most requested smooth-finish waxing services.",
+  },
+];
+
+export const topSellingProducts = [
+  "BBL & Maca Gummies",
+  "Aguaje Maca Gummies",
+  "28 Days Detox Tea Set",
+];

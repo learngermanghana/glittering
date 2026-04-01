@@ -2,7 +2,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/Container";
-import { SITE, WHATSAPP_LINK, LOCATIONS, products, SALES_WHATSAPP_LINK } from "@/lib/site";
+import {
+  SITE,
+  WHATSAPP_LINK,
+  LOCATIONS,
+  products,
+  SALES_WHATSAPP_LINK,
+  topSellingProducts,
+  topSellingServices,
+} from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
 import { getBlogPosts } from "@/lib/blog";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
@@ -86,6 +94,76 @@ export default async function HomePage() {
               >
                 Book Now
               </a>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-3xl border border-brand-200/70 bg-gradient-to-br from-white via-rose-50/40 to-brand-50 p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="text-sm text-neutral-600">Top Selling Right Now</div>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Most requested services & products</h2>
+                <p className="mt-2 text-sm text-neutral-600">
+                  Quick picks clients ask for most. Tap WhatsApp and we’ll help you choose the best option.
+                </p>
+              </div>
+              <a
+                href={WHATSAPP_LINK}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-900 shadow-sm"
+              >
+                Reserve your slot
+              </a>
+            </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-black/10 bg-white p-5">
+                <div className="text-sm font-semibold text-brand-900">Top Services</div>
+                <div className="mt-4 space-y-3">
+                  {topSellingServices.map((service) => (
+                    <div key={service.name} className="rounded-xl border border-rose-100 bg-rose-50/40 p-3">
+                      <p className="text-sm font-semibold text-neutral-900">{service.name}</p>
+                      <p className="text-xs text-brand-800">{service.category}</p>
+                      <p className="mt-1 text-xs text-neutral-600">{service.summary}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-black/10 bg-white p-5">
+                <div className="text-sm font-semibold text-brand-900">Top Products</div>
+                <div className="mt-4 space-y-3">
+                  {topSellingProducts.map((name) => {
+                    const product = products.find((item) => item.name === name);
+                    if (!product) return null;
+                    return (
+                      <div key={product.name} className="flex items-center gap-3 rounded-xl border border-rose-100 bg-rose-50/40 p-3">
+                        <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-black/10 bg-white">
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                            sizes="56px"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-neutral-900">{product.name}</p>
+                          <p className="mt-0.5 text-xs text-neutral-600">{product.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <a
+                  href={SALES_WHATSAPP_LINK}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex text-sm font-semibold text-brand-800 hover:underline"
+                >
+                  Chat sales team →
+                </a>
+              </div>
             </div>
           </div>
 
