@@ -27,6 +27,12 @@ export default async function HomePage() {
   const featuredImages = galleryImages.slice(0, 3);
   const [awoshie, spintex] = LOCATIONS;
   const latestPosts = await getBlogPosts(3);
+  const spintexPromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
+    "Hi Glittering Spa! I want to register for the 50% off promo (April 1-15) at Spintex.\nName: ____\nService: ____\nDate: ____\nTime: ____"
+  )}`;
+  const awoshiePromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
+    "Hi Glittering Spa! I want to register for the 50% off promo (April 1-15) at Awoshie.\nName: ____\nService: ____\nDate: ____\nTime: ____"
+  )}`;
 
   return (
     <div className="relative">
@@ -38,7 +44,57 @@ export default async function HomePage() {
 
       <Container>
         <section className="py-12 sm:py-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-neutral-700 shadow-sm">
+          <div className="overflow-hidden rounded-3xl border border-gold-500/50 bg-gradient-to-r from-brand-950 via-brand-900 to-brand-950 text-white shadow-lg">
+            <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
+              <div className="p-6 sm:p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">Limited April Promo</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Glittering Med Spa 50% OFF Services
+                </h2>
+                <p className="mt-2 text-sm text-brand-100 sm:text-base">
+                  Offer runs from <span className="font-semibold text-white">April 1 - April 15</span>. Register now and
+                  choose your branch.
+                </p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link
+                    href="/services"
+                    className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
+                  >
+                    View promo services
+                  </Link>
+                  <a
+                    href={spintexPromoLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
+                  >
+                    Register now (Spintex)
+                  </a>
+                  <a
+                    href={awoshiePromoLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
+                  >
+                    Register now (Awoshie)
+                  </a>
+                </div>
+              </div>
+              <div className="relative min-h-[220px]">
+                <Image
+                  src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1200&q=80"
+                  alt="Spa treatment room setup"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 35vw"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-950/60 to-transparent lg:bg-gradient-to-l" />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
             Open Mon–Sat 7am–8pm • Sun 12–8pm • {SITE.location}
           </div>
