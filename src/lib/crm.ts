@@ -5,10 +5,15 @@ const PUBLIC_STORE_ID = process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID ?? "37mJqg20MjO
 
 export type Product = {
   id?: string;
-  name: string;
-  description: string;
-  image: string;
-  price?: number;
+  name?: string;
+  description?: string;
+  image?: string;
+  imageUrl?: string;
+  price?: number | string;
+  stockCount?: number | string | null;
+  quantity?: number | string | null;
+  itemType?: string;
+  updatedAt?: string;
   storeId?: string;
 };
 
@@ -49,22 +54,18 @@ export async function getProducts(): Promise<Product[]> {
     if (!PUBLIC_STORE_ID) return fallbackProducts;
 
     const data = await queryFirestoreCollectionByStoreId<Product>("products", PUBLIC_STORE_ID);
-
-    const filteredStoreProducts = data.filter((item) => item.name && item.description && item.image);
-    if (filteredStoreProducts.length) return filteredStoreProducts;
+    if (data.length) return data;
 
     const allProducts = await fetchFirestoreCollection<Product>("products");
-    const validProducts = allProducts.filter((item) => item.name && item.description && item.image);
+    if (!allProducts.length) return fallbackProducts;
 
-    if (!validProducts.length) return fallbackProducts;
-
-    const storeSpecificProducts = validProducts.filter((item) => item.storeId === PUBLIC_STORE_ID);
+    const storeSpecificProducts = allProducts.filter((item) => item.storeId === PUBLIC_STORE_ID);
     if (storeSpecificProducts.length) return storeSpecificProducts;
 
-    const productsWithoutStore = validProducts.filter((item) => !item.storeId);
+    const productsWithoutStore = allProducts.filter((item) => !item.storeId);
     if (productsWithoutStore.length) return productsWithoutStore;
 
-    return validProducts;
+    return allProducts;
   } catch {
     return fallbackProducts;
   }
