@@ -7,10 +7,10 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { SALES_WHATSAPP_LINK } from "@/lib/site";
 import { productCatalog } from "@/lib/productCatalog";
 
-type AvailabilityFilter = "all" | "in-stock" | "service" | "out-of-stock";
+type AvailabilityFilter = "all" | "in-stock" | "out-of-stock";
 
 function stockText(quantity: number | null) {
-  if (quantity === null) return "Service item";
+  if (quantity === null) return "Out of stock";
   if (quantity <= 0) return "Out of stock";
   return `${quantity} in stock`;
 }
@@ -46,13 +46,19 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
 
-  const allProducts = useMemo(() => Object.values(productCatalog), []);
+  const allProducts = useMemo(
+    () =>
+      Object.values(productCatalog).filter((product) => {
+        const detail = trustSignals(product.name, product.price);
+        return product.quantity !== null && !detail.isService;
+      }),
+    []
+  );
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return allProducts.filter((product) => {
-      const detail = trustSignals(product.name, product.price);
       const matchesSearch =
         query.length === 0 ||
         product.name.toLowerCase().includes(query) ||
@@ -60,9 +66,8 @@ export default function ProductsPage() {
 
       const matchesAvailability =
         availabilityFilter === "all" ||
-        (availabilityFilter === "in-stock" && product.quantity !== null && product.quantity > 0) ||
-        (availabilityFilter === "service" && (product.quantity === null || detail.isService)) ||
-        (availabilityFilter === "out-of-stock" && product.quantity !== null && product.quantity <= 0);
+        (availabilityFilter === "in-stock" && product.quantity > 0) ||
+        (availabilityFilter === "out-of-stock" && product.quantity <= 0);
 
       return matchesSearch && matchesAvailability;
     });
@@ -120,7 +125,6 @@ export default function ProductsPage() {
             >
               <option value="all">All items</option>
               <option value="in-stock">In stock</option>
-              <option value="service">Service items</option>
               <option value="out-of-stock">Out of stock</option>
             </select>
           </div>
