@@ -6,14 +6,14 @@ export type CatalogProduct = {
 };
 
 export const productCatalog: Record<string, CatalogProduct> = {
-  product_001: { name: "Vitamin C Tablet", price: 70, quantity: 2, image: "/products/9.jpeg" },
+  product_001: { name: "Vitamin C Tablet", price: 70, quantity: 2, image: "/products/8.jpeg" },
   product_002: { name: "Anti Aging Drip Infusion", price: 850, quantity: null, image: "/products/17.jpeg" },
   product_003: { name: "Ultra Whitening Skin (Glutathione)", price: 180, quantity: 2, image: "/products/7.jpeg" },
   product_004: { name: "Hip Booster", price: 300, quantity: 8, image: "/products/2.jpeg" },
   product_005: { name: "Stretch Mark Scrub Big", price: 80, quantity: 1, image: "/products/11.jpeg" },
   product_006: { name: "Tripple B Hip Serum", price: 85, quantity: 1, image: "/products/2.jpeg" },
   product_007: { name: "Eyebrow", price: 30, quantity: null, image: "/products/16.jpeg" },
-  product_008: { name: "Butt Booty Gummies", price: 150, quantity: 1, image: "/products/3.jpeg" },
+  product_008: { name: "Butt Booty Gummies", price: 150, quantity: 1, image: "/products/6.jpeg" },
   product_009: { name: "Grittering Coffee Scrub", price: 100, quantity: 17, image: "/products/11.jpeg" },
   product_010: { name: "Signature Facial", price: 500, quantity: null, image: "/products/14.jpeg" },
   product_011: { name: "Body Polish", price: 400, quantity: null, image: "/products/11.jpeg" },
@@ -46,7 +46,7 @@ export const productCatalog: Record<string, CatalogProduct> = {
   product_038: { name: "Head and Neck Massage", price: 180, quantity: null, image: "/products/15.jpeg" },
   product_039: { name: "Vitamin C 100 Mg", price: 150, quantity: 5, image: "/products/9.jpeg" },
   product_040: { name: "Skin Whitening Vitamin Gunnies", price: 150, quantity: 0, image: "/products/9.jpeg" },
-  product_041: { name: "Sunscreen", price: 150, quantity: 7, image: "/products/6.jpeg" },
+  product_041: { name: "Sunscreen", price: 150, quantity: 7, image: "/products/9.jpeg" },
   product_042: { name: "Anti Aging Tablet", price: 150, quantity: 2, image: "/products/9.jpeg" },
   product_043: { name: "Breast and Butt Enlargement (Five Sessions)", price: 1200, quantity: null, image: "/products/2.jpeg" },
   product_044: { name: "Micro Needing", price: 600, quantity: null, image: "/products/14.jpeg" },
