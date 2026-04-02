@@ -81,7 +81,6 @@ export const productCatalog: Record<string, CatalogProduct> = {
   product_073: { name: "General Body Weight Loss inj.", price: 1350, quantity: null, image: "/products/4.jpeg" },
   product_074: { name: "Chest", price: 180, quantity: null, image: "/products/16.jpeg" },
   product_075: { name: "Scar removal", price: 450, quantity: null, image: "/products/18.jpeg" },
-  product_076: { name: "Service add", price: 10, quantity: null, image: "/products/18.jpeg" },
   product_077: { name: "Odogu Whitening IV", price: 1500, quantity: null, image: "/products/7.jpeg" },
   product_078: { name: "Skin Whitening", price: 150, quantity: 1, image: "/products/7.jpeg" },
   product_079: { name: "Brazilian Wax", price: 200, quantity: null, image: "/products/16.jpeg" },
