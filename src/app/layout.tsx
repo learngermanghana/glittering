@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { organizationJsonLd } from "@/lib/seo";
+import { TeamAreaChromeToggle } from "@/components/TeamAreaChromeToggle";
 
 export const metadata: Metadata = {
   title: "Glittering Spa | Awoshie & Spintex",
@@ -68,11 +69,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen bg-rose-100 text-rose-950 antialiased">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
-        <Navbar />
+        <TeamAreaChromeToggle />
+        <div data-site-chrome="navbar">
+          <Navbar />
+        </div>
         <main className="min-h-[70vh]">{children}</main>
-        <Footer />
+        <div data-site-chrome="footer">
+          <Footer />
+        </div>
 
         <Link
+          data-site-chrome="floating-book"
           href="https://www.glitteringmedspa.com/book"
           className="fixed bottom-5 right-5 z-50 rounded-full bg-rose-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-rose-800"
         >
