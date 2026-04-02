@@ -3,6 +3,7 @@ import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SALES_WHATSAPP_LINK } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
+import { getProductsCatalogData } from "@/lib/products";
 import { buildProductsItemListJsonLd, ProductsCatalogClient } from "./ProductsCatalogClient";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -13,8 +14,9 @@ export const metadata: Metadata = buildPageMetadata({
   image: "/logo-glittering.svg",
 });
 
-export default function ProductsPage() {
-  const productsItemListJsonLd = buildProductsItemListJsonLd();
+export default async function ProductsPage() {
+  const products = await getProductsCatalogData();
+  const productsItemListJsonLd = buildProductsItemListJsonLd(products);
 
   return (
     <Container>
@@ -58,7 +60,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <ProductsCatalogClient />
+        <ProductsCatalogClient products={products} />
       </section>
     </Container>
   );

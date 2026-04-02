@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { SALES_WHATSAPP_LINK } from "@/lib/site";
-import { productCatalog } from "@/lib/productCatalog";
+import type { DisplayProduct } from "@/lib/productsData";
 
 type AvailabilityFilter = "all" | "in-stock" | "out-of-stock";
 
@@ -13,13 +13,8 @@ function stockText(quantity: number | null) {
   return `${quantity} in stock`;
 }
 
-function trustSignals(productName: string, price: number) {
+function trustSignals(productName: string, price: number, isService: boolean) {
   const normalized = productName.toLowerCase();
-  const isService =
-    price >= 300 ||
-    normalized.includes("massage") ||
-    normalized.includes("facial") ||
-    normalized.includes("wax");
 
   const ingredients = normalized.includes("vitamin")
     ? "Vitamin C complex, antioxidant blend, and hydration support nutrients."
@@ -37,21 +32,14 @@ function trustSignals(productName: string, price: number) {
     ? "Not suitable during active skin infection, fever, or recent invasive procedures without clinician approval."
     : "Do not use on broken skin. Avoid if allergic to listed ingredients. Pause use if irritation occurs.";
 
-  return { ingredients, usage, contraindications, isService };
+  return { ingredients, usage, contraindications };
 }
 
-export function ProductsCatalogClient() {
+export function ProductsCatalogClient({ products }: { products: DisplayProduct[] }) {
   const [search, setSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
 
-  const allProducts = useMemo(
-    () =>
-      Object.values(productCatalog).filter((product) => {
-        const detail = trustSignals(product.name, product.price);
-        return product.quantity !== null && !detail.isService;
-      }),
-    []
-  );
+  const allProducts = useMemo(() => products.filter((product) => !product.isService), [products]);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -114,12 +102,12 @@ export function ProductsCatalogClient() {
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.map((product, index) => {
             const isOutOfStock = product.quantity !== null && product.quantity <= 0;
-            const detail = trustSignals(product.name, product.price);
+            const detail = trustSignals(product.name, product.price, product.isService);
             const rating = (4.6 + (index % 4) * 0.1).toFixed(1);
 
             return (
               <article
-                key={`${product.name}-${index}`}
+                key={`${product.id ?? product.name}-${index}`}
                 className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm"
                 aria-label={product.name}
               >
@@ -188,26 +176,23 @@ export function ProductsCatalogClient() {
   );
 }
 
-export function buildProductsItemListJsonLd() {
-  const offers = Object.values(productCatalog)
-    .filter((product) => product.quantity !== null)
-    .slice(0, 30)
-    .map((product, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "Product",
-        name: product.name,
-        image: `https://www.glitteringmedspa.com${product.image}`,
-        offers: {
-          "@type": "Offer",
-          priceCurrency: "GHS",
-          price: product.price.toFixed(2),
-          availability: product.quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-          url: "https://www.glitteringmedspa.com/products",
-        },
+export function buildProductsItemListJsonLd(products: DisplayProduct[]) {
+  const offers = products.slice(0, 30).map((product, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    item: {
+      "@type": "Product",
+      name: product.name,
+      image: product.image.startsWith("http") ? product.image : `https://www.glitteringmedspa.com${product.image}`,
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "GHS",
+        price: product.price.toFixed(2),
+        availability: product.quantity !== null && product.quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        url: "https://www.glitteringmedspa.com/products",
       },
-    }));
+    },
+  }));
 
   return {
     "@context": "https://schema.org",
