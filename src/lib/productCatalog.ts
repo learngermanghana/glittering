@@ -115,7 +115,7 @@ export const productCatalog: Record<string, CatalogProduct> = {
   product_108: { name: "Full Leg", price: 150, quantity: null, image: "/products/16.jpeg" },
   product_109: { name: "Back Massage", price: 180, quantity: null, image: "/products/15.jpeg" },
   product_110: { name: "Dark Nakel", price: 80, quantity: 6, image: "/products/18.jpeg" },
-  product_111: { name: "Caffee Body Scrub", price: 100, quantity: 15, image: "/products/20.jpeg" },
+  product_111: { name: "Caffee Body Scrub", price: 100, quantity: 15, image: "/products/18.jpeg" },
   product_112: { name: "Skin Lightening Infusion", price: 1200, quantity: null, image: "/products/7.jpeg" },
   product_113: { name: "Coseit", price: 100, quantity: 3, image: "/products/18.jpeg" },
   product_114: { name: "Body Curve", price: 150, quantity: 2, image: "/products/2.jpeg" },
@@ -124,5 +124,7 @@ export const productCatalog: Record<string, CatalogProduct> = {
   product_117: { name: "Weight Gain Infusion", price: 750, quantity: null, image: "/products/4.jpeg" },
   product_118: { name: "Anti Pimples Face Soap Big", price: 70, quantity: 3, image: "/products/10.jpeg" },
   product_119: { name: "Skin Tag Removal", price: 200, quantity: null, image: "/products/18.jpeg" },
-  product_120: { name: "Face mask", price: 10, quantity: 125, image: "/products/12.jpeg" },
+  product_120: { name: "Face mask", price: 10, quantity: 125, image: "/products/facemask.jpeg" },
+  product_121: { name: "Ultimate Maca Syrup", price: 200, quantity: null, image: "/products/12.jpeg" },
+  product_122: { name: "Slim Green Coffee", price: 150, quantity: null, image: "/products/15.jpeg" },
 };
