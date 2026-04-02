@@ -38,6 +38,33 @@ INSTAGRAM_ACCESS_TOKEN=your_token_here
 
 For more details, see the official Meta docs: [Instagram Graph API overview](https://developers.facebook.com/docs/instagram-api/).
 
+
+## Updating product images (GitHub workflow)
+
+If you want to upload a new product image and use it on `/products`, do this:
+
+1. Upload the image file into `public/products/` on GitHub (for example: `public/products/vitamin-c-new.jpeg`).
+2. Open `src/lib/productCatalog.ts`.
+3. Find the product entry you want to update (for example `product_001`).
+4. Change its `image` value to the new path, e.g. `"/products/vitamin-c-new.jpeg"`.
+5. Commit and push your changes.
+
+Example:
+
+```ts
+product_001: {
+  name: "Vitamin C Tablet",
+  price: 70,
+  quantity: 2,
+  image: "/products/vitamin-c-new.jpeg",
+},
+```
+
+Notes:
+- The path must start with `/products/` because files are served from `public/products`.
+- Keep image filenames simple (lowercase + hyphens) to avoid path issues.
+- Recommended format: `.jpeg` or `.jpg`, optimized under ~300KB for fast page load.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
