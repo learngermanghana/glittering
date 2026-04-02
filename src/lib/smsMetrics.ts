@@ -1,12 +1,15 @@
-import { queryFirestoreCollectionByStoreId } from "@/lib/firebase";
+import { fetchFirestoreDocument, queryFirestoreSubcollection } from "@/lib/firebase";
 
-type SmsCampaignRecord = {
+type BulkMessageRunRecord = {
   createdAt?: string;
+  attempted?: number;
   sent?: number;
   failed?: number;
 };
 
-const SMS_COLLECTION_CANDIDATES = ["smsCampaigns", "campaigns", "bulkSmsCampaigns"];
+type StoreDoc = {
+  bulkMessagingCredits?: number;
+};
 
 function getWeekStart(date: Date) {
   const copy = new Date(date);
@@ -23,34 +26,32 @@ function toValidNumber(value: unknown) {
 
 export async function getSmsMetricsForStore(storeId: string) {
   const weekStart = getWeekStart(new Date());
+  const [runs, store] = await Promise.all([
+    queryFirestoreSubcollection<BulkMessageRunRecord>(`stores/${storeId}`, "bulkMessageRuns", {
+      orderBy: [{ fieldPath: "createdAt", direction: "DESCENDING" }],
+      limit: 100,
+    }).catch(() => []),
+    fetchFirestoreDocument<StoreDoc>("stores", storeId).catch(() => null),
+  ]);
 
-  for (const collectionName of SMS_COLLECTION_CANDIDATES) {
-    try {
-      const campaigns = await queryFirestoreCollectionByStoreId<SmsCampaignRecord>(collectionName, storeId);
-
-      if (!campaigns.length) {
-        continue;
+  const weeklyTotals = runs.reduce(
+    (totals, run) => {
+      const created = run.createdAt ? new Date(run.createdAt) : null;
+      if (!created || Number.isNaN(created.getTime()) || created < weekStart) {
+        return totals;
       }
 
-      return campaigns.reduce(
-        (totals, entry) => {
-          const created = entry.createdAt ? new Date(entry.createdAt) : null;
-          if (!created || Number.isNaN(created.getTime()) || created < weekStart) {
-            return totals;
-          }
+      return {
+        attemptedThisWeek: totals.attemptedThisWeek + toValidNumber(run.attempted),
+        sentThisWeek: totals.sentThisWeek + toValidNumber(run.sent),
+        failedThisWeek: totals.failedThisWeek + toValidNumber(run.failed),
+      };
+    },
+    { attemptedThisWeek: 0, sentThisWeek: 0, failedThisWeek: 0 }
+  );
 
-          return {
-            sentThisWeek: totals.sentThisWeek + toValidNumber(entry.sent),
-            failedThisWeek: totals.failedThisWeek + toValidNumber(entry.failed),
-          };
-        },
-        { sentThisWeek: 0, failedThisWeek: 0 }
-      );
-    } catch {
-      // Try the next candidate collection if this one does not exist or cannot be queried.
-      continue;
-    }
-  }
-
-  return { sentThisWeek: 0, failedThisWeek: 0 };
+  return {
+    ...weeklyTotals,
+    bulkMessagingCredits: Math.max(0, toValidNumber(store?.bulkMessagingCredits)),
+  };
 }
