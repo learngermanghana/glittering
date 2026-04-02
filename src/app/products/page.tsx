@@ -64,10 +64,11 @@ export default function ProductsPage() {
         product.name.toLowerCase().includes(query) ||
         stockText(product.quantity).toLowerCase().includes(query);
 
+      const quantity = product.quantity ?? 0;
       const matchesAvailability =
         availabilityFilter === "all" ||
-        (availabilityFilter === "in-stock" && product.quantity > 0) ||
-        (availabilityFilter === "out-of-stock" && product.quantity <= 0);
+        (availabilityFilter === "in-stock" && quantity > 0) ||
+        (availabilityFilter === "out-of-stock" && quantity <= 0);
 
       return matchesSearch && matchesAvailability;
     });
