@@ -11,6 +11,7 @@ function getFirebaseConfig() {
 
 type FirestoreValue = {
   stringValue?: string;
+  timestampValue?: string;
   integerValue?: string;
   doubleValue?: number;
   booleanValue?: boolean;
@@ -23,6 +24,7 @@ type FirestoreDocument = { name: string; fields?: Record<string, FirestoreValue>
 
 function parseValue(value: FirestoreValue): unknown {
   if (value.stringValue !== undefined) return value.stringValue;
+  if (value.timestampValue !== undefined) return value.timestampValue;
   if (value.integerValue !== undefined) return Number(value.integerValue);
   if (value.doubleValue !== undefined) return value.doubleValue;
   if (value.booleanValue !== undefined) return value.booleanValue;
@@ -100,6 +102,48 @@ export async function queryFirestoreCollectionByStoreId<T>(collectionName: strin
 
   if (!response.ok) {
     throw new Error(`Failed to query collection ${collectionName}: ${response.status}`);
+  }
+
+  const rows = (await response.json()) as Array<{ document?: FirestoreDocument }>;
+  return rows.filter((row) => row.document).map((row) => parseDocument<T>(row.document as FirestoreDocument));
+}
+
+type FirestoreOrderBy = {
+  fieldPath: string;
+  direction?: "ASCENDING" | "DESCENDING";
+};
+
+export async function queryFirestoreSubcollection<T>(
+  parentPath: string,
+  collectionName: string,
+  options?: { orderBy?: FirestoreOrderBy[]; limit?: number }
+): Promise<T[]> {
+  const { projectId, apiKey } = getFirebaseConfig();
+  const response = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${parentPath}:runQuery?key=${apiKey}`,
+    {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: collectionName }],
+          ...(options?.orderBy?.length
+            ? {
+                orderBy: options.orderBy.map((rule) => ({
+                  field: { fieldPath: rule.fieldPath },
+                  direction: rule.direction ?? "ASCENDING",
+                })),
+              }
+            : {}),
+          ...(typeof options?.limit === "number" ? { limit: options.limit } : {}),
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to query subcollection ${parentPath}/${collectionName}: ${response.status}`);
   }
 
   const rows = (await response.json()) as Array<{ document?: FirestoreDocument }>;

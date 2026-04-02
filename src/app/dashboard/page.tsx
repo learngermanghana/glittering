@@ -31,7 +31,12 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const metrics = await getSmsMetricsForStore(session.resolvedStoreId).catch(() => ({ sentThisWeek: 0, failedThisWeek: 0 }));
+  const metrics = await getSmsMetricsForStore(session.resolvedStoreId).catch(() => ({
+    attemptedThisWeek: 0,
+    sentThisWeek: 0,
+    failedThisWeek: 0,
+    bulkMessagingCredits: 0,
+  }));
 
   return (
     <Container>
@@ -44,7 +49,12 @@ export default async function DashboardPage() {
         <TeamSessionActions />
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <DashboardSmsMetrics sentThisWeek={metrics.sentThisWeek} failedThisWeek={metrics.failedThisWeek} />
+          <DashboardSmsMetrics
+            attemptedThisWeek={metrics.attemptedThisWeek}
+            sentThisWeek={metrics.sentThisWeek}
+            failedThisWeek={metrics.failedThisWeek}
+            bulkMessagingCredits={metrics.bulkMessagingCredits}
+          />
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
