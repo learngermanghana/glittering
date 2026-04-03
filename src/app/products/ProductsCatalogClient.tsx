@@ -13,28 +13,6 @@ function stockText(quantity: number | null) {
   return `${quantity} in stock`;
 }
 
-function trustSignals(productName: string, price: number, isService: boolean) {
-  const normalized = productName.toLowerCase();
-
-  const ingredients = normalized.includes("vitamin")
-    ? "Vitamin C complex, antioxidant blend, and hydration support nutrients."
-    : normalized.includes("scrub") || normalized.includes("soap")
-      ? "Plant oils, exfoliating grains, gentle cleansers, and fragrance-safe blend."
-      : isService
-        ? "Performed with professional spa-grade products chosen for your skin profile."
-        : "Active botanical blend with moisturizing and glow-support ingredients.";
-
-  const usage = isService
-    ? "Book your session and complete a quick skin/safety consultation before treatment."
-    : "Use 1-2 times daily as directed. Start with a patch test on first use.";
-
-  const contraindications = isService
-    ? "Not suitable during active skin infection, fever, or recent invasive procedures without clinician approval."
-    : "Do not use on broken skin. Avoid if allergic to listed ingredients. Pause use if irritation occurs.";
-
-  return { ingredients, usage, contraindications };
-}
-
 export function ProductsCatalogClient({ products }: { products: DisplayProduct[] }) {
   const [search, setSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
@@ -102,8 +80,6 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.map((product, index) => {
             const isOutOfStock = product.quantity !== null && product.quantity <= 0;
-            const detail = trustSignals(product.name, product.price, product.isService);
-            const rating = (4.6 + (index % 4) * 0.1).toFixed(1);
 
             return (
               <article
@@ -136,29 +112,12 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                 </div>
                 <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
                   <p>
-                    <span className="font-semibold text-neutral-900">Ingredients:</span> {detail.ingredients}
+                    This listing is synced from Sedifex inventory data.
                   </p>
                   <p className="mt-1">
-                    <span className="font-semibold text-neutral-900">Usage:</span> {detail.usage}
-                  </p>
-                  <p className="mt-1">
-                    <span className="font-semibold text-neutral-900">Contraindications:</span> {detail.contraindications}
+                    Contact the spa team for verified ingredients, usage directions, contraindications, and treatment suitability.
                   </p>
                 </div>
-                <div className="mt-3 flex items-center justify-between text-xs text-neutral-600">
-                  <span className="font-semibold text-neutral-900">Rating: ⭐ {rating}/5</span>
-                  <span>{22 + (index % 31)} verified reviews</span>
-                </div>
-                <p className="mt-2 text-xs text-neutral-600">
-                  Before/after gallery available for compliant treatments in our{" "}
-                  <a href="/gallery" className="font-semibold text-brand-800 hover:underline">
-                    gallery
-                  </a>
-                  .
-                </p>
-                <p className="mt-2 text-xs text-neutral-600">
-                  Related bundles: Pair with best-sellers and save up to 15% when you order 2+ compatible items.
-                </p>
                 <a
                   href={SALES_WHATSAPP_LINK}
                   target="_blank"
