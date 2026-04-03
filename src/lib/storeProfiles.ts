@@ -1,0 +1,169 @@
+import { fetchFirestoreDocument, queryFirestoreCollectionByStoreId } from "@/lib/firebase";
+import { getBusinessSnapshotForStores } from "@/lib/businessMetrics";
+import { getSmsMetricsForStores } from "@/lib/smsMetrics";
+
+type StoreDoc = {
+  id?: string;
+  name?: string;
+  displayName?: string;
+  addressLine1?: string;
+  addressLine2?: string | null;
+  city?: string;
+  country?: string;
+  email?: string;
+  phone?: string;
+  ownerEmail?: string;
+  paymentStatus?: string;
+  contractStatus?: string;
+  status?: string;
+  bulkMessagingCredits?: number;
+  promoTitle?: string;
+  promoSummary?: string;
+  promoStartDate?: string;
+  promoEndDate?: string;
+  updatedAt?: string;
+};
+
+type StoreProfile = {
+  storeId: string;
+  storeName: string;
+  location: string;
+  contact: {
+    email: string | null;
+    phone: string | null;
+    ownerEmail: string | null;
+  };
+  statuses: {
+    store: string;
+    payment: string;
+    contract: string;
+  };
+  personalization: {
+    promoTitle: string | null;
+    promoSummary: string | null;
+    promoWindow: string | null;
+  };
+  counts: {
+    customers: number;
+    sales: number;
+    products: number;
+  };
+  sms: {
+    attemptedThisWeek: number;
+    sentThisWeek: number;
+    failedThisWeek: number;
+    bulkMessagingCredits: number;
+  };
+  business: {
+    salesToday: number;
+    salesThisMonth: number;
+    salesAllTime: number;
+    ordersToday: number;
+    ordersThisMonth: number;
+    totalProducts: number;
+    inStockProducts: number;
+    outOfStockProducts: number;
+    lowStockProducts: number;
+  };
+};
+
+function asText(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function buildLocation(store: StoreDoc) {
+  const lines = [asText(store.addressLine1), asText(store.addressLine2), asText(store.city), asText(store.country)].filter(Boolean);
+  return lines.length ? lines.join(", ") : "Not set";
+}
+
+function formatPromoWindow(start?: string, end?: string) {
+  if (!start && !end) return null;
+  if (start && end) return `${start} → ${end}`;
+  return start ?? end ?? null;
+}
+
+async function countCollectionByStoreId(collectionName: string, storeId: string) {
+  try {
+    const rows = await queryFirestoreCollectionByStoreId(collectionName, storeId);
+    return rows.length;
+  } catch {
+    return 0;
+  }
+}
+
+export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile[]> {
+  const uniqueStoreIds = Array.from(new Set(storeIds.filter(Boolean)));
+
+  const [sms, business, stores, countsByStore] = await Promise.all([
+    getSmsMetricsForStores(uniqueStoreIds),
+    getBusinessSnapshotForStores(uniqueStoreIds),
+    Promise.all(uniqueStoreIds.map((storeId) => fetchFirestoreDocument<StoreDoc>("stores", storeId).catch(() => null))),
+    Promise.all(
+      uniqueStoreIds.map(async (storeId) => ({
+        storeId,
+        customers: await countCollectionByStoreId("customers", storeId),
+        sales: await countCollectionByStoreId("sales", storeId),
+        products: await countCollectionByStoreId("products", storeId),
+      }))
+    ),
+  ]);
+
+  const smsMap = new Map(sms.stores.map((entry) => [entry.storeId, entry]));
+  const businessMap = new Map(business.stores.map((entry) => [entry.storeId, entry]));
+  const countsMap = new Map(countsByStore.map((entry) => [entry.storeId, entry]));
+
+  return uniqueStoreIds.map((storeId, index) => {
+    const store = stores[index] ?? null;
+    const smsForStore = smsMap.get(storeId);
+    const businessForStore = businessMap.get(storeId);
+    const counts = countsMap.get(storeId);
+
+    return {
+      storeId,
+      storeName: asText(store?.displayName) ?? asText(store?.name) ?? `Store ${storeId.slice(0, 6)}`,
+      location: buildLocation(store ?? {}),
+      contact: {
+        email: asText(store?.email),
+        phone: asText(store?.phone),
+        ownerEmail: asText(store?.ownerEmail),
+      },
+      statuses: {
+        store: asText(store?.status) ?? "unknown",
+        payment: asText(store?.paymentStatus) ?? "unknown",
+        contract: asText(store?.contractStatus) ?? "unknown",
+      },
+      personalization: {
+        promoTitle: asText(store?.promoTitle),
+        promoSummary: asText(store?.promoSummary),
+        promoWindow: formatPromoWindow(asText(store?.promoStartDate) ?? undefined, asText(store?.promoEndDate) ?? undefined),
+      },
+      counts: {
+        customers: counts?.customers ?? 0,
+        sales: counts?.sales ?? 0,
+        products: counts?.products ?? 0,
+      },
+      sms: {
+        attemptedThisWeek: smsForStore?.attemptedThisWeek ?? 0,
+        sentThisWeek: smsForStore?.sentThisWeek ?? 0,
+        failedThisWeek: smsForStore?.failedThisWeek ?? 0,
+        bulkMessagingCredits: smsForStore?.bulkMessagingCredits ?? 0,
+      },
+      business: {
+        salesToday: businessForStore?.salesToday ?? 0,
+        salesThisMonth: businessForStore?.salesThisMonth ?? 0,
+        salesAllTime: businessForStore?.salesAllTime ?? 0,
+        ordersToday: businessForStore?.ordersToday ?? 0,
+        ordersThisMonth: businessForStore?.ordersThisMonth ?? 0,
+        totalProducts: businessForStore?.totalProducts ?? 0,
+        inStockProducts: businessForStore?.inStockProducts ?? 0,
+        outOfStockProducts: businessForStore?.outOfStockProducts ?? 0,
+        lowStockProducts: businessForStore?.lowStockProducts ?? 0,
+      },
+    };
+  });
+}
+
+export async function getStoreProfile(storeId: string) {
+  const [profile] = await getStoreProfiles([storeId]);
+  return profile ?? null;
+}
