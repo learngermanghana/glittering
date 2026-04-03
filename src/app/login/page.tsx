@@ -35,7 +35,7 @@ export default async function LoginPage() {
           <>
             <SectionTitle
               title="Team Login"
-              subtitle="Sign in with your Glittering Spa Sedifex account, then use the Dashboard, Booking Sync, Bulk SMS, Campaigns, and Calendar tabs."
+              subtitle="Sign in with your Glittering Spa Sedifex account, then use the Dashboard, Booking Sync, and Bulk SMS tabs."
             />
             <LoginForm />
           </>
