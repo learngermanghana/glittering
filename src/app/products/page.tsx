@@ -4,7 +4,8 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { SALES_WHATSAPP_LINK } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
 import { getProductsCatalogData } from "@/lib/products";
-import { buildProductsItemListJsonLd, ProductsCatalogClient } from "./ProductsCatalogClient";
+import { ProductsCatalogClient } from "./ProductsCatalogClient";
+import { buildProductsItemListJsonLd } from "./productsJsonLd";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Spa Products in Accra | Skincare, Wellness & Beauty | Glittering Med Spa",
