@@ -5,7 +5,6 @@ import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TeamSessionActions } from "@/components/TeamSessionActions";
 import { TeamToolsNav } from "@/components/TeamToolsNav";
-import { DashboardSmsMetrics } from "@/components/DashboardSmsMetrics";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { buildPageMetadata } from "@/lib/seo";
 import { getTeamSession } from "@/lib/auth";
@@ -19,9 +18,7 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 const quickLinks = [
-  { href: "/login", label: "Booking Sync", description: "Sync appointments to Google Sheets." },
-  { href: "/campaigns", label: "Campaigns", description: "Reuse templates and campaign history." },
-  { href: "/calendar", label: "Calendar", description: "View synced bookings by day or week." },
+  { href: "/login", label: "Booking Sync", description: "Enter and sync appointments." },
 ];
 
 const leaderStoreIds = [
@@ -94,15 +91,6 @@ export default async function DashboardPage() {
         />
         <TeamToolsNav active="dashboard" />
         <TeamSessionActions />
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <DashboardSmsMetrics
-            attemptedThisWeek={metrics.totals.attemptedThisWeek}
-            sentThisWeek={metrics.totals.sentThisWeek}
-            failedThisWeek={metrics.totals.failedThisWeek}
-            bulkMessagingCredits={metrics.totals.bulkMessagingCredits}
-          />
-        </div>
 
         <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Per-store SMS metrics (this week)</p>
