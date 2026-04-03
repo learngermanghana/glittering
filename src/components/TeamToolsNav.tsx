@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-type TeamTab = "dashboard" | "booking" | "sms" | "campaigns" | "calendar";
+type TeamTab = "dashboard" | "booking" | "campaigns" | "calendar";
 
 type TeamToolsNavProps = {
   active: TeamTab;
@@ -9,7 +9,6 @@ type TeamToolsNavProps = {
 const links: Array<{ href: string; label: string; key: TeamTab }> = [
   { href: "/dashboard", label: "Dashboard", key: "dashboard" },
   { href: "/login", label: "Booking Sync", key: "booking" },
-  { href: "/sms", label: "Bulk SMS", key: "sms" },
   { href: "/campaigns", label: "Campaigns", key: "campaigns" },
   { href: "/calendar", label: "Calendar", key: "calendar" },
 ];

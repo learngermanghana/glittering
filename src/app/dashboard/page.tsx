@@ -9,7 +9,8 @@ import { DashboardSmsMetrics } from "@/components/DashboardSmsMetrics";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { buildPageMetadata } from "@/lib/seo";
 import { getTeamSession } from "@/lib/auth";
-import { getSmsMetricsForStore } from "@/lib/smsMetrics";
+import { getSmsMetricsForStores } from "@/lib/smsMetrics";
+import { getBusinessSnapshotForStores } from "@/lib/businessMetrics";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Team Dashboard | Glittering Med Spa",
@@ -19,9 +20,14 @@ export const metadata: Metadata = buildPageMetadata({
 
 const quickLinks = [
   { href: "/login", label: "Booking Sync", description: "Sync appointments to Google Sheets." },
-  { href: "/sms", label: "Bulk SMS", description: "Send targeted campaigns to opted-in customers." },
   { href: "/campaigns", label: "Campaigns", description: "Reuse templates and campaign history." },
   { href: "/calendar", label: "Calendar", description: "View synced bookings by day or week." },
+];
+
+const leaderStoreIds = [
+  "37mJqg20MjOriggaIaOOuahDsgj1",
+  "2EeDEIDS1FO814KVfaaUVdv66bM2",
+  "kT9QTWUkACMby6OwI2RO1bxG0WL2",
 ];
 
 export default async function DashboardPage() {
@@ -31,30 +37,143 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const metrics = await getSmsMetricsForStore(session.resolvedStoreId).catch(() => ({
-    attemptedThisWeek: 0,
-    sentThisWeek: 0,
-    failedThisWeek: 0,
-    bulkMessagingCredits: 0,
+  const metrics = await getSmsMetricsForStores(leaderStoreIds).catch(() => ({
+    stores: leaderStoreIds.map((storeId) => ({
+      storeId,
+      attemptedThisWeek: 0,
+      sentThisWeek: 0,
+      failedThisWeek: 0,
+      bulkMessagingCredits: 0,
+    })),
+    totals: {
+      attemptedThisWeek: 0,
+      sentThisWeek: 0,
+      failedThisWeek: 0,
+      bulkMessagingCredits: 0,
+    },
   }));
+
+  const business = await getBusinessSnapshotForStores(leaderStoreIds).catch(() => ({
+    stores: leaderStoreIds.map((storeId) => ({
+      storeId,
+      salesToday: 0,
+      salesThisMonth: 0,
+      salesAllTime: 0,
+      ordersToday: 0,
+      ordersThisMonth: 0,
+      totalProducts: 0,
+      inStockProducts: 0,
+      outOfStockProducts: 0,
+      lowStockProducts: 0,
+    })),
+    totals: {
+      salesToday: 0,
+      salesThisMonth: 0,
+      salesAllTime: 0,
+      ordersToday: 0,
+      ordersThisMonth: 0,
+      totalProducts: 0,
+      inStockProducts: 0,
+      outOfStockProducts: 0,
+      lowStockProducts: 0,
+    },
+  }));
+
+  const currency = new Intl.NumberFormat("en-GH", {
+    style: "currency",
+    currency: "GHS",
+    maximumFractionDigits: 2,
+  });
 
   return (
     <Container>
       <section className="py-12 sm:py-16">
         <SectionTitle
           title="Team Dashboard"
-          subtitle={`Signed in as ${session.email ?? "Sedifex user"}. Store: ${session.resolvedStoreId}.`}
+          subtitle={`Signed in as ${session.email ?? "Sedifex user"}. Aggregated metrics across ${leaderStoreIds.length} stores.`}
         />
         <TeamToolsNav active="dashboard" />
         <TeamSessionActions />
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <DashboardSmsMetrics
-            attemptedThisWeek={metrics.attemptedThisWeek}
-            sentThisWeek={metrics.sentThisWeek}
-            failedThisWeek={metrics.failedThisWeek}
-            bulkMessagingCredits={metrics.bulkMessagingCredits}
+            attemptedThisWeek={metrics.totals.attemptedThisWeek}
+            sentThisWeek={metrics.totals.sentThisWeek}
+            failedThisWeek={metrics.totals.failedThisWeek}
+            bulkMessagingCredits={metrics.totals.bulkMessagingCredits}
           />
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Per-store SMS metrics (this week)</p>
+          <div className="mt-3 space-y-2">
+            {metrics.stores.map((store) => (
+              <div key={store.storeId} className="grid grid-cols-2 gap-2 rounded-xl border border-black/10 p-3 text-sm sm:grid-cols-5">
+                <p className="font-semibold text-neutral-800 sm:col-span-1">{store.storeId}</p>
+                <p className="text-neutral-700">Attempted: {store.attemptedThisWeek}</p>
+                <p className="text-neutral-700">Sent: {store.sentThisWeek}</p>
+                <p className="text-neutral-700">Failed: {store.failedThisWeek}</p>
+                <p className="text-neutral-700">Credits: {store.bulkMessagingCredits}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Business snapshot (all selected stores)</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">Sales today</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{currency.format(business.totals.salesToday)}</p>
+            </div>
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">Sales this month</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{currency.format(business.totals.salesThisMonth)}</p>
+            </div>
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">Sales all-time</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{currency.format(business.totals.salesAllTime)}</p>
+            </div>
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">Orders today</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{business.totals.ordersToday}</p>
+            </div>
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">Orders this month</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{business.totals.ordersThisMonth}</p>
+            </div>
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">Total products</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{business.totals.totalProducts}</p>
+            </div>
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">In stock products</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{business.totals.inStockProducts}</p>
+            </div>
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">Out of stock products</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{business.totals.outOfStockProducts}</p>
+            </div>
+            <div className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs uppercase text-neutral-500">Low stock products (≤ 5)</p>
+              <p className="mt-1 text-xl font-semibold text-neutral-900">{business.totals.lowStockProducts}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {business.stores.map((store) => (
+              <div key={store.storeId} className="rounded-xl border border-black/10 p-3 text-sm">
+                <p className="font-semibold text-neutral-900">{store.storeId}</p>
+                <p className="mt-1 text-neutral-700">
+                  Today: {currency.format(store.salesToday)} · Month: {currency.format(store.salesThisMonth)} · All-time: {currency.format(store.salesAllTime)}
+                </p>
+                <p className="text-neutral-700">
+                  Orders today/month: {store.ordersToday}/{store.ordersThisMonth} · Products: {store.totalProducts} · In stock: {store.inStockProducts} · Out:
+                  {store.outOfStockProducts} · Low stock: {store.lowStockProducts}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
