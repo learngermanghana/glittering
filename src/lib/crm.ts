@@ -1,5 +1,6 @@
 import { fetchFirestoreCollection, queryFirestoreCollectionByStoreId } from "@/lib/firebase";
 import { products as fallbackProducts } from "@/lib/site";
+import { leaderStoreIds } from "@/lib/stores";
 
 const PUBLIC_STORE_ID = process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID ?? "37mJqg20MjOriggaIaOOuahDsgj1";
 
@@ -51,15 +52,33 @@ function normalizeCustomer(record: FirestoreCustomerRecord): Customer {
 
 export async function getProducts(): Promise<Product[]> {
   try {
-    if (!PUBLIC_STORE_ID) return fallbackProducts;
+    const preferredStoreIds = Array.from(new Set([PUBLIC_STORE_ID, ...leaderStoreIds].filter(Boolean)));
 
-    const data = await queryFirestoreCollectionByStoreId<Product>("products", PUBLIC_STORE_ID);
-    if (data.length) return data;
+    if (preferredStoreIds.length) {
+      const settled = await Promise.allSettled(
+        preferredStoreIds.map((storeId) => queryFirestoreCollectionByStoreId<Product>("products", storeId))
+      );
+      const multiStoreData = settled
+        .filter((entry): entry is PromiseFulfilledResult<Product[]> => entry.status === "fulfilled")
+        .flatMap((entry) => entry.value);
+
+      if (multiStoreData.length) {
+        const seenKeys = new Set<string>();
+        const uniqueProducts = multiStoreData.filter((item) => {
+          const key = `${item.id ?? ""}|${item.storeId ?? ""}|${item.name ?? ""}|${item.price ?? ""}`;
+          if (seenKeys.has(key)) return false;
+          seenKeys.add(key);
+          return true;
+        });
+
+        if (uniqueProducts.length) return uniqueProducts;
+      }
+    }
 
     const allProducts = await fetchFirestoreCollection<Product>("products");
     if (!allProducts.length) return fallbackProducts;
 
-    const storeSpecificProducts = allProducts.filter((item) => item.storeId === PUBLIC_STORE_ID);
+    const storeSpecificProducts = allProducts.filter((item) => preferredStoreIds.includes(item.storeId ?? ""));
     if (storeSpecificProducts.length) return storeSpecificProducts;
 
     const productsWithoutStore = allProducts.filter((item) => !item.storeId);
