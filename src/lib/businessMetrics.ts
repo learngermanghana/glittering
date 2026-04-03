@@ -32,7 +32,7 @@ type AggregateSnapshot = Omit<StoreBusinessSnapshot, "storeId">;
 
 const SALES_COLLECTION_CANDIDATES = ["sales", "orders", "transactions"];
 
-function toValidNumber(value: unknown) {
+function toValidNumber(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
     const numeric = Number(value.replace(/,/g, "").trim());
