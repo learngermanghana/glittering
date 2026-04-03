@@ -15,6 +15,7 @@ import { getGalleryImages } from "@/lib/gallery";
 import { getBlogPosts } from "@/lib/blog";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { buildPageMetadata } from "@/lib/seo";
+import { fetchFirestoreDocument } from "@/lib/firebase";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Glittering Spa | Awoshie & Spintex",
@@ -22,16 +23,46 @@ export const metadata: Metadata = buildPageMetadata({
   path: "/",
 });
 
+type StorePromoDoc = {
+  promoTitle?: string;
+  promoSummary?: string;
+  promoStartDate?: string;
+  promoEndDate?: string;
+  promoWebsiteUrl?: string;
+};
+
+const PROMO_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
+
+function asPromoText(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function formatPromoDate(value?: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" }).format(parsed);
+}
+
 export default async function HomePage() {
   const galleryImages = getGalleryImages();
   const featuredImages = galleryImages.slice(0, 3);
   const [awoshie, spintex] = LOCATIONS;
-  const latestPosts = await getBlogPosts(3);
+  const [latestPosts, promoStore] = await Promise.all([
+    getBlogPosts(3),
+    fetchFirestoreDocument<StorePromoDoc>("stores", PROMO_STORE_ID).catch(() => null),
+  ]);
+  const promoTitle = asPromoText(promoStore?.promoTitle) ?? "Limited April Promo";
+  const promoSummary = asPromoText(promoStore?.promoSummary) ?? "Glittering Med Spa 50% OFF Services";
+  const promoStart = formatPromoDate(asPromoText(promoStore?.promoStartDate));
+  const promoEnd = formatPromoDate(asPromoText(promoStore?.promoEndDate));
+  const promoWindow = promoStart && promoEnd ? `${promoStart} - ${promoEnd}` : promoStart ?? promoEnd ?? "April 1 - April 15";
+  const promoWebsiteUrl = asPromoText(promoStore?.promoWebsiteUrl);
   const spintexPromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
-    "Hi Glittering Spa! I want to register for the 50% off promo (April 1-15) at Spintex.\nName: ____\nService: ____\nDate: ____\nTime: ____"
+    `Hi Glittering Spa! I want to register for the promo (${promoWindow}) at Spintex.\nName: ____\nService: ____\nDate: ____\nTime: ____`
   )}`;
   const awoshiePromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
-    "Hi Glittering Spa! I want to register for the 50% off promo (April 1-15) at Awoshie.\nName: ____\nService: ____\nDate: ____\nTime: ____"
+    `Hi Glittering Spa! I want to register for the promo (${promoWindow}) at Awoshie.\nName: ____\nService: ____\nDate: ____\nTime: ____`
   )}`;
 
   return (
@@ -100,19 +131,30 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-8 overflow-hidden rounded-3xl border border-gold-500/40 bg-gradient-to-r from-brand-900 via-brand-900 to-brand-950 p-6 text-white shadow-sm sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">Limited April Promo</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Glittering Med Spa 50% OFF Services</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">{promoTitle}</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{promoSummary}</h2>
             <p className="mt-2 text-sm text-brand-100 sm:text-base">
-              Offer runs from <span className="font-semibold text-white">April 1 - April 15</span>. Register now and choose
-              your branch.
+              Offer runs from <span className="font-semibold text-white">{promoWindow}</span>. Register now and choose your
+              branch.
             </p>
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                href="/services"
-                className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
-              >
-                View promo services
-              </Link>
+              {promoWebsiteUrl ? (
+                <a
+                  href={promoWebsiteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
+                >
+                  View promo services
+                </a>
+              ) : (
+                <Link
+                  href="/services"
+                  className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
+                >
+                  View promo services
+                </Link>
+              )}
               <a
                 href={spintexPromoLink}
                 target="_blank"
