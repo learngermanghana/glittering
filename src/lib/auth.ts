@@ -1,13 +1,26 @@
 import { cookies } from "next/headers";
 import { createVerify } from "node:crypto";
 import { fetchFirestoreDocument } from "@/lib/firebase";
+import { leaderStoreIds } from "@/lib/stores";
 
 const FIREBASE_COOKIE = "sedifex_session";
 const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-const WEBSITE_STORE_ID =
-  process.env.SEDIFEX_WEBSITE_STORE_ID ??
-  process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID ??
-  "37mJqg20MjOriggaIaOOuahDsgj1";
+const DEFAULT_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
+
+const allowedStoreIds = (process.env.SEDIFEX_ALLOWED_STORE_IDS ?? "")
+  .split(",")
+  .map((storeId) => storeId.trim())
+  .filter(Boolean);
+
+const WEBSITE_STORE_IDS = Array.from(
+  new Set([
+    ...allowedStoreIds,
+    process.env.SEDIFEX_WEBSITE_STORE_ID,
+    process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID,
+    DEFAULT_STORE_ID,
+    ...leaderStoreIds,
+  ].filter((storeId): storeId is string => Boolean(storeId && storeId.trim())))
+);
 
 type FirebaseTokenPayload = {
   aud: string;
@@ -81,7 +94,7 @@ async function assertStoreExists(storeId: string) {
 }
 
 function assertWebsiteStore(storeId: string) {
-  if (storeId !== WEBSITE_STORE_ID) {
+  if (!WEBSITE_STORE_IDS.includes(storeId)) {
     throw new Error("This account does not have access to this website store.");
   }
 }
