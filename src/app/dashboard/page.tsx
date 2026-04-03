@@ -92,9 +92,8 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {stores.map((store) => (
-              <Link
+              <div
                 key={store.storeId}
-                href={`/dashboard/stores/${store.storeId}`}
                 className="rounded-2xl border border-black/10 bg-neutral-50/60 p-4 text-sm transition hover:-translate-y-0.5 hover:border-black/20 hover:bg-white hover:shadow-sm"
               >
                 <p className="font-semibold text-neutral-900">{store.storeName}</p>
@@ -106,7 +105,13 @@ export default async function DashboardPage() {
                 <p className="mt-1 text-sm font-semibold text-neutral-800">
                   Sales this month: {currency.format(store.business.salesThisMonth)}
                 </p>
-              </Link>
+                <Link
+                  href={`/dashboard/stores/${store.storeId}`}
+                  className="mt-3 inline-flex rounded-xl border border-black/15 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800 transition hover:border-black/30 hover:bg-neutral-100"
+                >
+                  Select store
+                </Link>
+              </div>
             ))}
           </div>
         </div>
