@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSessionCookieName, verifyFirebaseIdToken } from "@/lib/auth";
-import { fetchFirestoreDocument } from "@/lib/firebase";
+import { fetchFirestoreDocument, updateFirestoreDocumentNumberField } from "@/lib/firebase";
 import { formatSmsAddress, normalizePhoneE164 } from "@/lib/phone";
 
 type Payload = {
@@ -220,16 +220,33 @@ export async function POST(request: Request) {
 
   const sent = results.filter((item) => item.ok).length;
   const failed = results.length - sent;
+  const creditsUsed = sent * estimateSmsSegments(message);
+  const remainingCredits = Math.max(0, availableCredits - creditsUsed);
   const failureSummary = results
     .filter((item) => !item.ok)
     .map((item) => `${item.to} (${item.reason ?? "Unknown error"})`)
     .join(", ");
 
+  let creditUpdateWarning: string | null = null;
+  if (creditsUsed > 0) {
+    try {
+      await updateFirestoreDocumentNumberField("stores", session.resolvedStoreId, "bulkMessagingCredits", remainingCredits);
+    } catch (error) {
+      creditUpdateWarning =
+        error instanceof Error ? `SMS sent but credits were not updated: ${error.message}` : "SMS sent but credits were not updated.";
+    }
+  }
+
   return NextResponse.json({
-    message:
-      failed > 0
-        ? `Campaign complete. Sent: ${sent}, Failed: ${failed}. Failures: ${failureSummary}`
-        : `Campaign complete. Sent: ${sent}, Failed: ${failed}`,
+    message: (() => {
+      const summary =
+        failed > 0
+          ? `Campaign complete. Sent: ${sent}, Failed: ${failed}. Failures: ${failureSummary}`
+          : `Campaign complete. Sent: ${sent}, Failed: ${failed}`;
+      return creditUpdateWarning ? `${summary}. ${creditUpdateWarning}` : summary;
+    })(),
     results,
+    creditsUsed,
+    remainingCredits,
   });
 }
