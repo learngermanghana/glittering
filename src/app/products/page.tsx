@@ -4,7 +4,8 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { SALES_WHATSAPP_LINK } from "@/lib/site";
 import { buildPageMetadata } from "@/lib/seo";
 import { getProductsCatalogData } from "@/lib/products";
-import { buildProductsItemListJsonLd, ProductsCatalogClient } from "./ProductsCatalogClient";
+import { ProductsCatalogClient } from "./ProductsCatalogClient";
+import type { DisplayProduct } from "@/lib/productsData";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Spa Products in Accra | Skincare, Wellness & Beauty | Glittering Med Spa",
@@ -64,4 +65,30 @@ export default async function ProductsPage() {
       </section>
     </Container>
   );
+}
+
+function buildProductsItemListJsonLd(products: DisplayProduct[]) {
+  const offers = products.slice(0, 30).map((product, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    item: {
+      "@type": "Product",
+      name: product.name,
+      image: product.image.startsWith("http") ? product.image : `https://www.glitteringmedspa.com${product.image}`,
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "GHS",
+        price: product.price.toFixed(2),
+        availability: product.quantity !== null && product.quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        url: "https://www.glitteringmedspa.com/products",
+      },
+    },
+  }));
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Glittering Med Spa products",
+    itemListElement: offers,
+  };
 }
