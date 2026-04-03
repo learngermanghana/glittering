@@ -58,7 +58,7 @@ export default async function LoginPage() {
                 <div>
                   <SectionTitle
                     title="Team Login"
-                    subtitle="Sign in with your Glittering Spa Sedifex account, then switch between store pages, Dashboard, Booking Sync, and Bulk SMS tabs."
+                    subtitle="Sign in with your Glittering Spa Sedifex account, then switch between store pages, Dashboard, Booking Sync, and Calendar tabs."
                   />
 
                   <div className="-mt-1 grid gap-3 sm:grid-cols-2">

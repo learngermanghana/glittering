@@ -45,6 +45,7 @@ export type SedifexSession = FirebaseTokenPayload & {
 
 let certCache: Record<string, string> | null = null;
 let certCacheExp = 0;
+const sessionCache = new Map<string, { session: SedifexSession; expiresAtMs: number }>();
 
 function decodeBase64Url(value: string) {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -102,6 +103,11 @@ function assertWebsiteStore(storeId: string) {
 export async function verifyFirebaseIdToken(idToken: string): Promise<SedifexSession> {
   if (!FIREBASE_PROJECT_ID) throw new Error("Missing NEXT_PUBLIC_FIREBASE_PROJECT_ID.");
 
+  const cached = sessionCache.get(idToken);
+  if (cached && cached.expiresAtMs > Date.now()) {
+    return cached.session;
+  }
+
   const segments = idToken.split(".");
   if (segments.length !== 3) throw new Error("Invalid token format.");
 
@@ -133,10 +139,17 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<SedifexSes
   await assertStoreExists(resolvedStoreId);
   assertWebsiteStore(resolvedStoreId);
 
-  return {
+  const session = {
     ...payload,
     resolvedStoreId,
   };
+
+  sessionCache.set(idToken, {
+    session,
+    expiresAtMs: Math.max(Date.now() + 15_000, payload.exp * 1000 - 30_000),
+  });
+
+  return session;
 }
 
 export async function getTeamSession() {

@@ -17,7 +17,10 @@ export const metadata: Metadata = buildPageMetadata({
   path: "/dashboard",
 });
 
-const quickLinks = [{ href: "/login", label: "Booking Sync", description: "Enter and sync appointments." }];
+const quickLinks = [
+  { href: "/login", label: "Booking Sync", description: "Enter and sync appointments." },
+  { href: "/calendar", label: "Booking Calendar", description: "View upcoming events from the booking CSV feed." },
+];
 
 export default async function DashboardPage() {
   const session = await getTeamSession();
