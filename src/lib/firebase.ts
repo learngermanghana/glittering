@@ -165,3 +165,31 @@ export async function fetchFirestoreDocument<T>(collectionName: string, document
   const payload = (await response.json()) as FirestoreDocument;
   return parseDocument<T>(payload);
 }
+
+export async function updateFirestoreDocumentNumberField(
+  collectionName: string,
+  documentId: string,
+  field: string,
+  value: number
+) {
+  const { projectId, apiKey } = getFirebaseConfig();
+  const safeValue = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+
+  const response = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collectionName}/${documentId}?updateMask.fieldPaths=${encodeURIComponent(field)}&key=${apiKey}`,
+    {
+      method: "PATCH",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fields: {
+          [field]: { integerValue: String(safeValue) },
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to update document ${collectionName}/${documentId}.${field}: ${response.status}`);
+  }
+}
