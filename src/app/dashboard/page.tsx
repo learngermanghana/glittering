@@ -19,7 +19,6 @@ export const metadata: Metadata = buildPageMetadata({
 
 const quickLinks = [{ href: "/login", label: "Booking Sync", description: "Enter and sync appointments." }];
 
-
 export default async function DashboardPage() {
   const session = await getTeamSession();
 
@@ -35,9 +34,29 @@ export default async function DashboardPage() {
     maximumFractionDigits: 2,
   });
 
+  const totals = stores.reduce(
+    (acc, store) => {
+      acc.customers += store.counts.customers;
+      acc.salesRecords += store.counts.sales;
+      acc.products += store.counts.products;
+      acc.smsCredits += store.sms.bulkMessagingCredits;
+      acc.smsThisWeek += store.sms.sentThisWeek;
+      acc.salesThisMonth += store.business.salesThisMonth;
+      return acc;
+    },
+    {
+      customers: 0,
+      salesRecords: 0,
+      products: 0,
+      smsCredits: 0,
+      smsThisWeek: 0,
+      salesThisMonth: 0,
+    },
+  );
+
   return (
     <Container>
-      <section className="py-12 sm:py-16">
+      <section className="py-8 sm:py-12">
         <SectionTitle
           title="Team Dashboard"
           subtitle={`Signed in as ${session.email ?? "Sedifex user"}. Choose a store to view full customers, sales, and products context.`}
@@ -45,14 +64,38 @@ export default async function DashboardPage() {
         <TeamToolsNav active="dashboard" />
         <TeamSessionActions />
 
-        <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Store switcher</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-3xl border border-rose-200/70 bg-gradient-to-br from-rose-100 to-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Total customers</p>
+            <p className="mt-3 text-3xl font-semibold text-neutral-900">{totals.customers.toLocaleString("en-US")}</p>
+          </div>
+          <div className="rounded-3xl border border-brand-200/70 bg-gradient-to-br from-brand-100 to-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Sales this month</p>
+            <p className="mt-3 text-3xl font-semibold text-neutral-900">{currency.format(totals.salesThisMonth)}</p>
+          </div>
+          <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">SMS sent this week</p>
+            <p className="mt-3 text-3xl font-semibold text-neutral-900">{totals.smsThisWeek.toLocaleString("en-US")}</p>
+          </div>
+          <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Products tracked</p>
+            <p className="mt-3 text-3xl font-semibold text-neutral-900">{totals.products.toLocaleString("en-US")}</p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Store switcher</p>
+            <p className="text-xs text-neutral-500">
+              {stores.length} stores · {totals.salesRecords.toLocaleString("en-US")} sales records · {totals.smsCredits} SMS credits
+            </p>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {stores.map((store) => (
               <Link
                 key={store.storeId}
                 href={`/dashboard/stores/${store.storeId}`}
-                className="rounded-xl border border-black/10 p-4 text-sm transition hover:border-black/20 hover:bg-neutral-50"
+                className="rounded-2xl border border-black/10 bg-neutral-50/60 p-4 text-sm transition hover:-translate-y-0.5 hover:border-black/20 hover:bg-white hover:shadow-sm"
               >
                 <p className="font-semibold text-neutral-900">{store.storeName}</p>
                 <p className="mt-1 text-neutral-600">{store.location}</p>
@@ -60,7 +103,9 @@ export default async function DashboardPage() {
                   Customers: {store.counts.customers} · Sales records: {store.counts.sales} · Products: {store.counts.products}
                 </p>
                 <p className="text-neutral-700">Credits: {store.sms.bulkMessagingCredits} · SMS sent this week: {store.sms.sentThisWeek}</p>
-                <p className="text-neutral-700">Sales this month: {currency.format(store.business.salesThisMonth)}</p>
+                <p className="mt-1 text-sm font-semibold text-neutral-800">
+                  Sales this month: {currency.format(store.business.salesThisMonth)}
+                </p>
               </Link>
             ))}
           </div>
