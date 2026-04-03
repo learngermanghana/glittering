@@ -55,3 +55,38 @@ export async function getSmsMetricsForStore(storeId: string) {
     bulkMessagingCredits: Math.max(0, toValidNumber(store?.bulkMessagingCredits)),
   };
 }
+
+export async function getSmsMetricsForStores(storeIds: string[]) {
+  const uniqueStoreIds = Array.from(new Set(storeIds.filter(Boolean)));
+
+  const metricsByStore = await Promise.all(
+    uniqueStoreIds.map(async (storeId) => {
+      const metrics = await getSmsMetricsForStore(storeId).catch(() => ({
+        attemptedThisWeek: 0,
+        sentThisWeek: 0,
+        failedThisWeek: 0,
+        bulkMessagingCredits: 0,
+      }));
+
+      return {
+        storeId,
+        ...metrics,
+      };
+    })
+  );
+
+  const totals = metricsByStore.reduce(
+    (acc, store) => ({
+      attemptedThisWeek: acc.attemptedThisWeek + store.attemptedThisWeek,
+      sentThisWeek: acc.sentThisWeek + store.sentThisWeek,
+      failedThisWeek: acc.failedThisWeek + store.failedThisWeek,
+      bulkMessagingCredits: acc.bulkMessagingCredits + store.bulkMessagingCredits,
+    }),
+    { attemptedThisWeek: 0, sentThisWeek: 0, failedThisWeek: 0, bulkMessagingCredits: 0 }
+  );
+
+  return {
+    stores: metricsByStore,
+    totals,
+  };
+}
