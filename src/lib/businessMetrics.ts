@@ -53,7 +53,7 @@ function toRecordDate(record: SalesRecord) {
 
 function amountFromRecord(record: SalesRecord) {
   const candidates = [record.amount, record.total, record.totalAmount, record.grandTotal, record.subtotal];
-  return candidates.reduce((best, current) => {
+  return candidates.reduce<number>((best, current) => {
     const candidate = toValidNumber(current);
     return candidate > best ? candidate : best;
   }, 0);
