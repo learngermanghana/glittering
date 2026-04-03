@@ -10,6 +10,8 @@ const defaultData = {
   time: "",
 };
 
+const BRANCH_OPTIONS = ["Awoshie", "Spintex"] as const;
+
 export function BookingSyncForm() {
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(false);
@@ -56,7 +58,7 @@ export function BookingSyncForm() {
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Name" value={data.name} onChange={(value) => updateField("name", value)} required />
         <Field label="Email" type="email" value={data.email} onChange={(value) => updateField("email", value)} required />
-        <Field label="Branch" value={data.branch} onChange={(value) => updateField("branch", value)} required />
+        <BranchField value={data.branch} onChange={(value) => updateField("branch", value)} required />
         <Field label="Date" type="date" value={data.date} onChange={(value) => updateField("date", value)} required />
         <Field label="Time" type="time" value={data.time} onChange={(value) => updateField("time", value)} required />
       </div>
@@ -75,6 +77,33 @@ export function BookingSyncForm() {
 
       {status ? <p className="text-sm text-neutral-700">{status}</p> : null}
     </form>
+  );
+}
+
+type BranchFieldProps = {
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+};
+
+function BranchField({ value, onChange, required }: BranchFieldProps) {
+  return (
+    <label className="block text-sm font-medium text-neutral-800">
+      Branch
+      <select
+        value={value}
+        required={required}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-2"
+      >
+        <option value="">Select branch</option>
+        {BRANCH_OPTIONS.map((branch) => (
+          <option key={branch} value={branch}>
+            {branch}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
