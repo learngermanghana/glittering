@@ -18,8 +18,8 @@ import { buildPageMetadata } from "@/lib/seo";
 import { fetchFirestoreDocument } from "@/lib/firebase";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Glittering Spa | Awoshie & Spintex",
-  description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
+  title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
+  description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
   path: "/",
 });
 
@@ -86,9 +86,9 @@ export default async function HomePage() {
             <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
               <div className="p-6 sm:p-8 lg:p-10">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">Welcome to Glittering Spa</p>
-                <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-6xl">Relax. Glow. Restore.</h1>
+                <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-6xl">Relax. Glow. Restore. Right here in Ghana.</h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-brand-100 sm:text-lg">
-                  Premium self-care with Spa, Beauty, Salon and Nails in Awoshie and Spintex.
+                  Premium self-care med spa in Accra, Ghana with Spa, Beauty, Salon and Nails in Awoshie and Spintex.
                 </p>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
