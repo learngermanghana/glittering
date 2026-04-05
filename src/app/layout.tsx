@@ -7,8 +7,8 @@ import { organizationJsonLd } from "@/lib/seo";
 import { TeamAreaChromeToggle } from "@/components/TeamAreaChromeToggle";
 
 export const metadata: Metadata = {
-  title: "Glittering Spa | Awoshie & Spintex",
-  description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
+  title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
+  description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
   metadataBase: new URL("https://www.glitteringmedspa.com"),
   robots: {
     index: true,
@@ -30,17 +30,15 @@ export const metadata: Metadata = {
     "nail salon",
     "Awoshie spa",
     "Spintex spa",
+    "spa in Ghana",
+    "Accra med spa",
+    "beauty salon Accra",
     "massage",
     "facials",
   ],
-  icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: ["/icon.svg"],
-    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
-  },
   openGraph: {
-    title: "Glittering Spa | Awoshie & Spintex",
-    description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
+    title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
+    description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
     url: "https://www.glitteringmedspa.com",
     siteName: "Glittering Spa",
     images: [
@@ -56,8 +54,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Glittering Spa | Awoshie & Spintex",
-    description: "Spa • Beauty • Salon • Nails in Awoshie and Spintex. Book on WhatsApp.",
+    title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
+    description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
     images: ["/logo-glittering.svg"],
   },
 };
