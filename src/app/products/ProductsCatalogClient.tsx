@@ -80,6 +80,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.map((product, index) => {
             const isOutOfStock = product.quantity !== null && product.quantity <= 0;
+            const isSedifexImage = product.image.startsWith("http");
 
             return (
               <article
@@ -92,7 +93,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover"
+                    className={isSedifexImage ? "object-contain p-2" : "object-cover"}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
                 </div>
