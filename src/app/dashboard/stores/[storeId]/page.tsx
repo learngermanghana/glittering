@@ -46,6 +46,11 @@ export default async function StoreOverviewPage({ params }: StoreOverviewPagePro
         <TeamToolsNav active="dashboard" />
         <TeamSessionActions />
 
+        <div className="mt-5 rounded-2xl border border-brand-200 bg-brand-50/70 p-4 text-sm text-brand-950">
+          <p className="font-semibold">You are now viewing this store: {store.storeName}.</p>
+          <p className="mt-1 text-brand-900">All numbers below are filtered to this branch only.</p>
+        </div>
+
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Identity & contact</p>
@@ -85,9 +90,21 @@ export default async function StoreOverviewPage({ params }: StoreOverviewPagePro
           <Metric label="Sales today" value={currency.format(store.business.salesToday)} />
           <Metric label="Sales this month" value={currency.format(store.business.salesThisMonth)} />
           <Metric label="Sales all time" value={currency.format(store.business.salesAllTime)} />
+          <Metric label="Live sales count (today)" value={store.business.liveSalesCount} />
           <Metric label="Orders today" value={store.business.ordersToday} />
           <Metric label="Orders this month" value={store.business.ordersThisMonth} />
           <Metric label="SMS credits" value={store.sms.bulkMessagingCredits} />
+          <Metric label="Customers with debt" value={store.insights.customersWithDebt} />
+          <Metric label="Outstanding debt" value={currency.format(store.insights.outstandingDebtCents / 100)} />
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Top selling products / services</p>
+          <p className="mt-2 text-sm text-neutral-700">
+            {store.insights.topSellingItems.length
+              ? store.insights.topSellingItems.map((item) => `${item.name} (${item.quantity})`).join(", ")
+              : "No item-level sales data available yet for this store."}
+          </p>
         </div>
 
         <div className="mt-6">
