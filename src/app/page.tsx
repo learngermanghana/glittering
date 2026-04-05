@@ -187,7 +187,7 @@ export default async function HomePage() {
                   src={promoImageUrl}
                   alt={promoImageAlt}
                   fill
-                  className="object-cover"
+                  className="object-contain p-3"
                   sizes="(max-width: 1024px) 100vw, 30vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-950/50 to-transparent lg:bg-gradient-to-l" />
@@ -333,7 +333,7 @@ export default async function HomePage() {
                       src={src}
                       alt={`Featured gallery image ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-contain p-2"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
                     />
                   </div>
