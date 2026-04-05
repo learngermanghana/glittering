@@ -252,6 +252,7 @@ export default async function HomePage() {
                   {topSellingProducts.map((name) => {
                     const product = products.find((item) => item.name === name);
                     if (!product) return null;
+                    const isSedifexImage = product.image.startsWith("http");
                     return (
                       <div key={product.name} className="flex items-center gap-3 rounded-xl border border-rose-100 bg-rose-50/40 p-3">
                         <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-black/10 bg-white">
@@ -259,7 +260,7 @@ export default async function HomePage() {
                             src={product.image}
                             alt={product.name}
                             fill
-                            className="object-cover"
+                            className={isSedifexImage ? "object-contain p-1" : "object-cover"}
                             sizes="56px"
                           />
                         </div>
@@ -411,26 +412,30 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {products.slice(0, 3).map((product) => (
-                <div
-                  key={product.name}
-                  className="overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
-                >
-                  <div className="relative aspect-[4/3]">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
-                    />
+              {products.slice(0, 3).map((product) => {
+                const isSedifexImage = product.image.startsWith("http");
+
+                return (
+                  <div
+                    key={product.name}
+                    className="overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
+                  >
+                    <div className="relative aspect-[4/3]">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className={isSedifexImage ? "object-contain p-2" : "object-cover"}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <div className="text-sm font-semibold text-neutral-900">{product.name}</div>
+                      <p className="mt-1 text-xs text-neutral-600">{product.description}</p>
+                    </div>
                   </div>
-                  <div className="p-4">
-                    <div className="text-sm font-semibold text-neutral-900">{product.name}</div>
-                    <p className="mt-1 text-xs text-neutral-600">{product.description}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
