@@ -29,11 +29,14 @@ type StorePromoDoc = {
   promoStartDate?: string;
   promoEndDate?: string;
   promoWebsiteUrl?: string;
+  promoImageUrl?: string;
+  promoImageAlt?: string;
 };
 
 const PROMO_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
-const PROMO_IMAGE_URL =
-  "https://storage.googleapis.com/sedifeximage/product-images/1775399014270-Luxury_breakfast_box_promotional_design.png";
+const FALLBACK_PROMO_IMAGE_URL =
+  "https://storage.googleapis.com/sedifeximage/product-images/1775413546139-IMG_1076.jpg";
+const FALLBACK_PROMO_IMAGE_ALT = "Glittering Med Spa promotional offer";
 
 function asPromoText(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -60,6 +63,8 @@ export default async function HomePage() {
   const promoEnd = formatPromoDate(asPromoText(promoStore?.promoEndDate));
   const promoWindow = promoStart && promoEnd ? `${promoStart} - ${promoEnd}` : promoStart ?? promoEnd ?? "April 1 - April 15";
   const promoWebsiteUrl = asPromoText(promoStore?.promoWebsiteUrl);
+  const promoImageUrl = asPromoText(promoStore?.promoImageUrl) ?? FALLBACK_PROMO_IMAGE_URL;
+  const promoImageAlt = asPromoText(promoStore?.promoImageAlt) ?? FALLBACK_PROMO_IMAGE_ALT;
   const spintexPromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
     `Hi Glittering Spa! I want to register for the promo (${promoWindow}) at Spintex.\nName: ____\nService: ____\nDate: ____\nTime: ____`
   )}`;
@@ -179,8 +184,8 @@ export default async function HomePage() {
               </div>
               <div className="relative min-h-[260px]">
                 <Image
-                  src={PROMO_IMAGE_URL}
-                  alt="Luxury breakfast box promotional design"
+                  src={promoImageUrl}
+                  alt={promoImageAlt}
                   fill
                   className="object-cover"
                   sizes="(max-width: 1024px) 100vw, 30vw"
