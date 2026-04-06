@@ -121,6 +121,19 @@ type StoreSalesRecord = {
   }>;
 };
 
+type StoreSaleItemRecord = {
+  name?: string;
+  itemName?: string;
+  productName?: string;
+  serviceName?: string;
+  product?: string;
+  service?: string;
+  title?: string;
+  quantity?: number | string;
+  qty?: number | string;
+  count?: number | string;
+};
+
 function toNumber(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
@@ -159,6 +172,25 @@ function extractSaleItemNames(record: StoreSalesRecord) {
   return [...lineItemEntries, ...directEntries];
 }
 
+function extractTopSellingEntryFromSaleItem(record: StoreSaleItemRecord) {
+  const name =
+    asText(record.itemName) ??
+    asText(record.productName) ??
+    asText(record.serviceName) ??
+    asText(record.product) ??
+    asText(record.service) ??
+    asText(record.title) ??
+    asText(record.name);
+
+  if (!name) return null;
+
+  const quantity = toPositiveInt(record.quantity ?? record.qty ?? record.count);
+  return {
+    name,
+    quantity: quantity > 0 ? quantity : 1,
+  };
+}
+
 export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile[]> {
   const uniqueStoreIds = Array.from(new Set(storeIds.filter(Boolean)));
 
@@ -176,7 +208,7 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
     ),
   ]);
 
-  const [customersByStore, salesByStore] = await Promise.all([
+  const [customersByStore, salesByStore, saleItemsByStore] = await Promise.all([
     Promise.all(
       uniqueStoreIds.map(async (storeId) => {
         try {
@@ -197,6 +229,16 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
         }
       })
     ),
+    Promise.all(
+      uniqueStoreIds.map(async (storeId) => {
+        try {
+          const rows = await queryFirestoreCollectionByStoreId<StoreSaleItemRecord>("saleItems", storeId);
+          return { storeId, rows };
+        } catch {
+          return { storeId, rows: [] as StoreSaleItemRecord[] };
+        }
+      })
+    ),
   ]);
 
   const smsMap = new Map(sms.stores.map((entry) => [entry.storeId, entry]));
@@ -204,6 +246,7 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
   const countsMap = new Map(countsByStore.map((entry) => [entry.storeId, entry]));
   const customersMap = new Map(customersByStore.map((entry) => [entry.storeId, entry.rows]));
   const salesMap = new Map(salesByStore.map((entry) => [entry.storeId, entry.rows]));
+  const saleItemsMap = new Map(saleItemsByStore.map((entry) => [entry.storeId, entry.rows]));
 
   return uniqueStoreIds.map((storeId, index) => {
     const store = stores[index] ?? null;
@@ -212,6 +255,7 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
     const counts = countsMap.get(storeId);
     const customerRows = customersMap.get(storeId) ?? [];
     const salesRows = salesMap.get(storeId) ?? [];
+    const saleItemRows = saleItemsMap.get(storeId) ?? [];
     const debtStats = customerRows.reduce(
       (acc, customer) => {
         const outstanding = toPositiveInt(customer.debt?.outstandingCents);
@@ -226,8 +270,10 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
     );
 
     const topSellingItems = Array.from(
-      salesRows
-        .flatMap(extractSaleItemNames)
+      [...saleItemRows.flatMap((row) => {
+        const entry = extractTopSellingEntryFromSaleItem(row);
+        return entry ? [entry] : [];
+      }), ...salesRows.flatMap(extractSaleItemNames)]
         .reduce((map, item) => {
           const current = map.get(item.name) ?? 0;
           map.set(item.name, current + item.quantity);
