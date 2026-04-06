@@ -80,7 +80,8 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.map((product, index) => {
             const isOutOfStock = product.quantity !== null && product.quantity <= 0;
-            const isSedifexImage = product.image.startsWith("http");
+            const productImages = (product.images.length ? product.images : [product.image]).slice(0, 3);
+            const isSedifexImage = productImages[0]?.startsWith("http") ?? false;
 
             return (
               <article
@@ -90,13 +91,34 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
               >
                 <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
                   <Image
-                    src={product.image}
+                    src={productImages[0] ?? product.image}
                     alt={product.name}
                     fill
                     className={isSedifexImage ? "object-contain p-2" : "object-cover"}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
                 </div>
+                {productImages.length > 1 ? (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {productImages.map((imageSrc, imageIndex) => {
+                      const isRemoteImage = imageSrc.startsWith("http");
+                      return (
+                        <div
+                          key={`${product.id ?? product.name}-${imageSrc}-${imageIndex}`}
+                          className="relative aspect-square overflow-hidden rounded-lg border border-black/10 bg-neutral-100"
+                        >
+                          <Image
+                            src={imageSrc}
+                            alt={`${product.name} photo ${imageIndex + 1}`}
+                            fill
+                            className={isRemoteImage ? "object-contain p-1" : "object-cover"}
+                            sizes="80px"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
                 <div className="mt-4 flex items-start justify-between gap-3">
                   <h2 className="text-base font-semibold">{product.name}</h2>
                   <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-900">

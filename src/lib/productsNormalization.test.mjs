@@ -28,6 +28,7 @@ test("mapSedifexProductToDisplay maps stockCount/imageUrl and guards invalid num
   assert.equal(mapped?.quantity, 4);
   assert.equal(mapped?.isService, false);
   assert.equal(mapped?.image, PRODUCT_PLACEHOLDER_IMAGE);
+  assert.deepEqual(mapped?.images, [PRODUCT_PLACEHOLDER_IMAGE]);
 
   const invalidNumbers = mapSedifexProductToDisplay({
     name: "Bad Numbers",
@@ -38,4 +39,23 @@ test("mapSedifexProductToDisplay maps stockCount/imageUrl and guards invalid num
 
   assert.equal(invalidNumbers?.price, 0);
   assert.equal(invalidNumbers?.quantity, null);
+});
+
+test("mapSedifexProductToDisplay preserves up to 3 unique valid photos", () => {
+  const mapped = mapSedifexProductToDisplay({
+    name: "Body Butter",
+    price: 90,
+    imageUrl: "https://cdn.example.com/1.jpg",
+    imageUrl2: "https://cdn.example.com/2.jpg",
+    imageUrl3: "https://cdn.example.com/3.jpg",
+    photos: ["https://cdn.example.com/4.jpg", "https://cdn.example.com/2.jpg", "bad-url"],
+  });
+
+  assert.ok(mapped);
+  assert.equal(mapped?.image, "https://cdn.example.com/1.jpg");
+  assert.deepEqual(mapped?.images, [
+    "https://cdn.example.com/1.jpg",
+    "https://cdn.example.com/2.jpg",
+    "https://cdn.example.com/3.jpg",
+  ]);
 });
