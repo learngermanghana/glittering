@@ -140,6 +140,16 @@ type StoreSaleItemRecord = {
   quantity?: number | string;
   qty?: number | string;
   count?: number | string;
+  itemType?: string;
+  type?: string;
+  category?: string;
+};
+
+type SaleEntryKind = "product" | "service" | "item";
+type SaleEntry = {
+  name: string;
+  quantity: number;
+  kind: SaleEntryKind;
 };
 
 function toNumber(value: unknown) {
@@ -158,7 +168,16 @@ function toPositiveInt(value: unknown) {
   return Math.floor(numeric);
 }
 
+function inferEntryKind(value: unknown): SaleEntryKind {
+  const text = asText(value)?.toLowerCase();
+  if (!text) return "item";
+  if (text.includes("service")) return "service";
+  if (text.includes("product")) return "product";
+  return "item";
+}
+
 function extractSaleItemNames(record: StoreSalesRecord) {
+  const recordKind = inferEntryKind(record.itemType ?? record.type ?? record.category);
   const names = [
     asText(record.itemName),
     asText(record.productName),
@@ -168,15 +187,31 @@ function extractSaleItemNames(record: StoreSalesRecord) {
     asText(record.name),
   ].filter(Boolean) as string[];
 
-  const lineItemEntries = (record.items ?? []).flatMap((item) => {
+  const lineItemEntries: SaleEntry[] = (record.items ?? []).flatMap((item) => {
     const itemName = asText(item.itemName) ?? asText(item.productName) ?? asText(item.serviceName) ?? asText(item.name);
     if (!itemName) return [];
 
     const quantity = toPositiveInt(item.quantity ?? item.qty ?? item.count);
-    return [{ name: itemName, quantity: quantity > 0 ? quantity : 1 }];
+    const kind =
+      item.serviceName || inferEntryKind(item.itemType ?? item.type ?? item.category) === "service"
+        ? "service"
+        : item.productName || inferEntryKind(item.itemType ?? item.type ?? item.category) === "product"
+          ? "product"
+          : "item";
+
+    return [{ name: itemName, quantity: quantity > 0 ? quantity : 1, kind }];
   });
 
-  const directEntries = names.map((name) => ({ name, quantity: 1 }));
+  const directEntries: SaleEntry[] = names.map((name) => ({
+    name,
+    quantity: 1,
+    kind:
+      (asText(record.serviceName) === name || asText(record.service) === name) && recordKind !== "product"
+        ? "service"
+        : (asText(record.productName) === name || asText(record.product) === name) && recordKind !== "service"
+          ? "product"
+          : recordKind,
+  }));
   return [...lineItemEntries, ...directEntries];
 }
 
@@ -193,9 +228,17 @@ function extractTopSellingEntryFromSaleItem(record: StoreSaleItemRecord) {
   if (!name) return null;
 
   const quantity = toPositiveInt(record.quantity ?? record.qty ?? record.count);
+  const kind =
+    record.serviceName || asText(record.service)
+      ? "service"
+      : record.productName || asText(record.product)
+        ? "product"
+        : inferEntryKind(record.itemType ?? record.type ?? record.category);
+
   return {
     name,
     quantity: quantity > 0 ? quantity : 1,
+    kind,
   };
 }
 
@@ -277,19 +320,38 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
       { customersWithDebt: 0, outstandingDebtCents: 0 }
     );
 
-    const topSellingItems = Array.from(
-      [...saleItemRows.flatMap((row) => {
+    const saleEntries: SaleEntry[] = [
+      ...saleItemRows.flatMap((row) => {
         const entry = extractTopSellingEntryFromSaleItem(row);
         return entry ? [entry] : [];
-      }), ...salesRows.flatMap(extractSaleItemNames)]
-        .reduce((map, item) => {
-          const current = map.get(item.name) ?? 0;
-          map.set(item.name, current + item.quantity);
-          return map;
-        }, new Map<string, number>())
-        .entries()
-    )
-      .map(([name, quantity]) => ({ name, quantity }))
+      }),
+      ...salesRows.flatMap(extractSaleItemNames),
+    ];
+
+    const aggregatedEntries = Array.from(
+      saleEntries.reduce((map, item) => {
+        const current = map.get(item.name);
+        const nextQuantity = (current?.quantity ?? 0) + item.quantity;
+        const nextKind = current?.kind === "item" ? item.kind : (current?.kind ?? item.kind);
+        map.set(item.name, { quantity: nextQuantity, kind: nextKind });
+        return map;
+      }, new Map<string, { quantity: number; kind: SaleEntryKind }>())
+    );
+
+    const topSellingItems = aggregatedEntries
+      .map(([name, data]) => ({ name, quantity: data.quantity }))
+      .sort((left, right) => right.quantity - left.quantity)
+      .slice(0, 3);
+
+    const topSellingProducts = aggregatedEntries
+      .filter(([, data]) => data.kind === "product")
+      .map(([name, data]) => ({ name, quantity: data.quantity }))
+      .sort((left, right) => right.quantity - left.quantity)
+      .slice(0, 3);
+
+    const topSellingServices = aggregatedEntries
+      .filter(([, data]) => data.kind === "service")
+      .map(([name, data]) => ({ name, quantity: data.quantity }))
       .sort((left, right) => right.quantity - left.quantity)
       .slice(0, 3);
 
