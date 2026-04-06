@@ -70,6 +70,8 @@ type StoreProfile = {
     customersWithDebt: number;
     outstandingDebtCents: number;
     topSellingItems: Array<{ name: string; quantity: number }>;
+    topSellingProducts: Array<{ name: string; quantity: number }>;
+    topSellingServices: Array<{ name: string; quantity: number }>;
   };
 };
 
@@ -110,15 +112,37 @@ type StoreSalesRecord = {
   serviceName?: string;
   product?: string;
   service?: string;
+  itemType?: string;
+  type?: string;
+  category?: string;
   items?: Array<{
     name?: string;
     itemName?: string;
     productName?: string;
     serviceName?: string;
+    itemType?: string;
+    type?: string;
+    category?: string;
     quantity?: number | string;
     qty?: number | string;
     count?: number | string;
   }>;
+};
+
+type StoreSaleItemRecord = {
+  name?: string;
+  itemName?: string;
+  productName?: string;
+  serviceName?: string;
+  product?: string;
+  service?: string;
+  title?: string;
+  itemType?: string;
+  type?: string;
+  category?: string;
+  quantity?: number | string;
+  qty?: number | string;
+  count?: number | string;
 };
 
 function toNumber(value: unknown) {
@@ -159,6 +183,92 @@ function extractSaleItemNames(record: StoreSalesRecord) {
   return [...lineItemEntries, ...directEntries];
 }
 
+type TopSellingKind = "product" | "service" | "unknown";
+
+type TopSellingEntry = {
+  name: string;
+  quantity: number;
+  kind: TopSellingKind;
+};
+
+function inferKindFromText(value: string | null): TopSellingKind {
+  if (!value) return "unknown";
+  const lowered = value.toLowerCase();
+  if (lowered.includes("service")) return "service";
+  if (lowered.includes("product")) return "product";
+  return "unknown";
+}
+
+function inferKindFromNames(record: {
+  productName?: string;
+  product?: string;
+  serviceName?: string;
+  service?: string;
+  itemType?: string;
+  type?: string;
+  category?: string;
+}): TopSellingKind {
+  if (asText(record.serviceName) || asText(record.service)) return "service";
+  if (asText(record.productName) || asText(record.product)) return "product";
+
+  const itemTypeKind = inferKindFromText(asText(record.itemType));
+  if (itemTypeKind !== "unknown") return itemTypeKind;
+  const typeKind = inferKindFromText(asText(record.type));
+  if (typeKind !== "unknown") return typeKind;
+  return inferKindFromText(asText(record.category));
+}
+
+function extractTopSellingEntryFromSaleItem(record: StoreSaleItemRecord) {
+  const name =
+    asText(record.itemName) ??
+    asText(record.productName) ??
+    asText(record.serviceName) ??
+    asText(record.product) ??
+    asText(record.service) ??
+    asText(record.title) ??
+    asText(record.name);
+
+  if (!name) return null;
+
+  const quantity = toPositiveInt(record.quantity ?? record.qty ?? record.count);
+  return {
+    name,
+    quantity: quantity > 0 ? quantity : 1,
+    kind: inferKindFromNames(record),
+  };
+}
+
+function extractTopSellingEntriesFromSale(record: StoreSalesRecord): TopSellingEntry[] {
+  const directKind = inferKindFromNames(record);
+  const directEntries = extractSaleItemNames(record).map((item) => ({ ...item, kind: directKind }));
+
+  const nestedEntries = (record.items ?? []).flatMap((item) => {
+    const name = asText(item.itemName) ?? asText(item.productName) ?? asText(item.serviceName) ?? asText(item.name);
+    if (!name) return [];
+    const quantity = toPositiveInt(item.quantity ?? item.qty ?? item.count);
+    const kind = inferKindFromNames(item);
+    return [{ name, quantity: quantity > 0 ? quantity : 1, kind }];
+  });
+
+  if (nestedEntries.length) return nestedEntries;
+  return directEntries;
+}
+
+function rankTopSellingItems(entries: TopSellingEntry[]) {
+  return Array.from(
+    entries
+      .reduce((map, item) => {
+        const current = map.get(item.name) ?? 0;
+        map.set(item.name, current + item.quantity);
+        return map;
+      }, new Map<string, number>())
+      .entries()
+  )
+    .map(([name, quantity]) => ({ name, quantity }))
+    .sort((left, right) => right.quantity - left.quantity)
+    .slice(0, 3);
+}
+
 export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile[]> {
   const uniqueStoreIds = Array.from(new Set(storeIds.filter(Boolean)));
 
@@ -176,7 +286,7 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
     ),
   ]);
 
-  const [customersByStore, salesByStore] = await Promise.all([
+  const [customersByStore, salesByStore, saleItemsByStore] = await Promise.all([
     Promise.all(
       uniqueStoreIds.map(async (storeId) => {
         try {
@@ -197,6 +307,16 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
         }
       })
     ),
+    Promise.all(
+      uniqueStoreIds.map(async (storeId) => {
+        try {
+          const rows = await queryFirestoreCollectionByStoreId<StoreSaleItemRecord>("saleItems", storeId);
+          return { storeId, rows };
+        } catch {
+          return { storeId, rows: [] as StoreSaleItemRecord[] };
+        }
+      })
+    ),
   ]);
 
   const smsMap = new Map(sms.stores.map((entry) => [entry.storeId, entry]));
@@ -204,6 +324,7 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
   const countsMap = new Map(countsByStore.map((entry) => [entry.storeId, entry]));
   const customersMap = new Map(customersByStore.map((entry) => [entry.storeId, entry.rows]));
   const salesMap = new Map(salesByStore.map((entry) => [entry.storeId, entry.rows]));
+  const saleItemsMap = new Map(saleItemsByStore.map((entry) => [entry.storeId, entry.rows]));
 
   return uniqueStoreIds.map((storeId, index) => {
     const store = stores[index] ?? null;
@@ -212,6 +333,7 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
     const counts = countsMap.get(storeId);
     const customerRows = customersMap.get(storeId) ?? [];
     const salesRows = salesMap.get(storeId) ?? [];
+    const saleItemRows = saleItemsMap.get(storeId) ?? [];
     const debtStats = customerRows.reduce(
       (acc, customer) => {
         const outstanding = toPositiveInt(customer.debt?.outstandingCents);
@@ -225,19 +347,17 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
       { customersWithDebt: 0, outstandingDebtCents: 0 }
     );
 
-    const topSellingItems = Array.from(
-      salesRows
-        .flatMap(extractSaleItemNames)
-        .reduce((map, item) => {
-          const current = map.get(item.name) ?? 0;
-          map.set(item.name, current + item.quantity);
-          return map;
-        }, new Map<string, number>())
-        .entries()
-    )
-      .map(([name, quantity]) => ({ name, quantity }))
-      .sort((left, right) => right.quantity - left.quantity)
-      .slice(0, 3);
+    const mergedTopSellingEntries = [
+      ...saleItemRows.flatMap((row) => {
+        const entry = extractTopSellingEntryFromSaleItem(row);
+        return entry ? [entry] : [];
+      }),
+      ...salesRows.flatMap(extractTopSellingEntriesFromSale),
+    ];
+
+    const topSellingItems = rankTopSellingItems(mergedTopSellingEntries);
+    const topSellingProducts = rankTopSellingItems(mergedTopSellingEntries.filter((item) => item.kind === "product"));
+    const topSellingServices = rankTopSellingItems(mergedTopSellingEntries.filter((item) => item.kind === "service"));
 
     return {
       storeId,
@@ -285,6 +405,8 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
         customersWithDebt: debtStats.customersWithDebt,
         outstandingDebtCents: debtStats.outstandingDebtCents,
         topSellingItems,
+        topSellingProducts,
+        topSellingServices,
       },
     };
   });

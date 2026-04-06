@@ -101,9 +101,16 @@ export default async function StoreOverviewPage({ params }: StoreOverviewPagePro
         <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Top selling products / services</p>
           <p className="mt-2 text-sm text-neutral-700">
-            {store.insights.topSellingItems.length
-              ? store.insights.topSellingItems.map((item) => `${item.name} (${item.quantity})`).join(", ")
-              : "No item-level sales data available yet for this store."}
+            <span className="font-semibold text-neutral-900">Products:</span>{" "}
+            {store.insights.topSellingProducts.length
+              ? store.insights.topSellingProducts.map((item) => `${item.name} (${item.quantity})`).join(", ")
+              : "No product sales data available yet"}
+          </p>
+          <p className="mt-1 text-sm text-neutral-700">
+            <span className="font-semibold text-neutral-900">Services:</span>{" "}
+            {store.insights.topSellingServices.length
+              ? store.insights.topSellingServices.map((item) => `${item.name} (${item.quantity})`).join(", ")
+              : "No service sales data available yet"}
           </p>
         </div>
 
