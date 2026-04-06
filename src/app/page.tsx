@@ -50,7 +50,7 @@ function formatPromoDate(value?: string | null) {
 }
 
 export default async function HomePage() {
-  const galleryImages = getGalleryImages();
+  const galleryImages = await getGalleryImages();
   const featuredImages = galleryImages.slice(0, 3);
   const [awoshie, spintex] = LOCATIONS;
   const [latestPosts, promoStore] = await Promise.all([

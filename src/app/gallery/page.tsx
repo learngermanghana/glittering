@@ -4,13 +4,13 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { SITE, WHATSAPP_LINK } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
 
-export default function GalleryPage() {
-  const images = getGalleryImages();
+export default async function GalleryPage() {
+  const images = await getGalleryImages();
 
   return (
     <Container>
       <section className="py-12 sm:py-16">
-        <SectionTitle title="Gallery" subtitle="Photos from public/gallery (and Instagram)." />
+        <SectionTitle title="Gallery" subtitle="Photos from Firebase gallery storage (with local fallback)." />
 
         <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
@@ -35,7 +35,7 @@ export default function GalleryPage() {
 
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {(images.length ? images : Array.from({ length: 6 }).map((_, i) => `placeholder-${i}`)).map((src, i) =>
-              typeof src === "string" && src.startsWith("/gallery/") ? (
+              typeof src === "string" && (src.startsWith("/gallery/") || src.startsWith("http")) ? (
                 <div
                   key={src}
                   className="relative aspect-square overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
@@ -56,7 +56,8 @@ export default function GalleryPage() {
 
           {images.length === 0 ? (
             <p className="mt-4 text-sm text-neutral-600">
-              Add photos to <span className="font-semibold">public/gallery</span> and refresh this page.
+              Add photos to Firebase Storage under <span className="font-semibold">stores/&lt;storeId&gt;/promo-gallery</span>{" "}
+              (or use <span className="font-semibold">public/gallery</span> as fallback) and refresh this page.
             </p>
           ) : null}
         </div>
