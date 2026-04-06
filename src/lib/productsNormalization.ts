@@ -7,9 +7,18 @@ export type SedifexProductRecord = {
   stockCount?: unknown;
   itemType?: unknown;
   imageUrl?: unknown;
+  imageUrl2?: unknown;
+  imageUrl3?: unknown;
+  secondaryImageUrl?: unknown;
+  tertiaryImageUrl?: unknown;
+  imageUrls?: unknown;
+  photos?: unknown;
+  images?: unknown;
   updatedAt?: unknown;
   storeId?: unknown;
   image?: unknown;
+  image2?: unknown;
+  image3?: unknown;
   quantity?: unknown;
 };
 
@@ -19,6 +28,7 @@ export type DisplayProduct = {
   price: number;
   quantity: number | null;
   image: string;
+  images: string[];
   isService: boolean;
 };
 
@@ -36,6 +46,46 @@ export function normalizeProductImageUrl(imageUrl: unknown): string {
   } catch {
     return PRODUCT_PLACEHOLDER_IMAGE;
   }
+}
+
+function normalizeProductImageUrls(imageCandidates: unknown[]): string[] {
+  const normalized = imageCandidates.map((candidate) => normalizeProductImageUrl(candidate));
+  const unique = Array.from(new Set(normalized));
+  const withoutPlaceholder = unique.filter((image) => image !== PRODUCT_PLACEHOLDER_IMAGE);
+  const selected = withoutPlaceholder.slice(0, 3);
+  return selected.length ? selected : [PRODUCT_PLACEHOLDER_IMAGE];
+}
+
+function readUnknownRecordValue(record: SedifexProductRecord, key: string): unknown {
+  return (record as Record<string, unknown>)[key];
+}
+
+function collectSedifexImages(record: SedifexProductRecord): string[] {
+  const listLikeCandidates: unknown[] = [];
+  const listLikeKeys = ["imageUrls", "photos", "images"];
+  for (const key of listLikeKeys) {
+    const value = readUnknownRecordValue(record, key);
+    if (Array.isArray(value)) listLikeCandidates.push(...value);
+  }
+
+  const directCandidates: unknown[] = [
+    record.imageUrl,
+    record.secondaryImageUrl,
+    record.tertiaryImageUrl,
+    record.imageUrl2,
+    record.imageUrl3,
+    record.image,
+    record.image2,
+    record.image3,
+    readUnknownRecordValue(record, "photo1"),
+    readUnknownRecordValue(record, "photo2"),
+    readUnknownRecordValue(record, "photo3"),
+    readUnknownRecordValue(record, "productImage1"),
+    readUnknownRecordValue(record, "productImage2"),
+    readUnknownRecordValue(record, "productImage3"),
+  ];
+
+  return normalizeProductImageUrls([...directCandidates, ...listLikeCandidates]);
 }
 
 function toFiniteNumber(value: unknown): number | null {
@@ -88,7 +138,8 @@ export function mapSedifexProductToDisplay(record: SedifexProductRecord): Displa
   const quantity = toStockQuantity(record.stockCount ?? record.quantity);
   const itemType = normalizeItemType(record.itemType);
   const isService = itemType ? itemType === "service" : isLikelyServiceProduct(name, price);
-  const image = normalizeProductImageUrl(record.imageUrl ?? record.image);
+  const images = collectSedifexImages(record);
+  const image = images[0] ?? PRODUCT_PLACEHOLDER_IMAGE;
 
   return {
     id: typeof record.id === "string" ? record.id : undefined,
@@ -96,6 +147,7 @@ export function mapSedifexProductToDisplay(record: SedifexProductRecord): Displa
     price,
     quantity,
     image,
+    images,
     isService,
   };
 }
@@ -107,12 +159,14 @@ export function mapSedifexProductsToDisplay(records: SedifexProductRecord[]): Di
 }
 
 export function mapFallbackCatalogProduct(id: string, product: { name: string; price: number; quantity: number | null; image: string }): DisplayProduct {
+  const images = normalizeProductImageUrls([product.image]);
   return {
     id,
     name: product.name,
     price: toSafePrice(product.price),
     quantity: toStockQuantity(product.quantity),
-    image: normalizeProductImageUrl(product.image),
+    image: images[0] ?? PRODUCT_PLACEHOLDER_IMAGE,
+    images,
     isService: isLikelyServiceProduct(product.name, product.price),
   };
 }
