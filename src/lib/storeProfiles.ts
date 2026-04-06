@@ -137,9 +137,6 @@ type StoreSaleItemRecord = {
   product?: string;
   service?: string;
   title?: string;
-  itemType?: string;
-  type?: string;
-  category?: string;
   quantity?: number | string;
   qty?: number | string;
   count?: number | string;
@@ -183,41 +180,6 @@ function extractSaleItemNames(record: StoreSalesRecord) {
   return [...lineItemEntries, ...directEntries];
 }
 
-type TopSellingKind = "product" | "service" | "unknown";
-
-type TopSellingEntry = {
-  name: string;
-  quantity: number;
-  kind: TopSellingKind;
-};
-
-function inferKindFromText(value: string | null): TopSellingKind {
-  if (!value) return "unknown";
-  const lowered = value.toLowerCase();
-  if (lowered.includes("service")) return "service";
-  if (lowered.includes("product")) return "product";
-  return "unknown";
-}
-
-function inferKindFromNames(record: {
-  productName?: string;
-  product?: string;
-  serviceName?: string;
-  service?: string;
-  itemType?: string;
-  type?: string;
-  category?: string;
-}): TopSellingKind {
-  if (asText(record.serviceName) || asText(record.service)) return "service";
-  if (asText(record.productName) || asText(record.product)) return "product";
-
-  const itemTypeKind = inferKindFromText(asText(record.itemType));
-  if (itemTypeKind !== "unknown") return itemTypeKind;
-  const typeKind = inferKindFromText(asText(record.type));
-  if (typeKind !== "unknown") return typeKind;
-  return inferKindFromText(asText(record.category));
-}
-
 function extractTopSellingEntryFromSaleItem(record: StoreSaleItemRecord) {
   const name =
     asText(record.itemName) ??
@@ -234,39 +196,7 @@ function extractTopSellingEntryFromSaleItem(record: StoreSaleItemRecord) {
   return {
     name,
     quantity: quantity > 0 ? quantity : 1,
-    kind: inferKindFromNames(record),
   };
-}
-
-function extractTopSellingEntriesFromSale(record: StoreSalesRecord): TopSellingEntry[] {
-  const directKind = inferKindFromNames(record);
-  const directEntries = extractSaleItemNames(record).map((item) => ({ ...item, kind: directKind }));
-
-  const nestedEntries = (record.items ?? []).flatMap((item) => {
-    const name = asText(item.itemName) ?? asText(item.productName) ?? asText(item.serviceName) ?? asText(item.name);
-    if (!name) return [];
-    const quantity = toPositiveInt(item.quantity ?? item.qty ?? item.count);
-    const kind = inferKindFromNames(item);
-    return [{ name, quantity: quantity > 0 ? quantity : 1, kind }];
-  });
-
-  if (nestedEntries.length) return nestedEntries;
-  return directEntries;
-}
-
-function rankTopSellingItems(entries: TopSellingEntry[]) {
-  return Array.from(
-    entries
-      .reduce((map, item) => {
-        const current = map.get(item.name) ?? 0;
-        map.set(item.name, current + item.quantity);
-        return map;
-      }, new Map<string, number>())
-      .entries()
-  )
-    .map(([name, quantity]) => ({ name, quantity }))
-    .sort((left, right) => right.quantity - left.quantity)
-    .slice(0, 3);
 }
 
 export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile[]> {
@@ -347,17 +277,21 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
       { customersWithDebt: 0, outstandingDebtCents: 0 }
     );
 
-    const mergedTopSellingEntries = [
-      ...saleItemRows.flatMap((row) => {
+    const topSellingItems = Array.from(
+      [...saleItemRows.flatMap((row) => {
         const entry = extractTopSellingEntryFromSaleItem(row);
         return entry ? [entry] : [];
-      }),
-      ...salesRows.flatMap(extractTopSellingEntriesFromSale),
-    ];
-
-    const topSellingItems = rankTopSellingItems(mergedTopSellingEntries);
-    const topSellingProducts = rankTopSellingItems(mergedTopSellingEntries.filter((item) => item.kind === "product"));
-    const topSellingServices = rankTopSellingItems(mergedTopSellingEntries.filter((item) => item.kind === "service"));
+      }), ...salesRows.flatMap(extractSaleItemNames)]
+        .reduce((map, item) => {
+          const current = map.get(item.name) ?? 0;
+          map.set(item.name, current + item.quantity);
+          return map;
+        }, new Map<string, number>())
+        .entries()
+    )
+      .map(([name, quantity]) => ({ name, quantity }))
+      .sort((left, right) => right.quantity - left.quantity)
+      .slice(0, 3);
 
     return {
       storeId,
