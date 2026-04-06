@@ -164,10 +164,16 @@ export default async function DashboardPage() {
                   {currency.format(store.insights.outstandingDebtCents / 100)}
                 </p>
                 <p className="mt-1 text-neutral-700">
-                  Top selling:{" "}
-                  {store.insights.topSellingItems.length
-                    ? store.insights.topSellingItems.map((item) => `${item.name} (${item.quantity})`).join(", ")
-                    : "No item-level sales data yet"}
+                  Top products:{" "}
+                  {store.insights.topSellingProducts.length
+                    ? store.insights.topSellingProducts.map((item) => `${item.name} (${item.quantity})`).join(", ")
+                    : "No product sales data yet"}
+                </p>
+                <p className="text-neutral-700">
+                  Top services:{" "}
+                  {store.insights.topSellingServices.length
+                    ? store.insights.topSellingServices.map((item) => `${item.name} (${item.quantity})`).join(", ")
+                    : "No service sales data yet"}
                 </p>
                 <Link
                   href={`/dashboard/stores/${store.storeId}`}

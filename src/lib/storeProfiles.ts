@@ -70,6 +70,8 @@ type StoreProfile = {
     customersWithDebt: number;
     outstandingDebtCents: number;
     topSellingItems: Array<{ name: string; quantity: number }>;
+    topSellingProducts: Array<{ name: string; quantity: number }>;
+    topSellingServices: Array<{ name: string; quantity: number }>;
   };
 };
 
@@ -110,11 +112,17 @@ type StoreSalesRecord = {
   serviceName?: string;
   product?: string;
   service?: string;
+  itemType?: string;
+  type?: string;
+  category?: string;
   items?: Array<{
     name?: string;
     itemName?: string;
     productName?: string;
     serviceName?: string;
+    itemType?: string;
+    type?: string;
+    category?: string;
     quantity?: number | string;
     qty?: number | string;
     count?: number | string;
@@ -331,6 +339,8 @@ export async function getStoreProfiles(storeIds: string[]): Promise<StoreProfile
         customersWithDebt: debtStats.customersWithDebt,
         outstandingDebtCents: debtStats.outstandingDebtCents,
         topSellingItems,
+        topSellingProducts,
+        topSellingServices,
       },
     };
   });
