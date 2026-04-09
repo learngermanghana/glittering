@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { SALES_WHATSAPP_LINK } from "@/lib/site";
+import { SALES_WHATSAPP_LINK, SITE } from "@/lib/site";
 import type { DisplayProduct } from "@/lib/productsData";
 
 type AvailabilityFilter = "all" | "in-stock" | "out-of-stock";
@@ -37,6 +37,15 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
       return matchesSearch && matchesAvailability;
     });
   }, [allProducts, availabilityFilter, search]);
+
+  const notFoundWhatsappLink = useMemo(() => {
+    const requestedProduct = search.trim();
+    if (!requestedProduct) return SALES_WHATSAPP_LINK;
+
+    return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
+      `Hi Glittering Spa! I searched for "${requestedProduct}" on your website but could not find it. Please can you confirm if it is available in-store?`
+    )}`;
+  }, [search]);
 
   return (
     <>
@@ -74,7 +83,18 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
 
       {filteredProducts.length === 0 ? (
         <div className="mt-8 rounded-3xl border border-dashed border-black/15 bg-neutral-50 px-6 py-10 text-center text-sm text-neutral-600">
-          No products matched your search. Try another keyword or filter.
+          <p>No products matched your search. Try another keyword or filter.</p>
+          <p className="mt-2">
+            Some products may still be available in-store even if they are not listed online.
+          </p>
+          <a
+            href={notFoundWhatsappLink}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-flex items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-100"
+          >
+            Contact store on WhatsApp
+          </a>
         </div>
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
