@@ -358,14 +358,6 @@ export default function BookPage() {
             </div>
           </div>
         </div>
-        <a
-          href={whatsappLink}
-          target="_blank"
-          rel="noreferrer"
-          className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-rose-700 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-rose-800"
-        >
-          WhatsApp Booking
-        </a>
       </section>
     </Container>
   );
