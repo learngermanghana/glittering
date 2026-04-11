@@ -21,6 +21,7 @@ export function Footer() {
             </a>
             <Link className="hover:text-rose-950 hover:underline" href="/privacy">Privacy</Link>
             <Link className="hover:text-rose-950 hover:underline" href="/terms">Terms</Link>
+            <Link className="hover:text-rose-950 hover:underline" href="/return-policy">Return Policy</Link>
           </div>
         </div>
       </Container>

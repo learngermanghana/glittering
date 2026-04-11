@@ -90,7 +90,7 @@ export default function TermsPage() {
             <section>
               <h2 className="text-xl font-semibold text-neutral-900">6. Privacy</h2>
               <p className="mt-2 leading-7">
-                Your use of our services is also governed by our <Link className="underline hover:text-neutral-900" href="/privacy">Privacy Policy</Link>.
+                Your use of our services is also governed by our <Link className="underline hover:text-neutral-900" href="/privacy">Privacy Policy</Link> and <Link className="underline hover:text-neutral-900" href="/return-policy">Return Policy</Link>.
               </p>
             </section>
 
