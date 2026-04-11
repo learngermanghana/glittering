@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
   description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
   metadataBase: new URL("https://www.glitteringmedspa.com"),
+  verification: {
+    google: "Lu17AMVwA5S5K4aKY-tdyJtZAHV_ofPldi5xFdo8fWc",
+  },
   robots: {
     index: true,
     follow: true,
