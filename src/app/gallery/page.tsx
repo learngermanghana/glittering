@@ -10,7 +10,7 @@ export default async function GalleryPage() {
   return (
     <Container>
       <section className="py-12 sm:py-16">
-        <SectionTitle title="Gallery" subtitle="Photos from Firebase gallery storage (with local fallback)." />
+        <SectionTitle title="Gallery" subtitle="Photos from Sedifex gallery storage (with local fallback)." />
 
         <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
@@ -56,8 +56,8 @@ export default async function GalleryPage() {
 
           {images.length === 0 ? (
             <p className="mt-4 text-sm text-neutral-600">
-              Add photos to Firebase Storage under <span className="font-semibold">stores/&lt;storeId&gt;/promo-gallery</span>{" "}
-              (or use <span className="font-semibold">public/gallery</span> as fallback) and refresh this page.
+              Add photos to Sedifex Storage under <span className="font-semibold">stores/&lt;storeId&gt;/promoGallery</span>{" "}
+              (or <span className="font-semibold">stores/&lt;storeId&gt;/promo-gallery</span> / <span className="font-semibold">stores/&lt;storeId&gt;/gallery</span>) and refresh this page.
             </p>
           ) : null}
         </div>
