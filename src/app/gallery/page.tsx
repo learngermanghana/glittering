@@ -56,8 +56,8 @@ export default async function GalleryPage() {
 
           {images.length === 0 ? (
             <p className="mt-4 text-sm text-neutral-600">
-              Add photos to Sedifex Storage under <span className="font-semibold">stores/&lt;storeId&gt;/promoGallery</span>{" "}
-              (or <span className="font-semibold">stores/&lt;storeId&gt;/promo-gallery</span> / <span className="font-semibold">stores/&lt;storeId&gt;/gallery</span>) and refresh this page.
+              Add photos to Sedifex Storage under <span className="font-semibold">stores/&lt;storeId&gt;/promo-gallery</span>{" "}
+              (or <span className="font-semibold">stores/&lt;storeId&gt;/gallery</span>) and refresh this page.
             </p>
           ) : null}
         </div>

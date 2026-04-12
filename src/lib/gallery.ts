@@ -4,7 +4,6 @@ import path from "node:path";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const DEFAULT_SEDIFEX_BUCKET = "sedifeximage";
-const DEFAULT_SEDIFEX_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
 
 function getLocalGalleryImages() {
   const dir = path.join(process.cwd(), "public", "gallery");
@@ -66,15 +65,14 @@ export async function getGalleryImages() {
     process.env.GALLERY_STORE_ID ??
     process.env.NEXT_PUBLIC_GALLERY_STORE_ID ??
     process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID ??
-    process.env.SEDIFEX_WEBSITE_STORE_ID ??
-    DEFAULT_SEDIFEX_STORE_ID;
+    process.env.SEDIFEX_WEBSITE_STORE_ID;
+
+  if (!storeId) return getLocalGalleryImages();
 
   try {
     const prefixes = [
-      `stores/${storeId}/promoGallery/`,
       `stores/${storeId}/promo-gallery/`,
       `stores/${storeId}/gallery/`,
-      `${storeId}/promoGallery/`,
       `${storeId}/promo-gallery/`,
       `${storeId}/gallery/`,
     ];
