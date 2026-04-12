@@ -3,6 +3,7 @@ export const PRODUCT_PLACEHOLDER_IMAGE = "/products/product.jpeg";
 export type SedifexProductRecord = {
   id?: string;
   name?: unknown;
+  description?: unknown;
   price?: unknown;
   stockCount?: unknown;
   itemType?: unknown;
@@ -25,6 +26,7 @@ export type SedifexProductRecord = {
 export type DisplayProduct = {
   id?: string;
   name: string;
+  description: string;
   price: number;
   quantity: number | null;
   image: string;
@@ -115,6 +117,11 @@ function normalizeName(value: unknown): string {
   return value.trim();
 }
 
+function normalizeDescription(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim();
+}
+
 function normalizeItemType(value: unknown): string {
   if (typeof value !== "string") return "";
   return value.trim().toLowerCase();
@@ -144,6 +151,7 @@ export function mapSedifexProductToDisplay(record: SedifexProductRecord): Displa
   return {
     id: typeof record.id === "string" ? record.id : undefined,
     name,
+    description: normalizeDescription(record.description),
     price,
     quantity,
     image,
@@ -163,6 +171,7 @@ export function mapFallbackCatalogProduct(id: string, product: { name: string; p
   return {
     id,
     name: product.name,
+    description: "",
     price: toSafePrice(product.price),
     quantity: toStockQuantity(product.quantity),
     image: images[0] ?? PRODUCT_PLACEHOLDER_IMAGE,

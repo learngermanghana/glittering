@@ -24,6 +24,7 @@ test("mapSedifexProductToDisplay maps stockCount/imageUrl and guards invalid num
   assert.ok(mapped);
   assert.equal(mapped?.id, "p1");
   assert.equal(mapped?.name, "Glow Serum");
+  assert.equal(mapped?.description, "");
   assert.equal(mapped?.price, 55.5);
   assert.equal(mapped?.quantity, 4);
   assert.equal(mapped?.isService, false);
@@ -58,4 +59,16 @@ test("mapSedifexProductToDisplay preserves up to 3 unique valid photos", () => {
     "https://cdn.example.com/2.jpg",
     "https://cdn.example.com/3.jpg",
   ]);
+});
+
+test("mapSedifexProductToDisplay maps and trims description", () => {
+  const mapped = mapSedifexProductToDisplay({
+    name: "Body Oil",
+    description: "  Hydrating oil for daily glow.  ",
+    price: 50,
+    stockCount: 1,
+  });
+
+  assert.ok(mapped);
+  assert.equal(mapped?.description, "Hydrating oil for daily glow.");
 });
