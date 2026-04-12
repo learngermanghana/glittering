@@ -6,6 +6,7 @@ import { SALES_WHATSAPP_LINK, SITE } from "@/lib/site";
 import type { DisplayProduct } from "@/lib/productsData";
 
 type AvailabilityFilter = "all" | "in-stock" | "out-of-stock";
+const DESCRIPTION_PREVIEW_LENGTH = 180;
 
 function stockText(quantity: number | null) {
   if (quantity === null) return "Out of stock";
@@ -16,6 +17,7 @@ function stockText(quantity: number | null) {
 export function ProductsCatalogClient({ products }: { products: DisplayProduct[] }) {
   const [search, setSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   const allProducts = useMemo(() => products.filter((product) => !product.isService), [products]);
 
@@ -99,13 +101,20 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.map((product, index) => {
+            const cardKey = `${product.id ?? product.name}-${index}`;
             const isOutOfStock = product.quantity !== null && product.quantity <= 0;
             const productImages = (product.images.length ? product.images : [product.image]).slice(0, 3);
             const isSedifexImage = productImages[0]?.startsWith("http") ?? false;
+            const description = product.description.trim();
+            const hasLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
+            const isExpanded = expandedDescriptions[cardKey] ?? false;
+            const descriptionToShow = hasLongDescription && !isExpanded
+              ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}…`
+              : description;
 
             return (
               <article
-                key={`${product.id ?? product.name}-${index}`}
+                key={cardKey}
                 className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm"
                 aria-label={product.name}
               >
@@ -154,12 +163,30 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                   {stockText(product.quantity)}
                 </div>
                 <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
-                  <p>
-                    This listing is synced from Sedifex inventory data.
-                  </p>
-                  <p className="mt-1">
-                    Contact the spa team for verified ingredients, usage directions, contraindications, and treatment suitability.
-                  </p>
+                  {description ? (
+                    <>
+                      <p className="leading-relaxed">{descriptionToShow}</p>
+                      {hasLongDescription ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedDescriptions((previous) => ({
+                              ...previous,
+                              [cardKey]: !isExpanded,
+                            }))
+                          }
+                          className="mt-2 inline-flex text-xs font-semibold text-brand-900 underline-offset-2 hover:underline"
+                          aria-expanded={isExpanded}
+                        >
+                          {isExpanded ? "View less" : "View more"}
+                        </button>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p>
+                      Contact the spa team for verified ingredients, usage directions, contraindications, and treatment suitability.
+                    </p>
+                  )}
                 </div>
                 <a
                   href={SALES_WHATSAPP_LINK}
