@@ -87,7 +87,7 @@ export async function getIntegrationGalleryItems(storeId: string): Promise<Integ
     .filter((item): item is PromoGalleryItem & { id: string; url: string } => {
       return Boolean(item.id && item.isPublished === true && item.url?.trim());
     })
-    .map((item) => ({
+    .map((item): IntegrationGalleryItem => ({
       id: item.id,
       url: item.url.trim(),
       alt: item.alt?.trim() ?? "",
