@@ -79,6 +79,25 @@ No new variables were added for this change, but these are required for live pro
 - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 - `NEXT_PUBLIC_SEDIFEX_STORE_ID`
 
+## Integration gallery API
+
+Use the integration endpoint to fetch promo gallery items for a store:
+
+```http
+GET /api/integrationGallery?storeId=<storeId>
+Authorization: Bearer <integration-api-key>
+```
+
+Integration clients only need:
+- `storeId`
+- integration API key (`Authorization: Bearer ...`)
+
+The store does **not** need to know the Firebase Storage bucket name for this integration endpoint.
+
+### Integration environment variable
+
+- `INTEGRATION_API_KEY` (required for `/api/integrationGallery`)
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
