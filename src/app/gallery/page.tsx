@@ -1,8 +1,8 @@
-﻿import Image from "next/image";
-import { Container } from "@/components/Container";
+﻿import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SITE, WHATSAPP_LINK } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
+import { GalleryGrid } from "@/components/GalleryGrid";
 
 export default async function GalleryPage() {
   const images = await getGalleryImages();
@@ -33,26 +33,7 @@ export default async function GalleryPage() {
             </a>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {(images.length ? images : Array.from({ length: 6 }).map((_, i) => `placeholder-${i}`)).map((src, i) =>
-              typeof src === "string" && (src.startsWith("/gallery/") || src.startsWith("http")) ? (
-                <div
-                  key={src}
-                  className="relative aspect-square overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
-                >
-                  <Image
-                    src={src}
-                    alt={`Glittering Spa gallery ${i + 1}`}
-                    fill
-                    className="object-contain p-2"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                  />
-                </div>
-              ) : (
-                <div key={String(src)} className="aspect-square rounded-2xl border border-black/10 bg-neutral-50" />
-              )
-            )}
-          </div>
+          <GalleryGrid images={images} />
 
           {images.length === 0 ? (
             <p className="mt-4 text-sm text-neutral-600">
