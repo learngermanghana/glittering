@@ -84,10 +84,10 @@ export async function getIntegrationGalleryItems(storeId: string): Promise<Integ
   });
 
   return items
-    .filter((item): item is PromoGalleryItem & { id: string; url: string } => {
+    .filter((item): item is PromoGalleryItem & { id: string; url: string; isPublished: true } => {
       return Boolean(item.id && item.isPublished === true && item.url?.trim());
     })
-    .map((item) => ({
+    .map<IntegrationGalleryItem>((item) => ({
       id: item.id,
       url: item.url.trim(),
       alt: item.alt?.trim() ?? "",
