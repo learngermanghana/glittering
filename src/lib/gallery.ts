@@ -1,9 +1,32 @@
 import "server-only";
 import fs from "node:fs";
 import path from "node:path";
+import { queryFirestoreSubcollection } from "@/lib/firebase";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const DEFAULT_SEDIFEX_BUCKET = "sedifeximage";
+
+type PromoGalleryItem = {
+  id?: string;
+  url?: string;
+  alt?: string;
+  caption?: string;
+  sortOrder?: number;
+  isPublished?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type IntegrationGalleryItem = {
+  id: string;
+  url: string;
+  alt: string;
+  caption: string;
+  sortOrder: number;
+  isPublished: true;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
 
 function getLocalGalleryImages() {
   const dir = path.join(process.cwd(), "public", "gallery");
@@ -55,17 +78,51 @@ async function listImagesFromPrefix(bucket: string, prefix: string) {
     });
 }
 
+export async function getIntegrationGalleryItems(storeId: string): Promise<IntegrationGalleryItem[]> {
+  const items = await queryFirestoreSubcollection<PromoGalleryItem>(`stores/${storeId}`, "promoGallery", {
+    orderBy: [{ fieldPath: "sortOrder", direction: "ASCENDING" }],
+  });
+
+  return items
+    .filter((item): item is PromoGalleryItem & { id: string; url: string } => {
+      return Boolean(item.id && item.isPublished === true && item.url?.trim());
+    })
+    .map((item) => ({
+      id: item.id,
+      url: item.url.trim(),
+      alt: item.alt?.trim() ?? "",
+      caption: item.caption?.trim() ?? "",
+      sortOrder: Number.isFinite(item.sortOrder) ? Number(item.sortOrder) : 0,
+      isPublished: true,
+      createdAt: item.createdAt ?? null,
+      updatedAt: item.updatedAt ?? null,
+    }))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
 export async function getGalleryImages() {
-  const bucket =
-    process.env.GALLERY_STORAGE_BUCKET ??
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ??
-    process.env.FIREBASE_STORAGE_BUCKET ??
-    DEFAULT_SEDIFEX_BUCKET;
   const storeId =
     process.env.GALLERY_STORE_ID ??
     process.env.NEXT_PUBLIC_GALLERY_STORE_ID ??
     process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID ??
     process.env.SEDIFEX_WEBSITE_STORE_ID;
+
+  if (storeId) {
+    try {
+      const promoGalleryItems = await getIntegrationGalleryItems(storeId);
+      if (promoGalleryItems.length) {
+        return promoGalleryItems.map((item) => item.url);
+      }
+    } catch {
+      // Fall back to legacy storage/local loading below.
+    }
+  }
+
+  const bucket =
+    process.env.GALLERY_STORAGE_BUCKET ??
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ??
+    process.env.FIREBASE_STORAGE_BUCKET ??
+    DEFAULT_SEDIFEX_BUCKET;
 
   if (!storeId) return getLocalGalleryImages();
 
