@@ -27,6 +27,10 @@ export const WHATSAPP_LINK = `https://wa.me/${SITE.phoneIntl}?text=${encodeURICo
   "Hi Glittering Spa! I want to book a session.\nName: ____\nService: ____\nDate: ____\nTime: ____"
 )}`;
 
+export const ENQUIRIES_WHATSAPP_LINK = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
+  "Hi Glittering Spa! I have an enquiry about your services."
+)}`;
+
 export const BOOKING_URL = "https://www.glitteringmedspa.com/book";
 
 export const SALES_WHATSAPP_LINK = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
