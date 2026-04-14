@@ -5,6 +5,7 @@ import { Container } from "@/components/Container";
 import {
   SITE,
   WHATSAPP_LINK,
+  ENQUIRIES_WHATSAPP_LINK,
   LOCATIONS,
   products,
   SALES_WHATSAPP_LINK,
@@ -93,12 +94,12 @@ export default async function HomePage() {
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <a
-                    href={WHATSAPP_LINK}
+                    href={ENQUIRIES_WHATSAPP_LINK}
                     target="_blank"
                     rel="noreferrer"
                     className="rounded-2xl bg-white px-6 py-3 text-center text-sm font-semibold text-brand-950 hover:bg-white/90"
                   >
-                    Book on WhatsApp
+                    Make Enquiries on WhatsApp
                   </a>
                   <a
                     href={awoshie.directionsLink}
