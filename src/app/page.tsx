@@ -43,10 +43,16 @@ function asPromoText(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function formatPromoDate(value?: string | null) {
+function parsePromoDate(value?: string | null) {
   if (!value) return null;
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatPromoDate(value?: string | null) {
+  if (!value) return null;
+  const parsed = parsePromoDate(value);
+  if (!parsed) return value;
   return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" }).format(parsed);
 }
 
@@ -58,11 +64,22 @@ export default async function HomePage() {
     getBlogPosts(3),
     fetchFirestoreDocument<StorePromoDoc>("stores", PROMO_STORE_ID).catch(() => null),
   ]);
+  const fallbackPromoStartDate = "2026-04-01";
+  const fallbackPromoEndDate = "2026-04-15";
+  const promoStartDateRaw = asPromoText(promoStore?.promoStartDate) ?? fallbackPromoStartDate;
+  const promoEndDateRaw = asPromoText(promoStore?.promoEndDate) ?? fallbackPromoEndDate;
+  const promoEndDate = parsePromoDate(promoEndDateRaw);
+  const now = new Date();
+  const endOfPromoDate = promoEndDate ? new Date(promoEndDate) : null;
+  if (endOfPromoDate) {
+    endOfPromoDate.setHours(23, 59, 59, 999);
+  }
+  const promoIsExpired = endOfPromoDate ? now > endOfPromoDate : false;
   const promoTitle = asPromoText(promoStore?.promoTitle) ?? "Limited April Promo";
   const promoSummary = asPromoText(promoStore?.promoSummary) ?? "Glittering Med Spa 50% OFF Services";
-  const promoStart = formatPromoDate(asPromoText(promoStore?.promoStartDate));
-  const promoEnd = formatPromoDate(asPromoText(promoStore?.promoEndDate));
-  const promoWindow = promoStart && promoEnd ? `${promoStart} - ${promoEnd}` : promoStart ?? promoEnd ?? "April 1 - April 15";
+  const promoStart = formatPromoDate(promoStartDateRaw);
+  const promoEnd = formatPromoDate(promoEndDateRaw);
+  const promoWindow = promoStart && promoEnd ? `${promoStart} - ${promoEnd}` : promoStart ?? promoEnd ?? "Limited-time offer";
   const promoWebsiteUrl = asPromoText(promoStore?.promoWebsiteUrl);
   const promoImageUrl = asPromoText(promoStore?.promoImageUrl) ?? FALLBACK_PROMO_IMAGE_URL;
   const promoImageAlt = asPromoText(promoStore?.promoImageAlt) ?? FALLBACK_PROMO_IMAGE_ALT;
@@ -138,63 +155,65 @@ export default async function HomePage() {
             Open Mon–Sat 7am–8pm • Sun 12–8pm • {SITE.location}
           </div>
 
-          <div className="mt-8 overflow-hidden rounded-3xl border border-gold-500/40 bg-gradient-to-r from-brand-900 via-brand-900 to-brand-950 text-white shadow-sm">
-            <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
-              <div className="p-6 sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">{promoTitle}</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{promoSummary}</h2>
-                <p className="mt-2 text-sm text-brand-100 sm:text-base">
-                  Offer runs from <span className="font-semibold text-white">{promoWindow}</span>. Register now and choose your
-                  branch.
-                </p>
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  {promoWebsiteUrl ? (
+          {!promoIsExpired ? (
+            <div className="mt-8 overflow-hidden rounded-3xl border border-gold-500/40 bg-gradient-to-r from-brand-900 via-brand-900 to-brand-950 text-white shadow-sm">
+              <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
+                <div className="p-6 sm:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">{promoTitle}</p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{promoSummary}</h2>
+                  <p className="mt-2 text-sm text-brand-100 sm:text-base">
+                    Offer runs from <span className="font-semibold text-white">{promoWindow}</span>. Register now and choose your
+                    branch.
+                  </p>
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                    {promoWebsiteUrl ? (
+                      <a
+                        href={promoWebsiteUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
+                      >
+                        View promo services
+                      </a>
+                    ) : (
+                      <Link
+                        href="/services"
+                        className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
+                      >
+                        View promo services
+                      </Link>
+                    )}
                     <a
-                      href={promoWebsiteUrl}
+                      href={spintexPromoLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
+                      className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
                     >
-                      View promo services
+                      Register now (Spintex)
                     </a>
-                  ) : (
-                    <Link
-                      href="/services"
-                      className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
+                    <a
+                      href={awoshiePromoLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
                     >
-                      View promo services
-                    </Link>
-                  )}
-                  <a
-                    href={spintexPromoLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
-                  >
-                    Register now (Spintex)
-                  </a>
-                  <a
-                    href={awoshiePromoLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
-                  >
-                    Register now (Awoshie)
-                  </a>
+                      Register now (Awoshie)
+                    </a>
+                  </div>
+                </div>
+                <div className="relative min-h-[260px]">
+                  <Image
+                    src={promoImageUrl}
+                    alt={promoImageAlt}
+                    fill
+                    className="object-contain p-3"
+                    sizes="(max-width: 1024px) 100vw, 30vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-brand-950/50 to-transparent lg:bg-gradient-to-l" />
                 </div>
               </div>
-              <div className="relative min-h-[260px]">
-                <Image
-                  src={promoImageUrl}
-                  alt={promoImageAlt}
-                  fill
-                  className="object-contain p-3"
-                  sizes="(max-width: 1024px) 100vw, 30vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-950/50 to-transparent lg:bg-gradient-to-l" />
-              </div>
             </div>
-          </div>
+          ) : null}
 
           {/* green band like your sample */}
           <div className="mt-10 rounded-3xl bg-brand-900 text-brand-50 p-6 sm:p-8 shadow-sm">
