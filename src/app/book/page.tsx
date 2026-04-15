@@ -49,6 +49,11 @@ export default function BookPage() {
     return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(message)}`;
   }, [formData]);
 
+  const minimumFieldsComplete = useMemo(() => {
+    const requiredTextFields = [formData.name, formData.phone, formData.service, formData.date, formData.time, formData.branch];
+    return requiredTextFields.every((value) => value.trim().length > 0);
+  }, [formData]);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -87,6 +92,7 @@ export default function BookPage() {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Your name"
+                  required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                   type="text"
                 />
@@ -99,6 +105,7 @@ export default function BookPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone number"
+                  required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                   type="tel"
                 />
@@ -113,6 +120,7 @@ export default function BookPage() {
                   value={formData.service}
                   onChange={handleChange}
                   placeholder="e.g. Massage, Facial"
+                  required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                   type="text"
                 />
@@ -124,9 +132,10 @@ export default function BookPage() {
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
-                  placeholder="Preferred date"
+                  required
+                  min={new Date().toISOString().split("T")[0]}
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-                  type="text"
+                  type="date"
                 />
               </label>
             </div>
@@ -138,9 +147,10 @@ export default function BookPage() {
                   name="time"
                   value={formData.time}
                   onChange={handleChange}
-                  placeholder="Preferred time"
+                  required
+                  step={900}
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-                  type="text"
+                  type="time"
                 />
               </label>
             </div>
@@ -152,6 +162,7 @@ export default function BookPage() {
                   name="branch"
                   value={formData.branch}
                   onChange={handleSelectChange}
+                  required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                 >
                   <option value="">Select a branch</option>
@@ -295,12 +306,20 @@ export default function BookPage() {
                 href={whatsappLink}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-neutral-800 sm:w-auto"
+                aria-disabled={!minimumFieldsComplete}
+                onClick={(event) => {
+                  if (!minimumFieldsComplete) event.preventDefault();
+                }}
+                className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm sm:w-auto ${
+                  minimumFieldsComplete ? "bg-neutral-900 hover:bg-neutral-800" : "cursor-not-allowed bg-neutral-400"
+                }`}
               >
                 Send on WhatsApp
               </a>
               <p className="text-xs text-neutral-500">
-                We’ll confirm your booking details once you send the WhatsApp message.
+                {minimumFieldsComplete
+                  ? "We’ll confirm your booking details once you send the WhatsApp message."
+                  : "Complete Name, Phone, Service, Date, Time, and Branch to enable WhatsApp booking."}
               </p>
             </div>
           </form>
