@@ -134,17 +134,20 @@ function normalizeServiceName(value: string) {
 async function loadAvailableServices() {
   const products = await getProducts();
   const serviceMap = new Map<string, AvailableService>();
+  const normalizedStoreId = SEDIFEX_STORE_ID.trim();
 
   for (const product of products) {
     const id = readString(product.id);
     const name = readString(product.name);
     const itemType = readString(product.itemType).toLowerCase();
+    const storeId = readString(product.storeId);
     if (!id || !name || itemType !== "service") continue;
+    if (!storeId || storeId !== normalizedStoreId) continue;
 
     serviceMap.set(id, {
       id,
       name,
-      storeId: readString(product.storeId) || undefined,
+      storeId,
     });
   }
 
