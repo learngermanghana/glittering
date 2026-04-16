@@ -187,8 +187,12 @@ function validateAndNormalizePayload(payload: BookingRequestBody): ValidationRes
     return { error: "Payment method is required when deposit amount is greater than 0." };
   }
 
-  if (depositAmount > 0 && !paymentScreenshotReady && !paymentScreenshotUrl && !paymentReference) {
-    return { error: "Payment proof is required when deposit amount is greater than 0." };
+  if (!paymentReference) {
+    return { error: "Payment reference is required." };
+  }
+
+  if (depositAmount > 0 && !paymentScreenshotReady && !paymentScreenshotUrl) {
+    return { error: "Payment screenshot confirmation or screenshot URL is required when deposit amount is greater than 0." };
   }
 
   if (BOOKING_ALLOWED_SERVICES_BY_BRANCH) {

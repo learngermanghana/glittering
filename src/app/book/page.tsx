@@ -89,12 +89,16 @@ export default function BookPage() {
       return "Deposit amount must be a valid non-negative number.";
     }
 
+    if (!formData.paymentReference.trim()) {
+      return "Payment reference is required. Please type account name/number or another payment trace.";
+    }
+
     if (depositAmountValue > 0 && !formData.paymentMethod.trim()) {
       return "Payment method is required when deposit amount is greater than 0.";
     }
 
-    if (depositAmountValue > 0 && !formData.paymentScreenshotReady && !formData.paymentReference.trim()) {
-      return "Payment proof is required (checkbox or payment reference) when a deposit is paid.";
+    if (depositAmountValue > 0 && !formData.paymentScreenshotReady) {
+      return "Please confirm payment screenshot is ready when a deposit is paid.";
     }
 
     return null;
@@ -404,12 +408,13 @@ export default function BookPage() {
 
             <div className="mt-5">
               <label className="text-sm font-semibold text-neutral-700">
-                Payment Reference (optional)
+                Payment Reference
                 <input
                   name="paymentReference"
                   value={formData.paymentReference}
                   onChange={handleChange}
                   placeholder="Type account name/number or any payment trace"
+                  required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                   type="text"
                 />
@@ -507,7 +512,12 @@ export default function BookPage() {
 
             <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700">
               <h3 className="text-sm font-semibold text-neutral-900">Payment details</h3>
-              <p className="mt-2 text-xs text-neutral-500">Use the details below to make payment and keep a screenshot ready.</p>
+              <p className="mt-2 text-xs text-neutral-500">
+                Use the details below to make payment and keep a screenshot ready.
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Your payment reference should be the account name/number or payment details you used from these options.
+              </p>
               <div className="mt-4 space-y-4 text-xs sm:text-sm">
                 <div>
                   <p className="font-semibold text-neutral-900">General accounts</p>
