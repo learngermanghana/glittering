@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 
@@ -9,6 +9,7 @@ const SESSION_OPTIONS = ["30 minutes", "45 minutes", "60 minutes", "90 minutes",
 const THERAPIST_OPTIONS = ["Female", "Male", "No preference"] as const;
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
 const PAYMENT_OPTIONS = ["Momo", "Bank transfer", "Cash"] as const;
+type ServiceOption = { id: string; name: string };
 
 function parseDurationMinutes(value: string) {
   const parsed = Number.parseInt(value, 10);
@@ -29,9 +30,10 @@ function isPastDateTime(date: string, time: string) {
 export default function BookPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
   const [formData, setFormData] = useState({
     name: "",
-    serviceName: "",
+    serviceId: "",
     date: "",
     time: "",
     phone: "",
@@ -49,9 +51,14 @@ export default function BookPage() {
   });
 
   const minimumFieldsComplete = useMemo(() => {
-    const requiredTextFields = [formData.date, formData.time, formData.branch, formData.name];
+    const requiredTextFields = [formData.date, formData.time, formData.branch, formData.name, formData.serviceId];
     return requiredTextFields.every((value) => value.trim().length > 0);
   }, [formData]);
+
+  const selectedServiceName = useMemo(
+    () => serviceOptions.find((service) => service.id === formData.serviceId)?.name ?? "",
+    [formData.serviceId, serviceOptions]
+  );
 
   const hasContactMethod = useMemo(() => {
     return Boolean(formData.phone.trim() || formData.email.trim());
@@ -70,7 +77,7 @@ export default function BookPage() {
     }
 
     if (!minimumFieldsComplete) {
-      return "Please provide Name, Date, Time, and Preferred Branch.";
+      return "Please provide Name, Service, Date, Time, and Preferred Branch.";
     }
 
     if (!hasContactMethod) {
@@ -117,6 +124,34 @@ export default function BookPage() {
 
   const canSubmit = !isSubmitting && !clientValidationMessage;
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadServices() {
+      try {
+        const response = await fetch("/api/bookings/integration?view=services", { cache: "no-store" });
+        const payload = (await response.json()) as { services?: ServiceOption[] };
+
+        if (!response.ok) {
+          throw new Error("Unable to load services.");
+        }
+
+        if (!cancelled) {
+          setServiceOptions(Array.isArray(payload.services) ? payload.services : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setServiceOptions([]);
+        }
+      }
+    }
+
+    void loadServices();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -155,6 +190,8 @@ export default function BookPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          serviceId: formData.serviceId,
+          serviceName: selectedServiceName || undefined,
           quantity: 1,
           notes: formData.notes.trim() || undefined,
           attributes: {
@@ -172,7 +209,7 @@ export default function BookPage() {
             payment_screenshot_ready: formData.paymentScreenshotReady,
             payment_reference: formData.paymentReference.trim() || undefined,
             no_refund_policy_accepted: formData.cancellationAccepted,
-            service_name: formData.serviceName.trim() || undefined,
+            service_name: selectedServiceName || undefined,
           },
           customer: {
             name: formData.name.trim(),
@@ -259,15 +296,21 @@ export default function BookPage() {
 
             <div className="mt-5">
               <label className="text-sm font-semibold text-neutral-700">
-                Service name (optional, for internal notes)
-                <input
-                  name="serviceName"
-                  value={formData.serviceName}
-                  onChange={handleChange}
-                  placeholder="e.g. Deep Tissue Massage"
+                Service
+                <select
+                  name="serviceId"
+                  value={formData.serviceId}
+                  onChange={handleSelectChange}
+                  required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-                  type="text"
-                />
+                >
+                  <option value="">Select service</option>
+                  {serviceOptions.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
 
@@ -492,7 +535,7 @@ export default function BookPage() {
             <p className="mt-2 text-sm text-neutral-600">This is the information we send to Sedifex.</p>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700 whitespace-pre-line">
-              Service name: {formData.serviceName || "____"}
+              Service: {selectedServiceName || "____"}
               {"\n"}Customer name: {formData.name || "____"}
               {"\n"}Date: {formData.date || "____"}
               {"\n"}Time: {formData.time || "____"}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getProducts } from "@/lib/crm";
 
 const SEDIFEX_BASE_URL = process.env.SEDIFEX_INTEGRATION_BASE_URL ?? "https://us-central1-sedifex-web.cloudfunctions.net";
 const SEDIFEX_STORE_ID = process.env.SEDIFEX_WEBSITE_STORE_ID ?? process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID ?? "37mJqg20MjOriggaIaOOuahDsgj1";
@@ -35,6 +36,7 @@ type BookingAttributes = {
 
 type BookingRequestBody = {
   serviceId?: string;
+  serviceName?: string;
   slotId?: string;
   quantity?: number;
   notes?: string;
@@ -49,6 +51,18 @@ type BookingRequestBody = {
 type ValidationResult = {
   error: string | null;
   normalized?: BookingRequestBody;
+};
+
+type AvailableService = {
+  id: string;
+  name: string;
+  storeId?: string;
+};
+
+type ServiceResolutionContext = {
+  requestedServiceId?: string;
+  requestedServiceName?: string;
+  preferredBranch?: string;
 };
 
 function parseJsonSafely<T>(value: string): T | null {
@@ -113,14 +127,69 @@ function buildSlotKey(serviceId: string, branch: string, date: string, time: str
   return [branch, serviceId, date, time, therapistPreference || "any"].join("|").toLowerCase();
 }
 
-function validateAndNormalizePayload(payload: BookingRequestBody): ValidationResult {
-  const serviceId = payload.serviceId?.trim() || BOOKING_DEFAULT_SERVICE_ID.trim();
-  if (!serviceId) {
-    return { error: "Service could not be resolved. Configure BOOKING_DEFAULT_SERVICE_ID or provide serviceId." };
+function normalizeServiceName(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+async function loadAvailableServices() {
+  const products = await getProducts();
+  const serviceMap = new Map<string, AvailableService>();
+
+  for (const product of products) {
+    const id = readString(product.id);
+    const name = readString(product.name);
+    const itemType = readString(product.itemType).toLowerCase();
+    if (!id || !name || itemType !== "service") continue;
+
+    serviceMap.set(id, {
+      id,
+      name,
+      storeId: readString(product.storeId) || undefined,
+    });
   }
 
+  return Array.from(serviceMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function resolveServiceId(context: ServiceResolutionContext) {
+  const requestedServiceId = context.requestedServiceId?.trim() ?? "";
+  if (requestedServiceId) return requestedServiceId;
+
+  const requestedServiceName = context.requestedServiceName?.trim() ?? "";
+  const services = await loadAvailableServices();
+  if (requestedServiceName) {
+    const normalizedName = normalizeServiceName(requestedServiceName);
+    const byName = services.find((service) => normalizeServiceName(service.name) === normalizedName);
+    if (byName) return byName.id;
+  }
+
+  const defaultServiceId = BOOKING_DEFAULT_SERVICE_ID.trim();
+  if (defaultServiceId) return defaultServiceId;
+
+  const allowedByBranch = context.preferredBranch ? BOOKING_ALLOWED_SERVICES_BY_BRANCH?.[context.preferredBranch] : null;
+  if (Array.isArray(allowedByBranch) && allowedByBranch.length > 0) {
+    return allowedByBranch[0] ?? "";
+  }
+
+  return "";
+}
+
+async function validateAndNormalizePayload(payload: BookingRequestBody): Promise<ValidationResult> {
   const attributes = (payload.attributes ?? {}) as BookingAttributes;
   const preferredBranch = readString(attributes.preferred_branch);
+  const rawServiceName =
+    readString(payload.serviceName) || readString((payload.attributes as Record<string, unknown> | undefined)?.service_name);
+  const serviceId = await resolveServiceId({
+    requestedServiceId: payload.serviceId,
+    requestedServiceName: rawServiceName,
+    preferredBranch,
+  });
+  if (!serviceId) {
+    return {
+      error: "Service could not be resolved. Provide serviceId/serviceName or configure BOOKING_DEFAULT_SERVICE_ID.",
+    };
+  }
+
   const preferredDate = readString(attributes.preferred_date);
   const preferredTime = readString(attributes.preferred_time);
   const sessionType = readString(attributes.session_type);
@@ -244,10 +313,11 @@ function validateAndNormalizePayload(payload: BookingRequestBody): ValidationRes
 
 export async function POST(request: Request) {
   const body = (await request.json()) as BookingRequestBody;
-  const { error, normalized } = validateAndNormalizePayload(body);
+  const { error, normalized } = await validateAndNormalizePayload(body);
 
   if (error || !normalized) {
-    return NextResponse.json({ error: error ?? "Invalid booking payload." }, { status: 400 });
+    const services = await loadAvailableServices();
+    return NextResponse.json({ error: error ?? "Invalid booking payload.", services }, { status: 400 });
   }
 
   try {
@@ -281,8 +351,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    if (url.searchParams.get("view") === "services") {
+      const services = await loadAvailableServices();
+      return NextResponse.json({ services });
+    }
+
     const response = await fetch(`${SEDIFEX_BASE_URL}/v1IntegrationBookings?storeId=${encodeURIComponent(SEDIFEX_STORE_ID)}`, {
       method: "GET",
       headers: buildSedifexHeaders(),
