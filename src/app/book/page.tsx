@@ -10,11 +10,6 @@ const THERAPIST_OPTIONS = ["Female", "Male", "No preference"] as const;
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
 const PAYMENT_OPTIONS = ["Momo", "Bank transfer", "Cash"] as const;
 
-const branchServiceMap: Record<(typeof BRANCH_OPTIONS)[number], string[]> = {
-  Awoshie: [],
-  Spintex: [],
-};
-
 function parseDurationMinutes(value: string) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : null;
@@ -36,7 +31,6 @@ export default function BookPage() {
   const [submitMessage, setSubmitMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    serviceId: "",
     serviceName: "",
     date: "",
     time: "",
@@ -50,12 +44,12 @@ export default function BookPage() {
     paymentMethod: "",
     notes: "",
     paymentScreenshotReady: false,
-    paymentScreenshotUrl: "",
+    paymentReference: "",
     cancellationAccepted: false,
   });
 
   const minimumFieldsComplete = useMemo(() => {
-    const requiredTextFields = [formData.serviceId, formData.date, formData.time, formData.branch, formData.name];
+    const requiredTextFields = [formData.date, formData.time, formData.branch, formData.name];
     return requiredTextFields.every((value) => value.trim().length > 0);
   }, [formData]);
 
@@ -76,7 +70,7 @@ export default function BookPage() {
     }
 
     if (!minimumFieldsComplete) {
-      return "Please provide Name, Service ID, Date, Time, and Preferred Branch.";
+      return "Please provide Name, Date, Time, and Preferred Branch.";
     }
 
     if (!hasContactMethod) {
@@ -99,26 +93,19 @@ export default function BookPage() {
       return "Payment method is required when deposit amount is greater than 0.";
     }
 
-    if (depositAmountValue > 0 && !formData.paymentScreenshotReady && !formData.paymentScreenshotUrl.trim()) {
-      return "Payment proof is required (checkbox or screenshot URL) when a deposit is paid.";
-    }
-
-    const configuredServices = branchServiceMap[formData.branch as keyof typeof branchServiceMap] ?? [];
-    if (configuredServices.length > 0 && !configuredServices.includes(formData.serviceId.trim())) {
-      return `Service ${formData.serviceId.trim()} is not mapped to ${formData.branch}.`;
+    if (depositAmountValue > 0 && !formData.paymentScreenshotReady && !formData.paymentReference.trim()) {
+      return "Payment proof is required (checkbox or payment reference) when a deposit is paid.";
     }
 
     return null;
   }, [
     depositAmountValue,
-    formData.branch,
     formData.cancellationAccepted,
     formData.date,
     formData.email,
     formData.paymentMethod,
     formData.paymentScreenshotReady,
-    formData.paymentScreenshotUrl,
-    formData.serviceId,
+    formData.paymentReference,
     formData.time,
     hasContactMethod,
     minimumFieldsComplete,
@@ -164,7 +151,6 @@ export default function BookPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          serviceId: formData.serviceId.trim(),
           quantity: 1,
           notes: formData.notes.trim() || undefined,
           attributes: {
@@ -180,7 +166,7 @@ export default function BookPage() {
             email: formData.email.trim() || undefined,
             notes: formData.notes.trim() || undefined,
             payment_screenshot_ready: formData.paymentScreenshotReady,
-            payment_screenshot_url: formData.paymentScreenshotUrl.trim() || undefined,
+            payment_reference: formData.paymentReference.trim() || undefined,
             no_refund_policy_accepted: formData.cancellationAccepted,
             service_name: formData.serviceName.trim() || undefined,
           },
@@ -205,7 +191,7 @@ export default function BookPage() {
         depositAmount: "",
         paymentMethod: "",
         paymentScreenshotReady: false,
-        paymentScreenshotUrl: "",
+        paymentReference: "",
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to submit booking right now.";
@@ -253,19 +239,6 @@ export default function BookPage() {
             </div>
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <label className="text-sm font-semibold text-neutral-700">
-                Service ID
-                <input
-                  name="serviceId"
-                  value={formData.serviceId}
-                  onChange={handleChange}
-                  placeholder="Sedifex service ID"
-                  required
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-                  type="text"
-                />
-              </label>
-
               <label className="text-sm font-semibold text-neutral-700">
                 Date
                 <input
@@ -431,15 +404,18 @@ export default function BookPage() {
 
             <div className="mt-5">
               <label className="text-sm font-semibold text-neutral-700">
-                Payment Screenshot URL (optional)
+                Payment Reference (optional)
                 <input
-                  name="paymentScreenshotUrl"
-                  value={formData.paymentScreenshotUrl}
+                  name="paymentReference"
+                  value={formData.paymentReference}
                   onChange={handleChange}
-                  placeholder="https://..."
+                  placeholder="Type account name/number or any payment trace"
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-                  type="url"
+                  type="text"
                 />
+                <span className="mt-2 block text-xs font-normal text-neutral-500">
+                  Type your account name and number or anything that can help us track payment.
+                </span>
               </label>
             </div>
 
@@ -511,8 +487,7 @@ export default function BookPage() {
             <p className="mt-2 text-sm text-neutral-600">This is the information we send to Sedifex.</p>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700 whitespace-pre-line">
-              Service ID: {formData.serviceId || "____"}
-              {"\n"}Service name: {formData.serviceName || "____"}
+              Service name: {formData.serviceName || "____"}
               {"\n"}Customer name: {formData.name || "____"}
               {"\n"}Date: {formData.date || "____"}
               {"\n"}Time: {formData.time || "____"}
@@ -526,7 +501,7 @@ export default function BookPage() {
               {"\n"}Contact method: {formData.contactMethod || "____"}
               {"\n"}Notes: {formData.notes || "____"}
               {"\n"}Payment screenshot ready: {formData.paymentScreenshotReady ? "Yes" : "No"}
-              {"\n"}Payment screenshot URL: {formData.paymentScreenshotUrl || "____"}
+              {"\n"}Payment reference: {formData.paymentReference || "____"}
               {"\n"}No-refund policy accepted: {formData.cancellationAccepted ? "Yes" : "No"}
             </div>
 
