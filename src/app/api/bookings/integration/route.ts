@@ -25,8 +25,9 @@ type BookingAttributes = {
   deposit_amount?: number;
   payment_method?: string;
   email?: string;
+  customer_name?: string;
+  customer_phone?: string;
   notes?: string;
-  payment_screenshot_ready?: boolean;
   payment_screenshot_url?: string;
   payment_reference?: string;
   no_refund_policy_accepted?: boolean;
@@ -199,7 +200,6 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
   const therapistPreference = readString(attributes.therapist_preference);
   const preferredContactMethod = readString(attributes.preferred_contact_method);
   const paymentMethod = readString(attributes.payment_method);
-  const paymentScreenshotUrl = readString(attributes.payment_screenshot_url);
   const paymentReference = readString(attributes.payment_reference);
   const notes = readString(attributes.notes);
   const email = readString(payload.customer?.email ?? attributes.email);
@@ -207,7 +207,6 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
   const customerPhone = payload.customer?.phone?.trim() ?? "";
   const duration = readNumber(attributes.duration);
   const depositAmount = readNumber(attributes.deposit_amount) ?? 0;
-  const paymentScreenshotReady = readBoolean(attributes.payment_screenshot_ready) ?? false;
   const noRefundPolicyAccepted = readBoolean(attributes.no_refund_policy_accepted) ?? false;
 
   if (!preferredBranch) {
@@ -263,10 +262,6 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     return { error: "Payment reference is required." };
   }
 
-  if (depositAmount > 0 && !paymentScreenshotReady && !paymentScreenshotUrl) {
-    return { error: "Payment screenshot confirmation or screenshot URL is required when deposit amount is greater than 0." };
-  }
-
   if (BOOKING_ALLOWED_SERVICES_BY_BRANCH) {
     const allowed = BOOKING_ALLOWED_SERVICES_BY_BRANCH[preferredBranch];
     if (Array.isArray(allowed) && allowed.length > 0 && !allowed.includes(serviceId)) {
@@ -288,9 +283,9 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     deposit_amount: depositAmount,
     payment_method: paymentMethod || undefined,
     email: email || undefined,
+    customer_name: customerName,
+    customer_phone: customerPhone || undefined,
     notes: notes || undefined,
-    payment_screenshot_ready: paymentScreenshotReady,
-    payment_screenshot_url: paymentScreenshotUrl || undefined,
     payment_reference: paymentReference || undefined,
     no_refund_policy_accepted: true,
     preferred_date: preferredDate,

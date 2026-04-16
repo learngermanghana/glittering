@@ -30,6 +30,7 @@ function isPastDateTime(date: string, time: string) {
 export default function BookPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
   const [formData, setFormData] = useState({
     name: "",
@@ -45,15 +46,9 @@ export default function BookPage() {
     depositAmount: "",
     paymentMethod: "",
     notes: "",
-    paymentScreenshotReady: false,
     paymentReference: "",
     cancellationAccepted: false,
   });
-
-  const minimumFieldsComplete = useMemo(() => {
-    const requiredTextFields = [formData.date, formData.time, formData.branch, formData.name, formData.serviceId];
-    return requiredTextFields.every((value) => value.trim().length > 0);
-  }, [formData]);
 
   const selectedServiceName = useMemo(
     () => serviceOptions.find((service) => service.id === formData.serviceId)?.name ?? "",
@@ -71,58 +66,68 @@ export default function BookPage() {
     return Number.isFinite(parsed) ? parsed : Number.NaN;
   }, [formData.depositAmount]);
 
-  const clientValidationMessage = useMemo(() => {
+  const validationErrors = useMemo(() => {
+    const errors: Record<string, string> = {};
+
     if (!formData.cancellationAccepted) {
-      return "You must accept the no-refund policy before submitting.";
+      errors.cancellationAccepted = "Accept the no-refund policy before submitting.";
     }
 
-    if (!minimumFieldsComplete) {
-      return "Please provide Name, Service, Date, Time, and Preferred Branch.";
-    }
+    if (!formData.name.trim()) errors.name = "Name is required.";
+    if (!formData.serviceId.trim()) errors.serviceId = "Please select a service.";
+    if (!formData.date.trim()) errors.date = "Date is required.";
+    if (!formData.time.trim()) errors.time = "Time is required.";
+    if (!formData.branch.trim()) errors.branch = "Preferred branch is required.";
+    if (!formData.paymentReference.trim()) errors.paymentReference = "Payment reference is required.";
 
     if (!hasContactMethod) {
-      return "Please provide at least one contact method: phone or email.";
+      errors.phone = "Provide at least one contact method.";
+      errors.email = "Provide at least one contact method.";
     }
 
     if (formData.email.trim() && !isValidEmail(formData.email.trim())) {
-      return "Please provide a valid email address.";
+      errors.email = "Please provide a valid email address.";
     }
 
-    if (isPastDateTime(formData.date, formData.time)) {
-      return "Please select a booking date/time in the future.";
+    if (formData.date && formData.time && isPastDateTime(formData.date, formData.time)) {
+      errors.time = "Please choose a future date/time.";
     }
 
     if (Number.isNaN(depositAmountValue) || depositAmountValue < 0) {
-      return "Deposit amount must be a valid non-negative number.";
-    }
-
-    if (!formData.paymentReference.trim()) {
-      return "Payment reference is required. Please type account name/number or another payment trace.";
+      errors.depositAmount = "Deposit must be a valid non-negative number.";
     }
 
     if (depositAmountValue > 0 && !formData.paymentMethod.trim()) {
-      return "Payment method is required when deposit amount is greater than 0.";
+      errors.paymentMethod = "Payment method is required when deposit is greater than 0.";
     }
 
-    if (depositAmountValue > 0 && !formData.paymentScreenshotReady) {
-      return "Please confirm payment screenshot is ready when a deposit is paid.";
-    }
-
-    return null;
+    return errors;
   }, [
     depositAmountValue,
+    formData.branch,
     formData.cancellationAccepted,
     formData.date,
     formData.email,
+    formData.name,
     formData.paymentMethod,
-    formData.paymentScreenshotReady,
     formData.paymentReference,
+    formData.serviceId,
     formData.time,
     hasContactMethod,
-    minimumFieldsComplete,
   ]);
 
+  const clientValidationMessage = useMemo(() => {
+    const firstError = Object.values(validationErrors)[0];
+    return firstError ?? null;
+  }, [validationErrors]);
+
   const canSubmit = !isSubmitting && !clientValidationMessage;
+  const inputClassName = (field: string) =>
+    `mt-2 w-full rounded-2xl border bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:outline-none focus:ring-2 ${
+      fieldErrors[field]
+        ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+        : "border-neutral-200 focus:border-neutral-400 focus:ring-neutral-200"
+    }`;
 
   useEffect(() => {
     let cancelled = false;
@@ -154,21 +159,45 @@ export default function BookPage() {
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = event.target;
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = event.target;
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleTextareaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = event.target;
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -176,8 +205,9 @@ export default function BookPage() {
     event.preventDefault();
     setSubmitMessage(null);
 
-    if (clientValidationMessage) {
-      setSubmitMessage({ kind: "error", text: clientValidationMessage });
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setSubmitMessage({ kind: "error", text: "Please correct the highlighted fields and try again." });
       return;
     }
 
@@ -205,8 +235,9 @@ export default function BookPage() {
             deposit_amount: depositAmountValue,
             payment_method: formData.paymentMethod || undefined,
             email: formData.email.trim() || undefined,
+            customer_name: formData.name.trim(),
+            customer_phone: formData.phone.trim() || undefined,
             notes: formData.notes.trim() || undefined,
-            payment_screenshot_ready: formData.paymentScreenshotReady,
             payment_reference: formData.paymentReference.trim() || undefined,
             no_refund_policy_accepted: formData.cancellationAccepted,
             service_name: selectedServiceName || undefined,
@@ -225,13 +256,15 @@ export default function BookPage() {
         throw new Error(data.error ?? "Booking submission failed.");
       }
 
-      setSubmitMessage({ kind: "success", text: "Booking submitted successfully. Our team will confirm shortly." });
+      setSubmitMessage({
+        kind: "success",
+        text: "Booking sent successfully to Sedifex. We’ll contact you shortly to confirm your appointment.",
+      });
       setFormData((prev) => ({
         ...prev,
         notes: "",
         depositAmount: "",
         paymentMethod: "",
-        paymentScreenshotReady: false,
         paymentReference: "",
       }));
     } catch (error) {
@@ -261,9 +294,10 @@ export default function BookPage() {
                   onChange={handleChange}
                   placeholder="Your name"
                   required
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("name")}
                   type="text"
                 />
+                {fieldErrors.name && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.name}</span>}
               </label>
 
               <label className="text-sm font-semibold text-neutral-700">
@@ -273,9 +307,10 @@ export default function BookPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone number"
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("phone")}
                   type="tel"
                 />
+                {fieldErrors.phone && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.phone}</span>}
               </label>
             </div>
 
@@ -288,9 +323,10 @@ export default function BookPage() {
                   onChange={handleChange}
                   required
                   min={new Date().toISOString().split("T")[0]}
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("date")}
                   type="date"
                 />
+                {fieldErrors.date && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.date}</span>}
               </label>
             </div>
 
@@ -302,7 +338,7 @@ export default function BookPage() {
                   value={formData.serviceId}
                   onChange={handleSelectChange}
                   required
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("serviceId")}
                 >
                   <option value="">Select service</option>
                   {serviceOptions.map((service) => (
@@ -311,6 +347,7 @@ export default function BookPage() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.serviceId && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.serviceId}</span>}
               </label>
             </div>
 
@@ -323,9 +360,10 @@ export default function BookPage() {
                   onChange={handleChange}
                   required
                   step={900}
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("time")}
                   type="time"
                 />
+                {fieldErrors.time && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.time}</span>}
               </label>
             </div>
 
@@ -337,7 +375,7 @@ export default function BookPage() {
                   value={formData.branch}
                   onChange={handleSelectChange}
                   required
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("branch")}
                 >
                   <option value="">Select a branch</option>
                   {BRANCH_OPTIONS.map((branch) => (
@@ -346,6 +384,7 @@ export default function BookPage() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.branch && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.branch}</span>}
               </label>
 
               <label className="text-sm font-semibold text-neutral-700">
@@ -410,11 +449,14 @@ export default function BookPage() {
                   value={formData.depositAmount}
                   onChange={handleChange}
                   placeholder="e.g. 100"
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("depositAmount")}
                   type="number"
                   min="0"
                   step="0.01"
                 />
+                {fieldErrors.depositAmount && (
+                  <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.depositAmount}</span>
+                )}
               </label>
 
               <label className="text-sm font-semibold text-neutral-700">
@@ -423,7 +465,7 @@ export default function BookPage() {
                   name="paymentMethod"
                   value={formData.paymentMethod}
                   onChange={handleSelectChange}
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("paymentMethod")}
                 >
                   <option value="">Select payment method</option>
                   {PAYMENT_OPTIONS.map((paymentOption) => (
@@ -432,6 +474,9 @@ export default function BookPage() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.paymentMethod && (
+                  <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.paymentMethod}</span>
+                )}
               </label>
             </div>
 
@@ -443,9 +488,10 @@ export default function BookPage() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Email address"
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("email")}
                   type="email"
                 />
+                {fieldErrors.email && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.email}</span>}
               </label>
             </div>
 
@@ -458,12 +504,15 @@ export default function BookPage() {
                   onChange={handleChange}
                   placeholder="Type account name/number or any payment trace"
                   required
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  className={inputClassName("paymentReference")}
                   type="text"
                 />
                 <span className="mt-2 block text-xs font-normal text-neutral-500">
                   Type your account name and number or anything that can help us track payment.
                 </span>
+                {fieldErrors.paymentReference && (
+                  <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.paymentReference}</span>
+                )}
               </label>
             </div>
 
@@ -481,17 +530,7 @@ export default function BookPage() {
               </label>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm">
-                <input
-                  name="paymentScreenshotReady"
-                  checked={formData.paymentScreenshotReady}
-                  onChange={handleCheckboxChange}
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300"
-                />
-                Payment screenshot ready
-              </label>
+            <div className="mt-6 grid gap-4 sm:grid-cols-1">
               <label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm">
                 <input
                   name="cancellationAccepted"
@@ -502,6 +541,9 @@ export default function BookPage() {
                 />
                 I agree to the no-refund policy after payment
               </label>
+              {fieldErrors.cancellationAccepted && (
+                <span className="text-xs font-normal text-red-600">{fieldErrors.cancellationAccepted}</span>
+              )}
             </div>
 
             <p className="mt-4 text-xs text-neutral-500">Note: Payments are non-refundable after confirmation.</p>
@@ -524,9 +566,17 @@ export default function BookPage() {
             </div>
 
             {submitMessage && (
-              <p className={`mt-4 text-sm ${submitMessage.kind === "success" ? "text-emerald-700" : "text-red-700"}`}>
-                {submitMessage.text}
-              </p>
+              <div
+                role="status"
+                className={`mt-4 rounded-2xl border px-4 py-3 text-sm shadow-sm ${
+                  submitMessage.kind === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-red-200 bg-red-50 text-red-800"
+                }`}
+              >
+                <p className="font-semibold">{submitMessage.kind === "success" ? "Success" : "Submission failed"}</p>
+                <p className="mt-1">{submitMessage.text}</p>
+              </div>
             )}
           </form>
 
@@ -548,7 +598,6 @@ export default function BookPage() {
               {"\n"}Payment method: {formData.paymentMethod || "____"}
               {"\n"}Contact method: {formData.contactMethod || "____"}
               {"\n"}Notes: {formData.notes || "____"}
-              {"\n"}Payment screenshot ready: {formData.paymentScreenshotReady ? "Yes" : "No"}
               {"\n"}Payment reference: {formData.paymentReference || "____"}
               {"\n"}No-refund policy accepted: {formData.cancellationAccepted ? "Yes" : "No"}
             </div>
@@ -556,7 +605,7 @@ export default function BookPage() {
             <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700">
               <h3 className="text-sm font-semibold text-neutral-900">Payment details</h3>
               <p className="mt-2 text-xs text-neutral-500">
-                Use the details below to make payment and keep a screenshot ready.
+                Use the details below to make payment and include a clear payment reference when booking.
               </p>
               <p className="mt-1 text-xs text-neutral-500">
                 Your payment reference should be the account name/number or payment details you used from these options.
