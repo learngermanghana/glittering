@@ -1,16 +1,16 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
-import { SITE } from "@/lib/site";
-
-const baseMessage = "Hi Glittering Spa! I want to book a session.";
 
 export default function BookPage() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    service: "",
+    serviceId: "",
+    serviceName: "",
     date: "",
     time: "",
     phone: "",
@@ -26,33 +26,14 @@ export default function BookPage() {
     cancellationAccepted: false,
   });
 
-  const whatsappLink = useMemo(() => {
-    const message = [
-      baseMessage,
-      `Name: ${formData.name || "____"}`,
-      `Service: ${formData.service || "____"}`,
-      `Date: ${formData.date || "____"}`,
-      `Time: ${formData.time || "____"}`,
-      `Phone: ${formData.phone || "____"}`,
-      `Email: ${formData.email || "____"}`,
-      `Branch: ${formData.branch || "____"}`,
-      `Session type: ${formData.sessionDuration || "____"}`,
-      `Therapist preference: ${formData.therapistPreference || "____"}`,
-      `Deposit amount: ${formData.depositAmount || "____"}`,
-      `Payment method: ${formData.paymentMethod || "____"}`,
-      `Contact method: ${formData.contactMethod || "____"}`,
-      `Notes: ${formData.notes || "____"}`,
-      `Payment screenshot: ${formData.paymentConfirmed ? "Yes" : "No"}`,
-      `Cancellation policy accepted: ${formData.cancellationAccepted ? "Yes" : "No"}`,
-    ].join("\n");
-
-    return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(message)}`;
-  }, [formData]);
-
   const minimumFieldsComplete = useMemo(() => {
-    const requiredTextFields = [formData.name, formData.phone, formData.service, formData.date, formData.time, formData.branch];
+    const requiredTextFields = [formData.serviceId, formData.date, formData.time, formData.branch];
     return requiredTextFields.every((value) => value.trim().length > 0);
   }, [formData]);
+
+  const hasCustomerIdentity = useMemo(() => {
+    return Boolean(formData.name.trim() || formData.phone.trim() || formData.email.trim());
+  }, [formData.email, formData.name, formData.phone]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -74,16 +55,93 @@ export default function BookPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitMessage(null);
+
+    if (!minimumFieldsComplete || !hasCustomerIdentity) {
+      setSubmitMessage({
+        kind: "error",
+        text: "Please provide Service ID, Date, Time, Branch, and at least one customer identifier (name, phone, or email).",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const notes = [
+      formData.notes ? `Notes: ${formData.notes}` : "",
+      `Preferred date: ${formData.date}`,
+      `Preferred time: ${formData.time}`,
+      formData.branch ? `Branch: ${formData.branch}` : "",
+      formData.serviceName ? `Service name: ${formData.serviceName}` : "",
+      formData.sessionDuration ? `Session type: ${formData.sessionDuration}` : "",
+      formData.therapistPreference ? `Therapist preference: ${formData.therapistPreference}` : "",
+      formData.depositAmount ? `Deposit amount: ${formData.depositAmount}` : "",
+      formData.paymentMethod ? `Payment method: ${formData.paymentMethod}` : "",
+      formData.contactMethod ? `Preferred contact method: ${formData.contactMethod}` : "",
+      `Payment screenshot ready: ${formData.paymentConfirmed ? "Yes" : "No"}`,
+      `Cancellation policy accepted: ${formData.cancellationAccepted ? "Yes" : "No"}`,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
+    try {
+      const response = await fetch("/api/bookings/integration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceId: formData.serviceId.trim(),
+          quantity: 1,
+          notes,
+          attributes: {
+            serviceName: formData.serviceName.trim() || null,
+            preferredDate: formData.date,
+            preferredTime: formData.time,
+            branch: formData.branch,
+            sessionDuration: formData.sessionDuration,
+            therapistPreference: formData.therapistPreference,
+            contactMethod: formData.contactMethod,
+            paymentMethod: formData.paymentMethod,
+          },
+          customer: {
+            name: formData.name.trim() || undefined,
+            phone: formData.phone.trim() || undefined,
+            email: formData.email.trim() || undefined,
+          },
+        }),
+      });
+
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Booking submission failed.");
+      }
+
+      setSubmitMessage({ kind: "success", text: "Booking submitted successfully. Our team will confirm shortly." });
+      setFormData((prev) => ({
+        ...prev,
+        notes: "",
+        depositAmount: "",
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to submit booking right now.";
+      setSubmitMessage({ kind: "error", text: message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Container>
       <section className="rounded-[32px] bg-[#ffe6ea] px-4 py-12 sm:px-8 sm:py-16">
         <SectionTitle
           title="Book a Session"
-          subtitle="Fill the details below and we’ll open WhatsApp with your booking message."
+          subtitle="Fill the details below and submit your booking directly to our Sedifex booking system."
         />
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <form className="rounded-3xl border border-black/10 bg-white p-6 shadow-lg sm:p-8">
+          <form className="rounded-3xl border border-black/10 bg-white p-6 shadow-lg sm:p-8" onSubmit={handleSubmit}>
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="text-sm font-semibold text-neutral-700">
                 Name
@@ -92,7 +150,6 @@ export default function BookPage() {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Your name"
-                  required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                   type="text"
                 />
@@ -105,7 +162,6 @@ export default function BookPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone number"
-                  required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                   type="tel"
                 />
@@ -114,12 +170,12 @@ export default function BookPage() {
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <label className="text-sm font-semibold text-neutral-700">
-                Service
+                Service ID
                 <input
-                  name="service"
-                  value={formData.service}
+                  name="serviceId"
+                  value={formData.serviceId}
                   onChange={handleChange}
-                  placeholder="e.g. Massage, Facial"
+                  placeholder="Sedifex service ID"
                   required
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                   type="text"
@@ -136,6 +192,20 @@ export default function BookPage() {
                   min={new Date().toISOString().split("T")[0]}
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                   type="date"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5">
+              <label className="text-sm font-semibold text-neutral-700">
+                Service name (optional, for internal notes)
+                <input
+                  name="serviceName"
+                  value={formData.serviceName}
+                  onChange={handleChange}
+                  placeholder="e.g. Deep Tissue Massage"
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                  type="text"
                 />
               </label>
             </div>
@@ -302,38 +372,41 @@ export default function BookPage() {
             </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noreferrer"
-                aria-disabled={!minimumFieldsComplete}
-                onClick={(event) => {
-                  if (!minimumFieldsComplete) event.preventDefault();
-                }}
+              <button
+                type="submit"
+                disabled={!minimumFieldsComplete || !hasCustomerIdentity || isSubmitting}
                 className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm sm:w-auto ${
-                  minimumFieldsComplete ? "bg-neutral-900 hover:bg-neutral-800" : "cursor-not-allowed bg-neutral-400"
+                  minimumFieldsComplete && hasCustomerIdentity && !isSubmitting
+                    ? "bg-neutral-900 hover:bg-neutral-800"
+                    : "cursor-not-allowed bg-neutral-400"
                 }`}
               >
-                Send on WhatsApp
-              </a>
+                {isSubmitting ? "Submitting..." : "Submit booking"}
+              </button>
               <p className="text-xs text-neutral-500">
-                {minimumFieldsComplete
-                  ? "We’ll confirm your booking details once you send the WhatsApp message."
-                  : "Complete Name, Phone, Service, Date, Time, and Branch to enable WhatsApp booking."}
+                {minimumFieldsComplete && hasCustomerIdentity
+                  ? "After submission, your booking is sent to Sedifex and linked to a customer automatically."
+                  : "Complete Service ID, Date, Time, Branch, and at least one of Name, Phone, or Email."}
               </p>
             </div>
+
+            {submitMessage && (
+              <p className={`mt-4 text-sm ${submitMessage.kind === "success" ? "text-emerald-700" : "text-red-700"}`}>
+                {submitMessage.text}
+              </p>
+            )}
           </form>
 
           <div className="rounded-3xl border border-black/10 bg-neutral-50 p-6 shadow-lg sm:p-8">
             <h2 className="text-lg font-semibold">Booking details preview</h2>
             <p className="mt-2 text-sm text-neutral-600">
-              This is what we’ll send to WhatsApp based on your entries.
+              This is the information we send to Sedifex.
             </p>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700 whitespace-pre-line">
-              {baseMessage}
-              {"\n"}Name: {formData.name || "____"}
-              {"\n"}Service: {formData.service || "____"}
+              Service ID: {formData.serviceId || "____"}
+              {"\n"}Service name: {formData.serviceName || "____"}
+              {"\n"}Customer name: {formData.name || "____"}
               {"\n"}Date: {formData.date || "____"}
               {"\n"}Time: {formData.time || "____"}
               {"\n"}Phone: {formData.phone || "____"}
@@ -352,7 +425,7 @@ export default function BookPage() {
             <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700">
               <h3 className="text-sm font-semibold text-neutral-900">Payment details</h3>
               <p className="mt-2 text-xs text-neutral-500">
-                Use the details below to make payment and keep a screenshot ready to share on WhatsApp.
+                Use the details below to make payment and keep a screenshot ready.
               </p>
               <div className="mt-4 space-y-4 text-xs sm:text-sm">
                 <div>
