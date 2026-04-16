@@ -141,6 +141,12 @@ GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KE
 GOOGLE_SHEETS_SPREADSHEET_ID=1nh0xFzmP57K4Q9oQZHpeqUCtXA10M6L2uvDtOzzLvZA
 # Optional (defaults to Sheet1!A:K)
 GOOGLE_SHEETS_BOOKINGS_RANGE=Sheet1!A:K
+
+# Sedifex integration bookings (server-side only)
+SEDIFEX_INTEGRATION_API_KEY=...
+# Optional (defaults shown below)
+SEDIFEX_INTEGRATION_BASE_URL=https://us-central1-sedifex-web.cloudfunctions.net
+SEDIFEX_CONTRACT_VERSION=2026-04-13
 ```
 
 ### Firestore collections expected
@@ -163,5 +169,6 @@ GOOGLE_SHEETS_BOOKINGS_RANGE=Sheet1!A:K
 3. Public site pulls product records from Firestore and shows them on `/products`.
 4. Team can open `/login` after authenticating to submit booking rows that append directly into Google Sheets via `/api/bookings/sync` (protected).
 5. Team opens `/sms` (protected), app resolves their `storeId` from Sedifex auth claim or `teamMembers/<uid>`, then loads/sends only that store data via `/api/sms/bulk`.
+6. Public `/book` submissions are posted server-side to Sedifex via `/api/bookings/integration` with contract headers + API key.
 
 > Important: `/sms` and `/api/sms/bulk` are protected with a server-side verified Firebase ID token in an HttpOnly cookie. Data access is tenant-scoped by `storeId` (claim or teamMembers doc) **and** restricted to this website's configured store (`SEDIFEX_WEBSITE_STORE_ID`).
