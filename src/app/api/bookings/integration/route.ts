@@ -7,6 +7,7 @@ const SEDIFEX_API_KEY = process.env.SEDIFEX_INTEGRATION_API_KEY;
 const BOOKING_ALLOWED_SERVICES_BY_BRANCH = parseJsonSafely<Record<string, string[]>>(
   process.env.BOOKING_ALLOWED_SERVICES_BY_BRANCH ?? ""
 );
+const BOOKING_DEFAULT_SERVICE_ID = process.env.BOOKING_DEFAULT_SERVICE_ID ?? process.env.SEDIFEX_DEFAULT_SERVICE_ID ?? "";
 const BLOCKED_SLOT_KEYS = new Set(
   (process.env.BOOKING_BLOCKED_SLOT_KEYS ?? "")
     .split(",")
@@ -26,6 +27,7 @@ type BookingAttributes = {
   notes?: string;
   payment_screenshot_ready?: boolean;
   payment_screenshot_url?: string;
+  payment_reference?: string;
   no_refund_policy_accepted?: boolean;
   preferred_date?: string;
   preferred_time?: string;
@@ -112,9 +114,9 @@ function buildSlotKey(serviceId: string, branch: string, date: string, time: str
 }
 
 function validateAndNormalizePayload(payload: BookingRequestBody): ValidationResult {
-  const serviceId = payload.serviceId?.trim() ?? "";
+  const serviceId = payload.serviceId?.trim() || BOOKING_DEFAULT_SERVICE_ID.trim();
   if (!serviceId) {
-    return { error: "Service ID is required." };
+    return { error: "Service could not be resolved. Configure BOOKING_DEFAULT_SERVICE_ID or provide serviceId." };
   }
 
   const attributes = (payload.attributes ?? {}) as BookingAttributes;
@@ -126,6 +128,7 @@ function validateAndNormalizePayload(payload: BookingRequestBody): ValidationRes
   const preferredContactMethod = readString(attributes.preferred_contact_method);
   const paymentMethod = readString(attributes.payment_method);
   const paymentScreenshotUrl = readString(attributes.payment_screenshot_url);
+  const paymentReference = readString(attributes.payment_reference);
   const notes = readString(attributes.notes);
   const email = readString(payload.customer?.email ?? attributes.email);
   const customerName = payload.customer?.name?.trim() ?? "";
@@ -184,8 +187,12 @@ function validateAndNormalizePayload(payload: BookingRequestBody): ValidationRes
     return { error: "Payment method is required when deposit amount is greater than 0." };
   }
 
+  if (!paymentReference) {
+    return { error: "Payment reference is required." };
+  }
+
   if (depositAmount > 0 && !paymentScreenshotReady && !paymentScreenshotUrl) {
-    return { error: "Payment proof is required when deposit amount is greater than 0." };
+    return { error: "Payment screenshot confirmation or screenshot URL is required when deposit amount is greater than 0." };
   }
 
   if (BOOKING_ALLOWED_SERVICES_BY_BRANCH) {
@@ -212,6 +219,7 @@ function validateAndNormalizePayload(payload: BookingRequestBody): ValidationRes
     notes: notes || undefined,
     payment_screenshot_ready: paymentScreenshotReady,
     payment_screenshot_url: paymentScreenshotUrl || undefined,
+    payment_reference: paymentReference || undefined,
     no_refund_policy_accepted: true,
     preferred_date: preferredDate,
     preferred_time: preferredTime,
