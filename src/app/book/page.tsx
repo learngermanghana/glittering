@@ -7,7 +7,7 @@ import { SectionTitle } from "@/components/SectionTitle";
 const BRANCH_OPTIONS = ["Awoshie", "Spintex"] as const;
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
 const PAYMENT_OPTIONS = ["Momo", "Bank transfer", "Cash"] as const;
-type ServiceOption = { id: string; name: string };
+type ServiceOption = { id: string; name: string; price?: number | null };
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -21,6 +21,14 @@ function isPastDateTime(date: string, time: string) {
 }
 
 export default function BookPage() {
+  const currency = useMemo(
+    () =>
+      new Intl.NumberFormat("en-GH", {
+        style: "currency",
+        currency: "GHS",
+      }),
+    []
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -45,6 +53,10 @@ export default function BookPage() {
     () => serviceOptions.find((service) => service.id === formData.serviceId)?.name ?? "",
     [formData.serviceId, serviceOptions]
   );
+  const selectedServicePrice = useMemo(() => {
+    const value = serviceOptions.find((service) => service.id === formData.serviceId)?.price;
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }, [formData.serviceId, serviceOptions]);
 
   const hasContactMethod = useMemo(() => {
     return Boolean(formData.phone.trim() || formData.email.trim());
@@ -400,6 +412,11 @@ export default function BookPage() {
                     </option>
                   ))}
                 </select>
+                <span className="mt-2 block text-xs font-normal text-neutral-500">
+                  {selectedServicePrice === null
+                    ? "Service price will appear here after selection."
+                    : `Service price: ${currency.format(selectedServicePrice)}`}
+                </span>
                 {fieldErrors.serviceId && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.serviceId}</span>}
               </label>
             </div>
@@ -460,7 +477,7 @@ export default function BookPage() {
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <label className="text-sm font-semibold text-neutral-700">
-                Deposit Amount (if paid)
+                Payment Amount (how much paid)
                 <input
                   name="depositAmount"
                   value={formData.depositAmount}
@@ -474,6 +491,9 @@ export default function BookPage() {
                 {fieldErrors.depositAmount && (
                   <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.depositAmount}</span>
                 )}
+                <span className="mt-2 block text-xs font-normal text-neutral-500">
+                  Enter the exact amount paid so far.
+                </span>
               </label>
 
               <label className="text-sm font-semibold text-neutral-700">
@@ -540,10 +560,13 @@ export default function BookPage() {
                   name="notes"
                   value={formData.notes}
                   onChange={handleTextareaChange}
-                  placeholder="Share allergies or anything we should know."
+                  placeholder="Share allergies, special requests, or any extra payment details."
                   rows={4}
                   className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                 />
+                <span className="mt-2 block text-xs font-normal text-neutral-500">
+                  If you paid more than the service price for any reason, please explain it here.
+                </span>
               </label>
             </div>
 
@@ -603,6 +626,7 @@ export default function BookPage() {
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700 whitespace-pre-line">
               Service: {selectedServiceName || "____"}
+              {"\n"}Service price: {selectedServicePrice === null ? "____" : currency.format(selectedServicePrice)}
               {"\n"}Customer name: {formData.name || "____"}
               {"\n"}Date: {formData.date || "____"}
               {"\n"}Time: {formData.time || "____"}
