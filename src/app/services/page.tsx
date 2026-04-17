@@ -1,8 +1,10 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { categories, packages, SITE, WHATSAPP_LINK } from "@/lib/site";
+import { getServicesCatalogData } from "@/lib/services";
 import { buildPageMetadata, getAbsoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -11,7 +13,15 @@ export const metadata: Metadata = buildPageMetadata({
   path: "/services",
 });
 
-export default function ServicesPage() {
+const priceFormatter = new Intl.NumberFormat("en-GH", {
+  style: "currency",
+  currency: "GHS",
+  minimumFractionDigits: 2,
+});
+
+export default async function ServicesPage() {
+  const liveServices = await getServicesCatalogData();
+
   const servicesSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -75,32 +85,82 @@ export default function ServicesPage() {
 
         <SectionTitle title="Services" />
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((c) => (
-            <div key={c.title} className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-              <div className="text-lg font-semibold">{c.title}</div>
-              <div className="mt-1 text-sm text-neutral-600">{c.desc}</div>
+        {liveServices.length ? (
+          <>
+            <p className="mt-4 text-sm text-neutral-600">
+              Live services from Sedifex. Showing name, category, description, price, and image.
+            </p>
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {liveServices.map((service, index) => (
+                <article
+                  key={`${service.id ?? service.name}-${index}`}
+                  className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm"
+                >
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
+                    <Image
+                      src={service.image}
+                      alt={service.name}
+                      fill
+                      className="object-contain p-2"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  </div>
 
-              <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                {c.items.map((it) => (
-                  <li key={it} className="flex gap-2">
-                    <span className="mt-2 h-2 w-2 rounded-full bg-neutral-900/20" />
-                    <span>{it}</span>
-                  </li>
-                ))}
-              </ul>
+                  <div className="mt-4 flex items-start justify-between gap-3">
+                    <h2 className="text-base font-semibold">{service.name}</h2>
+                    <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-900">
+                      {priceFormatter.format(service.price)}
+                    </span>
+                  </div>
 
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
-              >
-                Book
-              </a>
+                  <div className="mt-2 inline-flex rounded-full border border-black/10 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-700">
+                    {service.category}
+                  </div>
+
+                  <p className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-sm leading-relaxed text-neutral-700">
+                    {service.description || "Contact the spa team for more service details."}
+                  </p>
+
+                  <a
+                    href={WHATSAPP_LINK}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
+                  >
+                    Book this service
+                  </a>
+                </article>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {categories.map((c) => (
+              <div key={c.title} className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+                <div className="text-lg font-semibold">{c.title}</div>
+                <div className="mt-1 text-sm text-neutral-600">{c.desc}</div>
+
+                <ul className="mt-4 space-y-2 text-sm text-neutral-700">
+                  {c.items.map((it) => (
+                    <li key={it} className="flex gap-2">
+                      <span className="mt-2 h-2 w-2 rounded-full bg-neutral-900/20" />
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <a
+                  href={WHATSAPP_LINK}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
+                >
+                  Book
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="mt-12">
           <SectionTitle title="Popular Packages" subtitle="Quick booking options bundled for you." />
