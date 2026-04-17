@@ -17,6 +17,18 @@ const BLOCKED_SLOT_KEYS = new Set(
 );
 
 type BookingAttributes = {
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  serviceName?: string;
+  bookingDate?: string;
+  bookingTime?: string;
+  branchLocationId?: string;
+  branchLocationName?: string;
+  eventLocation?: string;
+  customerStayLocation?: string;
+  paymentMethod?: string;
+  paymentAmount?: number | string;
   preferred_branch?: string;
   session_type?: string;
   duration?: number;
@@ -39,8 +51,22 @@ type BookingRequestBody = {
   serviceId?: string;
   serviceName?: string;
   slotId?: string;
+  slotID?: string;
+  slot_id?: string;
   quantity?: number;
   notes?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  bookingDate?: string;
+  bookingTime?: string;
+  branchLocationId?: string;
+  branchLocationName?: string;
+  eventLocation?: string;
+  customerStayLocation?: string;
+  paymentMethod?: string;
+  paymentAmount?: number | string;
+  paymentReference?: string;
   attributes?: Record<string, unknown>;
   customer?: {
     name?: string;
@@ -133,6 +159,14 @@ function normalizeServiceName(value: string) {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+function readStringFrom(...values: unknown[]) {
+  for (const value of values) {
+    const next = readString(value);
+    if (next) return next;
+  }
+  return "";
+}
+
 async function loadAvailableServices() {
   const products = await getProducts();
   const serviceMap = new Map<string, AvailableService>();
@@ -182,9 +216,28 @@ async function resolveServiceId(context: ServiceResolutionContext) {
 
 async function validateAndNormalizePayload(payload: BookingRequestBody): Promise<ValidationResult> {
   const attributes = (payload.attributes ?? {}) as BookingAttributes;
-  const preferredBranch = readString(attributes.preferred_branch);
-  const rawServiceName =
-    readString(payload.serviceName) || readString((payload.attributes as Record<string, unknown> | undefined)?.service_name);
+  const slotId = readStringFrom(payload.slotId, payload.slotID, payload.slot_id);
+  const customerName = readStringFrom(payload.customer?.name, payload.customerName, attributes.customerName, attributes.customer_name);
+  const customerPhone = readStringFrom(payload.customer?.phone, payload.customerPhone, attributes.customerPhone, attributes.customer_phone);
+  const email = readStringFrom(payload.customer?.email, payload.customerEmail, attributes.customerEmail, attributes.email);
+  const bookingDate = readStringFrom(payload.bookingDate, attributes.bookingDate, attributes.preferred_date);
+  const bookingTime = readStringFrom(payload.bookingTime, attributes.bookingTime, attributes.preferred_time);
+  const branchLocationId = readStringFrom(payload.branchLocationId, attributes.branchLocationId);
+  const branchLocationName = readStringFrom(payload.branchLocationName, attributes.branchLocationName, attributes.preferred_branch);
+  const eventLocation = readStringFrom(payload.eventLocation, attributes.eventLocation);
+  const customerStayLocation = readStringFrom(payload.customerStayLocation, attributes.customerStayLocation);
+  const paymentMethod = readStringFrom(payload.paymentMethod, attributes.paymentMethod, attributes.payment_method);
+  const paymentReference = readStringFrom(payload.paymentReference, attributes.payment_reference);
+  const preferredContactMethod = readString(attributes.preferred_contact_method);
+  const sessionType = readString(attributes.session_type);
+  const therapistPreference = readString(attributes.therapist_preference);
+  const rawServiceName = readStringFrom(payload.serviceName, attributes.serviceName, (payload.attributes as Record<string, unknown> | undefined)?.service_name);
+  const paymentAmount = readNumber(payload.paymentAmount) ?? readNumber(attributes.paymentAmount) ?? readNumber(attributes.deposit_amount) ?? 0;
+  const duration = readNumber(attributes.duration);
+  const noRefundPolicyAccepted = readBoolean(attributes.no_refund_policy_accepted) ?? false;
+  const notes = readStringFrom(payload.notes, attributes.notes);
+  const preferredBranch = branchLocationName;
+
   const serviceId = await resolveServiceId({
     requestedServiceId: payload.serviceId,
     requestedServiceName: rawServiceName,
@@ -192,38 +245,15 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
   });
   if (!serviceId) {
     return {
-      error: "Service could not be resolved. Provide serviceId/serviceName or configure BOOKING_DEFAULT_SERVICE_ID.",
+      error: "Service could not be resolved. Configure BOOKING_DEFAULT_SERVICE_ID or provide serviceId.",
     };
   }
 
-  const preferredDate = readString(attributes.preferred_date);
-  const preferredTime = readString(attributes.preferred_time);
-  const sessionType = readString(attributes.session_type);
-  const therapistPreference = readString(attributes.therapist_preference);
-  const preferredContactMethod = readString(attributes.preferred_contact_method);
-  const paymentMethod = readString(attributes.payment_method);
-  const paymentReference = readString(attributes.payment_reference);
-  const notes = readString(attributes.notes);
-  const email = readString(payload.customer?.email ?? attributes.email);
-  const customerName = payload.customer?.name?.trim() ?? "";
-  const customerPhone = payload.customer?.phone?.trim() ?? "";
-  const duration = readNumber(attributes.duration);
-  const depositAmount = readNumber(attributes.deposit_amount) ?? 0;
-  const noRefundPolicyAccepted = readBoolean(attributes.no_refund_policy_accepted) ?? false;
-
-  if (!preferredBranch) {
-    return { error: "Preferred branch is required." };
+  if (!bookingDate || !bookingTime) {
+    return { error: "Booking date and time are required." };
   }
 
-  if (!preferredContactMethod) {
-    return { error: "Preferred contact method is required." };
-  }
-
-  if (!preferredDate || !preferredTime) {
-    return { error: "Preferred date and time are required." };
-  }
-
-  if (isPastBooking(preferredDate, preferredTime)) {
+  if (isPastBooking(bookingDate, bookingTime)) {
     return { error: "Booking date/time must be in the future." };
   }
 
@@ -244,37 +274,49 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     return { error: "Please provide a valid email address." };
   }
 
-  if (depositAmount < 0) {
-    return { error: "Deposit amount cannot be negative." };
+  if (paymentAmount < 0) {
+    return { error: "Payment amount cannot be negative." };
   }
 
-  if (depositAmount > 0 && !paymentMethod) {
-    return { error: "Payment method is required when deposit amount is greater than 0." };
+  if (paymentAmount > 0 && !paymentMethod) {
+    return { error: "Payment method is required when payment amount is greater than 0." };
   }
 
   if (!paymentReference) {
     return { error: "Payment reference is required." };
   }
 
-  if (BOOKING_ALLOWED_SERVICES_BY_BRANCH) {
+  if (preferredBranch && BOOKING_ALLOWED_SERVICES_BY_BRANCH) {
     const allowed = BOOKING_ALLOWED_SERVICES_BY_BRANCH[preferredBranch];
     if (Array.isArray(allowed) && allowed.length > 0 && !allowed.includes(serviceId)) {
       return { error: `Service ${serviceId} is not available at ${preferredBranch}.` };
     }
   }
 
-  const slotKey = buildSlotKey(serviceId, preferredBranch, preferredDate, preferredTime, therapistPreference);
-  if (BLOCKED_SLOT_KEYS.has(slotKey)) {
+  const slotKey = preferredBranch ? buildSlotKey(serviceId, preferredBranch, bookingDate, bookingTime, therapistPreference) : "";
+  if (slotKey && BLOCKED_SLOT_KEYS.has(slotKey)) {
     return { error: "The selected slot is no longer available. Please choose another time." };
   }
 
-  const normalizedAttributes: BookingAttributes = {
+  const normalizedAttributes: Record<string, unknown> = {
+    customerName,
+    customerPhone: customerPhone || undefined,
+    customerEmail: email || undefined,
+    serviceName: rawServiceName || undefined,
+    bookingDate,
+    bookingTime,
+    branchLocationId: branchLocationId || undefined,
+    branchLocationName: branchLocationName || undefined,
+    eventLocation: eventLocation || undefined,
+    customerStayLocation: customerStayLocation || undefined,
+    paymentMethod: paymentMethod || undefined,
+    paymentAmount,
     preferred_branch: preferredBranch,
     session_type: sessionType,
     duration: duration ?? undefined,
     therapist_preference: therapistPreference,
-    preferred_contact_method: preferredContactMethod,
-    deposit_amount: depositAmount,
+    preferred_contact_method: preferredContactMethod || undefined,
+    deposit_amount: paymentAmount,
     payment_method: paymentMethod || undefined,
     email: email || undefined,
     customer_name: customerName,
@@ -282,17 +324,30 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     notes: notes || undefined,
     payment_reference: paymentReference || undefined,
     no_refund_policy_accepted: true,
-    preferred_date: preferredDate,
-    preferred_time: preferredTime,
+    preferred_date: bookingDate,
+    preferred_time: bookingTime,
   };
 
   return {
     error: null,
     normalized: {
       ...payload,
+      slotId: slotId || undefined,
       serviceId,
       quantity: payload.quantity && payload.quantity > 0 ? payload.quantity : 1,
-      notes: payload.notes?.trim() || undefined,
+      serviceName: rawServiceName || undefined,
+      customerName,
+      customerPhone: customerPhone || undefined,
+      customerEmail: email || undefined,
+      bookingDate,
+      bookingTime,
+      branchLocationId: branchLocationId || undefined,
+      branchLocationName: branchLocationName || undefined,
+      eventLocation: eventLocation || undefined,
+      customerStayLocation: customerStayLocation || undefined,
+      paymentMethod: paymentMethod || undefined,
+      paymentAmount,
+      notes: notes || undefined,
       attributes: normalizedAttributes,
       customer: {
         name: customerName,
@@ -351,7 +406,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ services });
     }
 
-    const response = await fetch(`${SEDIFEX_BASE_URL}/v1IntegrationBookings?storeId=${encodeURIComponent(SEDIFEX_STORE_ID)}`, {
+    const status = url.searchParams.get("status")?.trim() ?? "";
+    const serviceId = url.searchParams.get("serviceId")?.trim() ?? "";
+    const params = new URLSearchParams({ storeId: SEDIFEX_STORE_ID });
+    if (status) params.set("status", status);
+    if (serviceId) params.set("serviceId", serviceId);
+
+    const response = await fetch(`${SEDIFEX_BASE_URL}/v1IntegrationBookings?${params.toString()}`, {
       method: "GET",
       headers: buildSedifexHeaders(),
       cache: "no-store",
