@@ -215,10 +215,6 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     return { error: "Preferred branch is required." };
   }
 
-  if (!sessionType) {
-    return { error: "Session type / duration is required." };
-  }
-
   if (!therapistPreference) {
     return { error: "Therapist preference is required." };
   }
