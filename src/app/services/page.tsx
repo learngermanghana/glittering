@@ -1,4 +1,3 @@
-import Image from "next/image";
 import type { Metadata } from "next";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -6,6 +5,7 @@ import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { categories, packages, SITE, WHATSAPP_LINK } from "@/lib/site";
 import { getServicesCatalogData } from "@/lib/services";
 import { buildPageMetadata, getAbsoluteUrl } from "@/lib/seo";
+import { ServicesCatalogClient } from "@/app/services/ServicesCatalogClient";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Services | Glittering Med Spa",
@@ -13,11 +13,6 @@ export const metadata: Metadata = buildPageMetadata({
   path: "/services",
 });
 
-const priceFormatter = new Intl.NumberFormat("en-GH", {
-  style: "currency",
-  currency: "GHS",
-  minimumFractionDigits: 2,
-});
 
 export default async function ServicesPage() {
   const liveServices = await getServicesCatalogData();
@@ -90,48 +85,7 @@ export default async function ServicesPage() {
             <p className="mt-4 text-sm text-neutral-600">
               Live services from Sedifex. Showing name, category, description, price, and image.
             </p>
-            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {liveServices.map((service, index) => (
-                <article
-                  key={`${service.id ?? service.name}-${index}`}
-                  className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm"
-                >
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
-                    <Image
-                      src={service.image}
-                      alt={service.name}
-                      fill
-                      className="object-contain p-2"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  </div>
-
-                  <div className="mt-4 flex items-start justify-between gap-3">
-                    <h2 className="text-base font-semibold">{service.name}</h2>
-                    <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-900">
-                      {priceFormatter.format(service.price)}
-                    </span>
-                  </div>
-
-                  <div className="mt-2 inline-flex rounded-full border border-black/10 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-700">
-                    {service.category}
-                  </div>
-
-                  <p className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-sm leading-relaxed text-neutral-700">
-                    {service.description || "Contact the spa team for more service details."}
-                  </p>
-
-                  <a
-                    href={WHATSAPP_LINK}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
-                  >
-                    Book this service
-                  </a>
-                </article>
-              ))}
-            </div>
+            <ServicesCatalogClient services={liveServices} />
           </>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
