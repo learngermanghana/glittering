@@ -29,6 +29,7 @@ type BookingAttributes = {
   customerStayLocation?: string;
   paymentMethod?: string;
   paymentAmount?: number | string;
+  depositAmount?: number | string;
   preferred_branch?: string;
   session_type?: string;
   duration?: number;
@@ -66,6 +67,7 @@ type BookingRequestBody = {
   customerStayLocation?: string;
   paymentMethod?: string;
   paymentAmount?: number | string;
+  depositAmount?: number | string;
   paymentReference?: string;
   attributes?: Record<string, unknown>;
   customer?: {
@@ -232,7 +234,13 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
   const sessionType = readString(attributes.session_type);
   const therapistPreference = readString(attributes.therapist_preference);
   const rawServiceName = readStringFrom(payload.serviceName, attributes.serviceName, (payload.attributes as Record<string, unknown> | undefined)?.service_name);
-  const paymentAmount = readNumber(payload.paymentAmount) ?? readNumber(attributes.paymentAmount) ?? readNumber(attributes.deposit_amount) ?? 0;
+  const depositAmount =
+    readNumber(payload.depositAmount) ??
+    readNumber(payload.paymentAmount) ??
+    readNumber(attributes.depositAmount) ??
+    readNumber(attributes.deposit_amount) ??
+    readNumber(attributes.paymentAmount) ??
+    0;
   const duration = readNumber(attributes.duration);
   const noRefundPolicyAccepted = readBoolean(attributes.no_refund_policy_accepted) ?? false;
   const notes = readStringFrom(payload.notes, attributes.notes);
@@ -274,12 +282,12 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     return { error: "Please provide a valid email address." };
   }
 
-  if (paymentAmount < 0) {
-    return { error: "Payment amount cannot be negative." };
+  if (depositAmount < 0) {
+    return { error: "Deposit amount cannot be negative." };
   }
 
-  if (paymentAmount > 0 && !paymentMethod) {
-    return { error: "Payment method is required when payment amount is greater than 0." };
+  if (depositAmount > 0 && !paymentMethod) {
+    return { error: "Payment method is required when deposit amount is greater than 0." };
   }
 
   if (!paymentReference) {
@@ -310,13 +318,14 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     eventLocation: eventLocation || undefined,
     customerStayLocation: customerStayLocation || undefined,
     paymentMethod: paymentMethod || undefined,
-    paymentAmount,
+    depositAmount,
+    paymentAmount: depositAmount,
     preferred_branch: preferredBranch,
     session_type: sessionType,
     duration: duration ?? undefined,
     therapist_preference: therapistPreference,
     preferred_contact_method: preferredContactMethod || undefined,
-    deposit_amount: paymentAmount,
+    deposit_amount: depositAmount,
     payment_method: paymentMethod || undefined,
     email: email || undefined,
     customer_name: customerName,
@@ -346,7 +355,8 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
       eventLocation: eventLocation || undefined,
       customerStayLocation: customerStayLocation || undefined,
       paymentMethod: paymentMethod || undefined,
-      paymentAmount,
+      depositAmount,
+      paymentAmount: depositAmount,
       notes: notes || undefined,
       attributes: normalizedAttributes,
       customer: {
