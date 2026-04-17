@@ -270,6 +270,7 @@ export default function BookPage() {
           customerEmail: formData.email.trim() || undefined,
           branchLocationName: formData.branch,
           paymentMethod: formData.paymentMethod || undefined,
+          depositAmount: depositAmountValue,
           paymentAmount: depositAmountValue,
           paymentReference: formData.paymentReference.trim() || undefined,
           quantity: 1,
@@ -283,6 +284,7 @@ export default function BookPage() {
             bookingTime: formData.time,
             branchLocationName: formData.branch,
             paymentMethod: formData.paymentMethod || undefined,
+            depositAmount: depositAmountValue,
             paymentAmount: depositAmountValue,
             preferred_branch: formData.branch,
             preferred_date: formData.date,
@@ -495,7 +497,7 @@ export default function BookPage() {
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <label className="text-sm font-semibold text-neutral-700">
-                Payment Amount (how much paid)
+                Deposit Amount (how much paid)
                 <input
                   name="depositAmount"
                   value={formData.depositAmount}
