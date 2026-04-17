@@ -57,6 +57,7 @@ type ValidationResult = {
 type AvailableService = {
   id: string;
   name: string;
+  price?: number | null;
   storeId?: string;
 };
 
@@ -148,6 +149,7 @@ async function loadAvailableServices() {
     serviceMap.set(id, {
       id,
       name,
+      price: readNumber(product.price),
       storeId,
     });
   }
