@@ -5,16 +5,9 @@ import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 
 const BRANCH_OPTIONS = ["Awoshie", "Spintex"] as const;
-const SESSION_OPTIONS = ["30 minutes", "45 minutes", "60 minutes", "90 minutes", "120 minutes"] as const;
-const THERAPIST_OPTIONS = ["Female", "Male", "No preference"] as const;
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
 const PAYMENT_OPTIONS = ["Momo", "Bank transfer", "Cash"] as const;
 type ServiceOption = { id: string; name: string };
-
-function parseDurationMinutes(value: string) {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -40,8 +33,6 @@ export default function BookPage() {
     phone: "",
     email: "",
     branch: "",
-    sessionDuration: "60 minutes",
-    therapistPreference: "Female",
     contactMethod: "WhatsApp",
     depositAmount: "",
     paymentMethod: "",
@@ -213,8 +204,6 @@ export default function BookPage() {
 
     setIsSubmitting(true);
 
-    const duration = parseDurationMinutes(formData.sessionDuration);
-
     try {
       const response = await fetch("/api/bookings/integration", {
         method: "POST",
@@ -228,9 +217,6 @@ export default function BookPage() {
             preferred_branch: formData.branch,
             preferred_date: formData.date,
             preferred_time: formData.time,
-            session_type: formData.sessionDuration,
-            duration: duration ?? undefined,
-            therapist_preference: formData.therapistPreference,
             preferred_contact_method: formData.contactMethod,
             deposit_amount: depositAmountValue,
             payment_method: formData.paymentMethod || undefined,
@@ -385,42 +371,6 @@ export default function BookPage() {
                   ))}
                 </select>
                 {fieldErrors.branch && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.branch}</span>}
-              </label>
-
-              <label className="text-sm font-semibold text-neutral-700">
-                Session Type / Duration
-                <select
-                  name="sessionDuration"
-                  value={formData.sessionDuration}
-                  onChange={handleSelectChange}
-                  required
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-                >
-                  {SESSION_OPTIONS.map((sessionOption) => (
-                    <option key={sessionOption} value={sessionOption}>
-                      {sessionOption}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <label className="text-sm font-semibold text-neutral-700">
-                Therapist Preference
-                <select
-                  name="therapistPreference"
-                  value={formData.therapistPreference}
-                  onChange={handleSelectChange}
-                  required
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-                >
-                  {THERAPIST_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
               </label>
 
               <label className="text-sm font-semibold text-neutral-700">
@@ -592,8 +542,6 @@ export default function BookPage() {
               {"\n"}Phone: {formData.phone || "____"}
               {"\n"}Email: {formData.email || "____"}
               {"\n"}Preferred branch: {formData.branch || "____"}
-              {"\n"}Session type: {formData.sessionDuration || "____"}
-              {"\n"}Therapist preference: {formData.therapistPreference || "____"}
               {"\n"}Deposit amount: {formData.depositAmount || "0"}
               {"\n"}Payment method: {formData.paymentMethod || "____"}
               {"\n"}Contact method: {formData.contactMethod || "____"}
