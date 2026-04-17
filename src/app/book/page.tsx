@@ -112,6 +112,46 @@ export default function BookPage() {
     return firstError ?? null;
   }, [validationErrors]);
 
+  const progress = useMemo(() => {
+    const checks = [
+      Boolean(formData.name.trim()),
+      Boolean(formData.serviceId.trim()),
+      Boolean(formData.date.trim()),
+      Boolean(formData.time.trim()),
+      Boolean(formData.branch.trim()),
+      Boolean(formData.phone.trim() || formData.email.trim()),
+      Boolean(formData.paymentReference.trim()),
+      formData.cancellationAccepted,
+    ];
+
+    if (depositAmountValue > 0) {
+      checks.push(Boolean(formData.paymentMethod.trim()));
+    }
+
+    const completed = checks.filter(Boolean).length;
+    const total = checks.length;
+    const percentage = Math.round((completed / total) * 100);
+
+    return {
+      completed,
+      total,
+      percentage,
+      remaining: total - completed,
+    };
+  }, [
+    depositAmountValue,
+    formData.branch,
+    formData.cancellationAccepted,
+    formData.date,
+    formData.email,
+    formData.name,
+    formData.paymentMethod,
+    formData.paymentReference,
+    formData.phone,
+    formData.serviceId,
+    formData.time,
+  ]);
+
   const canSubmit = !isSubmitting && !clientValidationMessage;
   const inputClassName = (field: string) =>
     `mt-2 w-full rounded-2xl border bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:outline-none focus:ring-2 ${
@@ -271,6 +311,33 @@ export default function BookPage() {
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <form className="rounded-3xl border border-black/10 bg-white p-6 shadow-lg sm:p-8" onSubmit={handleSubmit}>
+            <div className="mb-6 rounded-2xl border border-black/10 bg-neutral-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-neutral-800">Booking form progress</p>
+                <p className="text-xs font-medium text-neutral-600">
+                  {progress.completed}/{progress.total} completed
+                </p>
+              </div>
+              <div
+                className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-200"
+                role="progressbar"
+                aria-label="Booking form completion progress"
+                aria-valuemin={0}
+                aria-valuemax={progress.total}
+                aria-valuenow={progress.completed}
+              >
+                <div
+                  className="h-full rounded-full bg-neutral-900 transition-all duration-300 ease-out"
+                  style={{ width: `${progress.percentage}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-neutral-600">
+                {progress.remaining > 0
+                  ? `${progress.remaining} field${progress.remaining === 1 ? "" : "s"} left to complete.`
+                  : "Great! All key fields are complete."}
+              </p>
+            </div>
+
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="text-sm font-semibold text-neutral-700">
                 Name
