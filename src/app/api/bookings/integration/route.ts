@@ -140,16 +140,112 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function isPastBooking(date: string, time: string) {
-  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return true;
+function padTwo(value: number) {
+  return String(value).padStart(2, "0");
+}
 
-  const [hours, minutes] = time.split(":").map((part) => Number(part));
-  if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-    return true;
+function toIsoDate(year: number, month: number, day: number) {
+  return `${year}-${padTwo(month)}-${padTwo(day)}`;
+}
+
+function normalizeBookingDateInput(input: string) {
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (isoMatch) {
+    return toIsoDate(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
   }
 
-  const bookingDateTime = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), hours, minutes));
+  const slashYearFirstMatch = trimmed.match(/^(\d{4})[/.](\d{1,2})[/.](\d{1,2})$/);
+  if (slashYearFirstMatch) {
+    return toIsoDate(Number(slashYearFirstMatch[1]), Number(slashYearFirstMatch[2]), Number(slashYearFirstMatch[3]));
+  }
+
+  const contiguousMatch = trimmed.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (contiguousMatch) {
+    return toIsoDate(Number(contiguousMatch[1]), Number(contiguousMatch[2]), Number(contiguousMatch[3]));
+  }
+
+  return "";
+}
+
+function isValidBookingDateFormat(date: string) {
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  return (
+    candidate.getUTCFullYear() === year &&
+    candidate.getUTCMonth() === month - 1 &&
+    candidate.getUTCDate() === day
+  );
+}
+
+function normalizeBookingTimeInput(input: string) {
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+
+  const twentyFourHourMatch = trimmed.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (twentyFourHourMatch) {
+    const hours = Number(twentyFourHourMatch[1]);
+    const minutes = Number(twentyFourHourMatch[2]);
+    if (Number.isInteger(hours) && Number.isInteger(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+      return `${padTwo(hours)}:${padTwo(minutes)}`;
+    }
+  }
+
+  const meridiemMatch = trimmed.match(/^(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)$/i);
+  if (meridiemMatch) {
+    const rawHours = Number(meridiemMatch[1]);
+    const rawMinutes = meridiemMatch[2] ? Number(meridiemMatch[2]) : 0;
+    if (Number.isInteger(rawHours) && Number.isInteger(rawMinutes) && rawHours >= 1 && rawHours <= 12 && rawMinutes >= 0 && rawMinutes <= 59) {
+      const suffix = meridiemMatch[3].toLowerCase();
+      const normalizedHours = suffix === "am" ? rawHours % 12 : (rawHours % 12) + 12;
+      return `${padTwo(normalizedHours)}:${padTwo(rawMinutes)}`;
+    }
+  }
+
+  const compactMatch = trimmed.match(/^(\d{2})(\d{2})$/);
+  if (compactMatch) {
+    const hours = Number(compactMatch[1]);
+    const minutes = Number(compactMatch[2]);
+    if (Number.isInteger(hours) && Number.isInteger(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+      return `${padTwo(hours)}:${padTwo(minutes)}`;
+    }
+  }
+
+  return "";
+}
+
+function isValidBookingTimeFormat(time: string) {
+  const match = time.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return false;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  return Number.isInteger(hours) && Number.isInteger(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
+}
+
+function isPastBooking(date: string, time: string) {
+  const dateMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeMatch = time.match(/^(\d{2}):(\d{2})$/);
+  if (!dateMatch || !timeMatch) return true;
+
+  const bookingDateTime = new Date(
+    Date.UTC(
+      Number(dateMatch[1]),
+      Number(dateMatch[2]) - 1,
+      Number(dateMatch[3]),
+      Number(timeMatch[1]),
+      Number(timeMatch[2]),
+    ),
+  );
   return bookingDateTime.getTime() < Date.now();
 }
 
@@ -261,7 +357,18 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     return { error: "Booking date and time are required." };
   }
 
-  if (isPastBooking(bookingDate, bookingTime)) {
+  const normalizedBookingDate = normalizeBookingDateInput(bookingDate);
+  const normalizedBookingTime = normalizeBookingTimeInput(bookingTime);
+
+  if (!normalizedBookingDate || !isValidBookingDateFormat(normalizedBookingDate)) {
+    return { error: "Booking date must use YYYY-MM-DD format (example: 2026-04-29)." };
+  }
+
+  if (!normalizedBookingTime || !isValidBookingTimeFormat(normalizedBookingTime)) {
+    return { error: "Booking time must use 24-hour HH:mm format (example: 19:00)." };
+  }
+
+  if (isPastBooking(normalizedBookingDate, normalizedBookingTime)) {
     return { error: "Booking date/time must be in the future." };
   }
 
@@ -301,7 +408,9 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     }
   }
 
-  const slotKey = preferredBranch ? buildSlotKey(serviceId, preferredBranch, bookingDate, bookingTime, therapistPreference) : "";
+  const slotKey = preferredBranch
+    ? buildSlotKey(serviceId, preferredBranch, normalizedBookingDate, normalizedBookingTime, therapistPreference)
+    : "";
   if (slotKey && BLOCKED_SLOT_KEYS.has(slotKey)) {
     return { error: "The selected slot is no longer available. Please choose another time." };
   }
@@ -311,8 +420,8 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     customerPhone: customerPhone || undefined,
     customerEmail: email || undefined,
     serviceName: rawServiceName || undefined,
-    bookingDate,
-    bookingTime,
+    bookingDate: normalizedBookingDate,
+    bookingTime: normalizedBookingTime,
     branchLocationId: branchLocationId || undefined,
     branchLocationName: branchLocationName || undefined,
     eventLocation: eventLocation || undefined,
@@ -333,8 +442,8 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     notes: notes || undefined,
     payment_reference: paymentReference || undefined,
     no_refund_policy_accepted: true,
-    preferred_date: bookingDate,
-    preferred_time: bookingTime,
+    preferred_date: normalizedBookingDate,
+    preferred_time: normalizedBookingTime,
   };
 
   return {
@@ -348,8 +457,8 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
       customerName,
       customerPhone: customerPhone || undefined,
       customerEmail: email || undefined,
-      bookingDate,
-      bookingTime,
+      bookingDate: normalizedBookingDate,
+      bookingTime: normalizedBookingTime,
       branchLocationId: branchLocationId || undefined,
       branchLocationName: branchLocationName || undefined,
       eventLocation: eventLocation || undefined,
