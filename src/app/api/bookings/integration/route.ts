@@ -103,8 +103,10 @@ const BOOKING_BRANCHES = [
   { name: "Glittering Spa Spintex", storeId: "kT9QTWUkACMby6OwI2RO1bxG0WL2" },
 ] as const;
 
-const BRANCH_BY_NAME = new Map(BOOKING_BRANCHES.map((branch) => [branch.name.toLowerCase(), branch]));
-const BRANCH_BY_STORE_ID = new Map(BOOKING_BRANCHES.map((branch) => [branch.storeId, branch]));
+type BookingBranch = (typeof BOOKING_BRANCHES)[number];
+
+const BRANCH_BY_NAME = new Map<string, BookingBranch>(BOOKING_BRANCHES.map((branch) => [branch.name.toLowerCase(), branch]));
+const BRANCH_BY_STORE_ID = new Map<string, BookingBranch>(BOOKING_BRANCHES.map((branch) => [branch.storeId, branch]));
 
 function parseJsonSafely<T>(value: string): T | null {
   if (!value) return null;
