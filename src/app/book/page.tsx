@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 
-const BRANCH_OPTIONS = ["Awoshie", "Spintex"] as const;
+const BRANCH_OPTIONS = [
+  { label: "Glittering Med Spa Main", value: "Glittering Med Spa Main", storeId: "37mJqg20MjOriggaIaOOuahDsgj1" },
+  { label: "Glittering Spa Annex", value: "Glittering Spa Annex", storeId: "2EeDEIDS1FO814KVfaaUVdv66bM2" },
+  { label: "Glittering Spa Spintex", value: "Glittering Spa Spintex", storeId: "kT9QTWUkACMby6OwI2RO1bxG0WL2" },
+] as const;
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
 const PAYMENT_OPTIONS = ["Momo", "Bank transfer", "Cash"] as const;
 type ServiceOption = { id: string; name: string; price?: number | null };
@@ -33,6 +37,7 @@ export default function BookPage() {
   const [submitMessage, setSubmitMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
+  const [activeStoreId, setActiveStoreId] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     serviceId: "",
@@ -172,24 +177,51 @@ export default function BookPage() {
         : "border-neutral-200 focus:border-neutral-400 focus:ring-neutral-200"
     }`;
 
+  const selectedBranch = useMemo(
+    () => BRANCH_OPTIONS.find((branch) => branch.value === formData.branch) ?? null,
+    [formData.branch]
+  );
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadServices() {
+      const branch = BRANCH_OPTIONS.find((option) => option.value === formData.branch);
+      if (!branch) {
+        if (!cancelled) {
+          setServiceOptions([]);
+          setActiveStoreId("");
+          setFormData((prev) => ({ ...prev, serviceId: "" }));
+        }
+        return;
+      }
+
       try {
-        const response = await fetch("/api/bookings/integration?view=services", { cache: "no-store" });
-        const payload = (await response.json()) as { services?: ServiceOption[] };
+        const params = new URLSearchParams({
+          view: "services",
+          storeId: branch.storeId,
+          branch: branch.value,
+        });
+        const response = await fetch(`/api/bookings/integration?${params.toString()}`, { cache: "no-store" });
+        const payload = (await response.json()) as { services?: ServiceOption[]; storeId?: string };
 
         if (!response.ok) {
           throw new Error("Unable to load services.");
         }
 
         if (!cancelled) {
-          setServiceOptions(Array.isArray(payload.services) ? payload.services : []);
+          const nextServices = Array.isArray(payload.services) ? payload.services : [];
+          setServiceOptions(nextServices);
+          setActiveStoreId(payload.storeId ?? branch.storeId);
+          setFormData((prev) => {
+            const hasSelectedService = nextServices.some((service) => service.id === prev.serviceId);
+            return hasSelectedService ? prev : { ...prev, serviceId: "" };
+          });
         }
       } catch {
         if (!cancelled) {
           setServiceOptions([]);
+          setActiveStoreId(branch.storeId);
         }
       }
     }
@@ -198,7 +230,7 @@ export default function BookPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [formData.branch]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -268,6 +300,7 @@ export default function BookPage() {
           customerName: formData.name.trim(),
           customerPhone: formData.phone.trim() || undefined,
           customerEmail: formData.email.trim() || undefined,
+          branchLocationId: selectedBranch?.storeId,
           branchLocationName: formData.branch,
           paymentMethod: formData.paymentMethod || undefined,
           depositAmount: depositAmountValue,
@@ -282,6 +315,7 @@ export default function BookPage() {
             serviceName: selectedServiceName || undefined,
             bookingDate: formData.date,
             bookingTime: formData.time,
+            branchLocationId: selectedBranch?.storeId,
             branchLocationName: formData.branch,
             paymentMethod: formData.paymentMethod || undefined,
             depositAmount: depositAmountValue,
@@ -401,6 +435,28 @@ export default function BookPage() {
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <label className="text-sm font-semibold text-neutral-700">
+                Branch
+                <select
+                  name="branch"
+                  value={formData.branch}
+                  onChange={handleSelectChange}
+                  required
+                  className={inputClassName("branch")}
+                >
+                  <option value="">Select a branch</option>
+                  {BRANCH_OPTIONS.map((branch) => (
+                    <option key={branch.storeId} value={branch.value}>
+                      {branch.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-2 block text-xs font-normal text-neutral-500">
+                  Services are loaded from the selected Sedifex branch.
+                </span>
+                {fieldErrors.branch && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.branch}</span>}
+              </label>
+
+              <label className="text-sm font-semibold text-neutral-700">
                 Date
                 <input
                   name="date"
@@ -423,9 +479,10 @@ export default function BookPage() {
                   value={formData.serviceId}
                   onChange={handleSelectChange}
                   required
+                  disabled={!formData.branch}
                   className={inputClassName("serviceId")}
                 >
-                  <option value="">Select service</option>
+                  <option value="">{formData.branch ? "Select service" : "Choose branch first"}</option>
                   {serviceOptions.map((service) => (
                     <option key={service.id} value={service.id}>
                       {service.name}
@@ -457,26 +514,7 @@ export default function BookPage() {
               </label>
             </div>
 
-            <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <label className="text-sm font-semibold text-neutral-700">
-                Preferred Branch
-                <select
-                  name="branch"
-                  value={formData.branch}
-                  onChange={handleSelectChange}
-                  required
-                  className={inputClassName("branch")}
-                >
-                  <option value="">Select a branch</option>
-                  {BRANCH_OPTIONS.map((branch) => (
-                    <option key={branch} value={branch}>
-                      {branch}
-                    </option>
-                  ))}
-                </select>
-                {fieldErrors.branch && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.branch}</span>}
-              </label>
-
+            <div className="mt-5">
               <label className="text-sm font-semibold text-neutral-700">
                 Preferred Contact Method
                 <select
@@ -653,6 +691,7 @@ export default function BookPage() {
               {"\n"}Phone: {formData.phone || "____"}
               {"\n"}Email: {formData.email || "____"}
               {"\n"}Preferred branch: {formData.branch || "____"}
+              {"\n"}Sedifex store id: {activeStoreId || selectedBranch?.storeId || "____"}
               {"\n"}Deposit amount: {formData.depositAmount || "0"}
               {"\n"}Payment method: {formData.paymentMethod || "____"}
               {"\n"}Contact method: {formData.contactMethod || "____"}
