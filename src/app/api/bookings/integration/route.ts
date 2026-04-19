@@ -3,6 +3,7 @@ import { getProducts } from "@/lib/crm";
 
 const SEDIFEX_BASE_URL = process.env.SEDIFEX_INTEGRATION_BASE_URL ?? "https://us-central1-sedifex-web.cloudfunctions.net";
 const SEDIFEX_STORE_ID = process.env.SEDIFEX_WEBSITE_STORE_ID ?? process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID ?? "37mJqg20MjOriggaIaOOuahDsgj1";
+const SEDIFEX_BOOKING_TARGET_STORE_ID = process.env.SEDIFEX_BOOKING_TARGET_STORE_ID ?? "kT9QTWUkACMby6OwI2RO1bxG0WL2";
 const SEDIFEX_CONTRACT_VERSION = process.env.SEDIFEX_CONTRACT_VERSION ?? "2026-04-13";
 const SEDIFEX_API_KEY = process.env.SEDIFEX_INTEGRATION_API_KEY;
 const BOOKING_ALLOWED_SERVICES_BY_BRANCH = parseJsonSafely<Record<string, string[]>>(
@@ -93,7 +94,17 @@ type ServiceResolutionContext = {
   requestedServiceId?: string;
   requestedServiceName?: string;
   preferredBranch?: string;
+  storeId?: string;
 };
+
+const BOOKING_BRANCHES = [
+  { name: "Glittering Med Spa Main", storeId: "37mJqg20MjOriggaIaOOuahDsgj1" },
+  { name: "Glittering Spa Annex", storeId: "2EeDEIDS1FO814KVfaaUVdv66bM2" },
+  { name: "Glittering Spa Spintex", storeId: "kT9QTWUkACMby6OwI2RO1bxG0WL2" },
+] as const;
+
+const BRANCH_BY_NAME = new Map(BOOKING_BRANCHES.map((branch) => [branch.name.toLowerCase(), branch]));
+const BRANCH_BY_STORE_ID = new Map(BOOKING_BRANCHES.map((branch) => [branch.storeId, branch]));
 
 function parseJsonSafely<T>(value: string): T | null {
   if (!value) return null;
@@ -265,10 +276,23 @@ function readStringFrom(...values: unknown[]) {
   return "";
 }
 
-async function loadAvailableServices() {
+function resolveBranchStoreContext(input: { branchLocationName?: string; branchLocationId?: string }) {
+  const branchByStoreId = input.branchLocationId ? BRANCH_BY_STORE_ID.get(input.branchLocationId.trim()) : null;
+  if (branchByStoreId) return branchByStoreId;
+
+  const normalizedBranchName = input.branchLocationName?.trim().toLowerCase() ?? "";
+  if (normalizedBranchName) {
+    const branchByName = BRANCH_BY_NAME.get(normalizedBranchName);
+    if (branchByName) return branchByName;
+  }
+
+  return null;
+}
+
+async function loadAvailableServices(storeId = SEDIFEX_STORE_ID) {
   const products = await getProducts();
   const serviceMap = new Map<string, AvailableService>();
-  const normalizedStoreId = SEDIFEX_STORE_ID.trim();
+  const normalizedStoreId = storeId.trim();
 
   for (const product of products) {
     const id = readString(product.id);
@@ -294,7 +318,7 @@ async function resolveServiceId(context: ServiceResolutionContext) {
   if (requestedServiceId) return requestedServiceId;
 
   const requestedServiceName = context.requestedServiceName?.trim() ?? "";
-  const services = await loadAvailableServices();
+  const services = await loadAvailableServices(context.storeId);
   if (requestedServiceName) {
     const normalizedName = normalizeServiceName(requestedServiceName);
     const byName = services.find((service) => normalizeServiceName(service.name) === normalizedName);
@@ -341,11 +365,15 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
   const noRefundPolicyAccepted = readBoolean(attributes.no_refund_policy_accepted) ?? false;
   const notes = readStringFrom(payload.notes, attributes.notes);
   const preferredBranch = branchLocationName;
+  const branchContext = resolveBranchStoreContext({ branchLocationName, branchLocationId });
+  const resolvedStoreId = branchContext?.storeId ?? SEDIFEX_STORE_ID;
+  const resolvedBranchName = branchContext?.name ?? branchLocationName;
 
   const serviceId = await resolveServiceId({
     requestedServiceId: payload.serviceId,
     requestedServiceName: rawServiceName,
     preferredBranch,
+    storeId: resolvedStoreId,
   });
   if (!serviceId) {
     return {
@@ -422,8 +450,8 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     serviceName: rawServiceName || undefined,
     bookingDate: normalizedBookingDate,
     bookingTime: normalizedBookingTime,
-    branchLocationId: branchLocationId || undefined,
-    branchLocationName: branchLocationName || undefined,
+    branchLocationId: branchContext?.storeId ?? branchLocationId ?? undefined,
+    branchLocationName: resolvedBranchName || undefined,
     eventLocation: eventLocation || undefined,
     customerStayLocation: customerStayLocation || undefined,
     paymentMethod: paymentMethod || undefined,
@@ -459,8 +487,8 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
       customerEmail: email || undefined,
       bookingDate: normalizedBookingDate,
       bookingTime: normalizedBookingTime,
-      branchLocationId: branchLocationId || undefined,
-      branchLocationName: branchLocationName || undefined,
+      branchLocationId: branchContext?.storeId ?? branchLocationId ?? undefined,
+      branchLocationName: resolvedBranchName || undefined,
       eventLocation: eventLocation || undefined,
       customerStayLocation: customerStayLocation || undefined,
       paymentMethod: paymentMethod || undefined,
@@ -487,12 +515,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await fetch(`${SEDIFEX_BASE_URL}/v1IntegrationBookings?storeId=${encodeURIComponent(SEDIFEX_STORE_ID)}`, {
+    const response = await fetch(
+      `${SEDIFEX_BASE_URL}/v1IntegrationBookings?storeId=${encodeURIComponent(SEDIFEX_BOOKING_TARGET_STORE_ID)}`,
+      {
       method: "POST",
       headers: buildSedifexHeaders(),
       body: JSON.stringify(normalized),
       cache: "no-store",
-    });
+      }
+    );
 
     const responseText = await response.text();
     const parsedResponse = parseJsonSafely<{ error?: string; message?: string }>(responseText);
@@ -521,8 +552,19 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     if (url.searchParams.get("view") === "services") {
-      const services = await loadAvailableServices();
-      return NextResponse.json({ services });
+      const requestedStoreId = url.searchParams.get("storeId")?.trim() ?? "";
+      const requestedBranchName = url.searchParams.get("branch")?.trim() ?? "";
+      const branchContext = resolveBranchStoreContext({
+        branchLocationName: requestedBranchName,
+        branchLocationId: requestedStoreId,
+      });
+      const activeStoreId = branchContext?.storeId ?? requestedStoreId ?? SEDIFEX_STORE_ID;
+      const services = await loadAvailableServices(activeStoreId);
+      return NextResponse.json({
+        services,
+        storeId: activeStoreId,
+        branches: BOOKING_BRANCHES,
+      });
     }
 
     const status = url.searchParams.get("status")?.trim() ?? "";
