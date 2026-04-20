@@ -5,7 +5,10 @@ import {
   type SedifexProductRecord,
 } from "@/lib/productsData";
 
-const SERVICES_PAGE_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
+const SERVICES_PAGE_STORE_IDS = new Set([
+  "37mJqg20MjOriggaIaOOuahDsgj1",
+  "2EeDEIDS1FO814KVfaaUVdv66bM2",
+]);
 
 export type DisplayService = {
   id?: string;
@@ -23,7 +26,7 @@ function normalizeText(value: unknown): string {
 function isStoreServiceRecord(record: SedifexProductRecord): boolean {
   const storeId = normalizeText(record.storeId);
   const itemType = normalizeText(record.itemType).toLowerCase();
-  return storeId === SERVICES_PAGE_STORE_ID && itemType === "service";
+  return SERVICES_PAGE_STORE_IDS.has(storeId) && itemType === "service";
 }
 
 function mapServiceRecord(record: SedifexProductRecord): DisplayService | null {
