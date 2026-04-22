@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { organizationJsonLd } from "@/lib/seo";
 import { TeamAreaChromeToggle } from "@/components/TeamAreaChromeToggle";
+import { LiveActivityToast } from "@/components/LiveActivityToast";
 
 export const metadata: Metadata = {
   title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
@@ -85,6 +86,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div data-site-chrome="footer">
           <Footer />
         </div>
+
+        <LiveActivityToast />
 
         <Link
           data-site-chrome="floating-book"
