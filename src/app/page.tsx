@@ -135,6 +135,16 @@ export default async function HomePage() {
                     Get Directions (Spintex)
                   </a>
                 </div>
+                <div className="mt-5">
+                  <a
+                    href="https://sedifex.com/join-customers/0e9ba2fa082640cbb2d78e39"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-semibold text-gold-300 underline decoration-gold-400/70 underline-offset-4 hover:text-gold-200"
+                  >
+                    Join our customer list
+                  </a>
+                </div>
               </div>
               <div className="relative min-h-[260px]">
                 <Image
