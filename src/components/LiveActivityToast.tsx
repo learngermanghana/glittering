@@ -147,17 +147,19 @@ export function LiveActivityToast() {
 
   return (
     <div className="pointer-events-none fixed bottom-24 left-4 z-[70] sm:bottom-6 sm:left-6">
-      <div className="pointer-events-auto mb-2 flex justify-end">
-        <button
-          type="button"
-          onClick={() => setSoundOn((current) => !current)}
-          className="rounded-full border border-black/10 bg-white/95 px-3 py-1 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-white"
-          aria-pressed={soundOn}
-          aria-label={soundOn ? "Turn activity sound off" : "Turn activity sound on"}
-        >
-          {soundOn ? "🔔 Sound On" : "🔕 Sound Off"}
-        </button>
-      </div>
+      {isVisible ? (
+        <div className="pointer-events-auto mb-2 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setSoundOn((current) => !current)}
+            className="rounded-full border border-black/10 bg-white/95 px-3 py-1 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-white"
+            aria-pressed={soundOn}
+            aria-label={soundOn ? "Turn activity sound off" : "Turn activity sound on"}
+          >
+            {soundOn ? "🔔 Sound On" : "🔕 Sound Off"}
+          </button>
+        </div>
+      ) : null}
 
       <div
         className={`max-w-sm rounded-2xl border border-brand-200/80 bg-white/95 p-4 shadow-lg transition-all duration-300 ${
