@@ -5,8 +5,8 @@ import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 
 const BRANCH_OPTIONS = [
-  { label: "Glittering Med Spa Main", value: "Glittering Med Spa Main", storeId: "37mJqg20MjOriggaIaOOuahDsgj1" },
-  { label: "Glittering Spa Annex", value: "Glittering Spa Annex", storeId: "2EeDEIDS1FO814KVfaaUVdv66bM2" },
+  { label: "Glittering Med Spa Main (Awoshie)", value: "Glittering Med Spa Main", storeId: "37mJqg20MjOriggaIaOOuahDsgj1" },
+  { label: "Glittering Spa Annex (Awoshie)", value: "Glittering Spa Annex", storeId: "2EeDEIDS1FO814KVfaaUVdv66bM2" },
   { label: "Glittering Spa Spintex", value: "Glittering Spa Spintex", storeId: "kT9QTWUkACMby6OwI2RO1bxG0WL2" },
 ] as const;
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
