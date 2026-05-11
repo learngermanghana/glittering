@@ -423,8 +423,12 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     return { error: "Deposit amount cannot be negative." };
   }
 
-  if (depositAmount > 0 && !paymentMethod) {
-    return { error: "Payment method is required when deposit amount is greater than 0." };
+  if (!paymentMethod) {
+    return { error: "Payment method is required." };
+  }
+
+  if (!Number.isFinite(depositAmount) || depositAmount <= 0) {
+    return { error: "Payment amount is required and must be greater than 0." };
   }
 
   if (!paymentReference) {
@@ -471,6 +475,13 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     customer_phone: customerPhone || undefined,
     notes: notes || undefined,
     payment_reference: paymentReference || undefined,
+    bookingStatus: "booked",
+    paymentCollectionMode: "manual_transfer",
+    paymentStatus: "awaiting_verification",
+    customerPaymentClaim: "claimed_paid",
+    syncStatus: "pending",
+    syncRequestedAt: new Date().toISOString(),
+    approvalStatus: "approved",
     no_refund_policy_accepted: true,
     preferred_date: normalizedBookingDate,
     preferred_time: normalizedBookingTime,
@@ -497,6 +508,8 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
       depositAmount,
       paymentAmount: depositAmount,
       notes: notes || undefined,
+      syncStatus: "pending",
+      syncRequestedAt: new Date().toISOString(),
       attributes: normalizedAttributes,
       customer: {
         name: customerName,

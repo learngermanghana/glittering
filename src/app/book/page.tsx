@@ -86,6 +86,7 @@ export default function BookPage() {
     if (!formData.date.trim()) errors.date = "Date is required.";
     if (!formData.time.trim()) errors.time = "Time is required.";
     if (!formData.branch.trim()) errors.branch = "Preferred branch is required.";
+    if (!formData.paymentMethod.trim()) errors.paymentMethod = "Payment method is required.";
     if (!formData.paymentReference.trim()) errors.paymentReference = "Payment reference is required.";
 
     if (!hasContactMethod) {
@@ -105,8 +106,8 @@ export default function BookPage() {
       errors.depositAmount = "Deposit must be a valid non-negative number.";
     }
 
-    if (depositAmountValue > 0 && !formData.paymentMethod.trim()) {
-      errors.paymentMethod = "Payment method is required when deposit is greater than 0.";
+    if (!Number.isFinite(depositAmountValue) || depositAmountValue <= 0) {
+      errors.depositAmount = "Payment amount is required and must be greater than 0.";
     }
 
     return errors;
@@ -137,13 +138,10 @@ export default function BookPage() {
       Boolean(formData.time.trim()),
       Boolean(formData.branch.trim()),
       Boolean(formData.phone.trim() || formData.email.trim()),
+      Boolean(formData.paymentMethod.trim()),
       Boolean(formData.paymentReference.trim()),
       formData.cancellationAccepted,
     ];
-
-    if (depositAmountValue > 0) {
-      checks.push(Boolean(formData.paymentMethod.trim()));
-    }
 
     const completed = checks.filter(Boolean).length;
     const total = checks.length;
@@ -156,7 +154,6 @@ export default function BookPage() {
       remaining: total - completed,
     };
   }, [
-    depositAmountValue,
     formData.branch,
     formData.cancellationAccepted,
     formData.date,
@@ -308,6 +305,8 @@ export default function BookPage() {
           paymentReference: formData.paymentReference.trim() || undefined,
           quantity: 1,
           notes: formData.notes.trim() || undefined,
+          syncStatus: "pending",
+          syncRequestedAt: new Date().toISOString(),
           attributes: {
             customerName: formData.name.trim(),
             customerPhone: formData.phone.trim() || undefined,
@@ -331,6 +330,13 @@ export default function BookPage() {
             customer_phone: formData.phone.trim() || undefined,
             notes: formData.notes.trim() || undefined,
             payment_reference: formData.paymentReference.trim() || undefined,
+            bookingStatus: "booked",
+            paymentCollectionMode: "manual_transfer",
+            paymentStatus: "awaiting_verification",
+            customerPaymentClaim: "claimed_paid",
+            syncStatus: "pending",
+            syncRequestedAt: new Date().toISOString(),
+            approvalStatus: "approved",
             no_refund_policy_accepted: formData.cancellationAccepted,
             service_name: selectedServiceName || undefined,
           },
