@@ -305,7 +305,7 @@ export default function BookPage() {
           paymentReference: formData.paymentReference.trim() || undefined,
           quantity: 1,
           notes: formData.notes.trim() || undefined,
-          syncStatus: "pending",
+          syncStatus: "confirmed",
           syncRequestedAt: new Date().toISOString(),
           attributes: {
             customerName: formData.name.trim(),
@@ -334,7 +334,7 @@ export default function BookPage() {
             paymentCollectionMode: "manual_transfer",
             paymentStatus: "awaiting_verification",
             customerPaymentClaim: "claimed_paid",
-            syncStatus: "pending",
+            syncStatus: "confirmed",
             syncRequestedAt: new Date().toISOString(),
             approvalStatus: "approved",
             no_refund_policy_accepted: formData.cancellationAccepted,
