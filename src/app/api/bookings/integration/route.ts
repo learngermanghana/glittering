@@ -70,6 +70,13 @@ type BookingRequestBody = {
   paymentAmount?: number | string;
   depositAmount?: number | string;
   paymentReference?: string;
+  syncStatus?: string;
+  syncRequestedAt?: string;
+  bookingStatus?: string;
+  paymentCollectionMode?: string;
+  paymentStatus?: string;
+  customerPaymentClaim?: string;
+  approvalStatus?: string;
   attributes?: Record<string, unknown>;
   customer?: {
     name?: string;
