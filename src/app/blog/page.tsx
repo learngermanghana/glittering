@@ -25,6 +25,20 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function getExcerpt(content: string, maxLength = 180) {
+  const text = stripHtml(content);
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength).trimEnd()}…`;
+}
+
 export default async function BlogPage() {
   const posts = await getBlogPosts();
 
@@ -35,7 +49,7 @@ export default async function BlogPage() {
       "@type": "Article",
       position: index + 1,
       headline: post.title,
-      description: post.summary,
+      description: getExcerpt(post.content),
       datePublished: post.publishedAt,
       author: {
         "@type": "Organization",
@@ -45,8 +59,8 @@ export default async function BlogPage() {
         "@type": "Organization",
         name: "Glittering Med Spa",
       },
-      mainEntityOfPage: post.link,
-      url: post.link,
+      mainEntityOfPage: post.linkUrl,
+      url: post.linkUrl,
     })),
     url: getAbsoluteUrl("/blog"),
   };
@@ -66,20 +80,22 @@ export default async function BlogPage() {
         <div className="mt-10 space-y-5">
           {posts.length ? (
             posts.map((post) => (
-              <article key={post.link} className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+              <article key={post.id} className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
                 <div className="text-xs font-semibold uppercase tracking-wide text-brand-700">
                   {formatDate(post.publishedAt)}
                 </div>
                 <h2 className="mt-2 text-xl font-semibold text-neutral-950">{post.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-neutral-700 line-clamp-3">{post.summary}</p>
-                <a
-                  href={post.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex text-sm font-semibold text-brand-800 hover:underline"
-                >
-                  Read full post →
-                </a>
+                <p className="mt-3 text-sm leading-6 text-neutral-700 line-clamp-3">{getExcerpt(post.content)}</p>
+                {post.linkUrl ? (
+                  <a
+                    href={post.linkUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex text-sm font-semibold text-brand-800 hover:underline"
+                  >
+                    Read full post →
+                  </a>
+                ) : null}
               </article>
             ))
           ) : (

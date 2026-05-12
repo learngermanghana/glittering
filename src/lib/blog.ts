@@ -1,89 +1,55 @@
-const BLOG_FEED_URLS = [process.env.BLOG_FEED_URL, "https://blog.glitteringmedspa.com/feed.xml"].filter(
-  (url): url is string => Boolean(url),
-);
+const SEDIFEX_SITE_BASE_URL = process.env.SEDIFEX_SITE_BASE_URL ?? "https://www.sedifex.com";
+const SEDIFEX_STORE_ID = process.env.SEDIFEX_STORE_ID ?? "";
 
 export type BlogPost = {
+  id: string;
   title: string;
-  link: string;
-  summary: string;
+  slug: string;
+  content: string;
+  linkUrl: string;
+  imageUrl: string;
   publishedAt: string;
 };
 
-function decodeXml(value: string) {
-  return value
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .trim();
-}
+type PublicBlogResponse = {
+  items?: unknown;
+};
 
-function stripHtml(value: string) {
-  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-}
+type PublicBlogItem = {
+  id?: unknown;
+  title?: unknown;
+  slug?: unknown;
+  content?: unknown;
+  linkUrl?: unknown;
+  imageUrl?: unknown;
+  publishedAt?: unknown;
+};
 
-function pickTag(block: string, tag: string) {
-  const matched = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i"));
-  return matched?.[1] ? decodeXml(matched[1]) : "";
-}
-
-function pickAtomLink(block: string) {
-  const alternateLink = block.match(/<link[^>]*rel=["']alternate["'][^>]*href=["']([^"']+)["'][^>]*\/?>(?:<\/link>)?/i);
-
-  if (alternateLink?.[1]) {
-    return decodeXml(alternateLink[1]);
+function toBlogPost(item: PublicBlogItem): BlogPost | null {
+  if (typeof item.title !== "string" || typeof item.slug !== "string") {
+    return null;
   }
 
-  const anyLink = block.match(/<link[^>]*href=["']([^"']+)["'][^>]*\/?>(?:<\/link>)?/i);
-  return anyLink?.[1] ? decodeXml(anyLink[1]) : "";
+  return {
+    id: typeof item.id === "string" ? item.id : item.slug,
+    title: item.title,
+    slug: item.slug,
+    content: typeof item.content === "string" ? item.content : "",
+    linkUrl: typeof item.linkUrl === "string" ? item.linkUrl : "",
+    imageUrl: typeof item.imageUrl === "string" ? item.imageUrl : "",
+    publishedAt: typeof item.publishedAt === "string" ? item.publishedAt : "",
+  };
 }
 
-function parseXmlFeed(xml: string): BlogPost[] {
-  const rssItems = xml.match(/<item\b[\s\S]*?<\/item>/gi) ?? [];
+function buildPublicBlogUrl(slug?: string) {
+  const url = new URL("/api/public-blog", SEDIFEX_SITE_BASE_URL);
+  url.searchParams.set("storeId", SEDIFEX_STORE_ID);
 
-  if (rssItems.length > 0) {
-    return rssItems
-      .map((entry) => {
-        const title = pickTag(entry, "title");
-        const link = pickTag(entry, "link");
-        const description = pickTag(entry, "description") || pickTag(entry, "content:encoded");
-        const publishedAt = pickTag(entry, "pubDate");
-
-        return { title, link, summary: stripHtml(description), publishedAt };
-      })
-      .filter((post) => post.title && post.link);
+  if (slug) {
+    url.searchParams.set("slug", slug);
   }
 
-  const atomEntries = xml.match(/<entry\b[\s\S]*?<\/entry>/gi) ?? [];
-
-  return atomEntries
-    .map((entry) => {
-      const title = pickTag(entry, "title");
-      const link = pickAtomLink(entry) || pickTag(entry, "id");
-      const description = pickTag(entry, "summary") || pickTag(entry, "content");
-      const publishedAt = pickTag(entry, "published") || pickTag(entry, "updated");
-
-      return { title, link, summary: stripHtml(description), publishedAt };
-    })
-    .filter((post) => post.title && post.link);
-}
-
-async function fetchFeed(url: string): Promise<BlogPost[]> {
-  const response = await fetch(url, {
-    next: { revalidate: 60 * 30 },
-    headers: {
-      Accept: "application/atom+xml, application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
-    },
-  });
-
-  if (!response.ok) {
-    return [];
-  }
-
-  const xml = await response.text();
-  return parseXmlFeed(xml);
+  return url.toString();
 }
 
 function normalizePosts(posts: BlogPost[]) {
@@ -91,7 +57,7 @@ function normalizePosts(posts: BlogPost[]) {
 
   return posts
     .filter((post) => {
-      const key = post.link.trim();
+      const key = post.id.trim() || post.slug.trim();
 
       if (!key || seen.has(key)) {
         return false;
@@ -112,18 +78,31 @@ function normalizePosts(posts: BlogPost[]) {
     });
 }
 
-export async function getBlogPosts(limit?: number): Promise<BlogPost[]> {
-  for (const url of BLOG_FEED_URLS) {
-    try {
-      const posts = normalizePosts(await fetchFeed(url));
-
-      if (posts.length > 0) {
-        return typeof limit === "number" ? posts.slice(0, limit) : posts;
-      }
-    } catch {
-      continue;
-    }
+async function fetchPublicBlog(slug?: string): Promise<BlogPost[]> {
+  if (!SEDIFEX_STORE_ID) {
+    return [];
   }
 
-  return [];
+  const response = await fetch(buildPublicBlogUrl(slug), {
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = (await response.json()) as PublicBlogResponse;
+  const items = Array.isArray(payload.items) ? payload.items : [];
+
+  return normalizePosts(items.map((item) => toBlogPost(item as PublicBlogItem)).filter((item): item is BlogPost => Boolean(item)));
+}
+
+export async function getBlogPosts(limit?: number): Promise<BlogPost[]> {
+  const posts = await fetchPublicBlog();
+  return typeof limit === "number" ? posts.slice(0, limit) : posts;
+}
+
+export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+  const posts = await fetchPublicBlog(slug);
+  return posts[0] ?? null;
 }
