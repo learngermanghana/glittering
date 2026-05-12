@@ -356,7 +356,8 @@ export default function BookPage() {
 
       setSubmitMessage({
         kind: "success",
-        text: "Booking sent successfully to Sedifex. We’ll contact you shortly to confirm your appointment.",
+        text:
+          "Your booking request was received successfully. A confirmation email with your booking details will be sent shortly.\n\nIf you have any further questions, contact us on WhatsApp or by email.\n\nTips to prepare for your booking day:\n• Keep your booking reference and a valid ID ready.\n• Check your email (including spam/junk) for updates from our team.\n• Arrive a little early for a smooth check-in.\n• Keep your phone on and reachable in case our team needs to contact you.",
       });
       setFormData((prev) => ({
         ...prev,
@@ -679,7 +680,7 @@ export default function BookPage() {
                 }`}
               >
                 <p className="font-semibold">{submitMessage.kind === "success" ? "Success" : "Submission failed"}</p>
-                <p className="mt-1">{submitMessage.text}</p>
+                <p className="mt-1 whitespace-pre-line">{submitMessage.text}</p>
               </div>
             )}
           </form>
