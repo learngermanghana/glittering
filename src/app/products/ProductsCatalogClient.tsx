@@ -7,6 +7,39 @@ import type { DisplayProduct } from "@/lib/productsData";
 
 type AvailabilityFilter = "all" | "in-stock" | "out-of-stock";
 const DESCRIPTION_PREVIEW_LENGTH = 180;
+const SEARCH_HISTORY_KEY = "products-search-history";
+const MAX_HISTORY_ITEMS = 6;
+const MAX_SUGGESTIONS = 8;
+
+const SEARCH_SYNONYMS: Record<string, string[]> = {
+  sneakers: ["shoe", "shoes", "trainer", "trainers", "footwear"],
+  sandals: ["slipper", "slippers", "flip flops", "slides"],
+  adidas: ["adiddas", "addidas", "addidas", "adi das"],
+  nike: ["naik", "nik", "nyke"],
+  face: ["facial", "facials", "skincare", "skin care"],
+};
+
+function levenshteinDistance(first: string, second: string) {
+  if (first === second) return 0;
+  if (!first.length) return second.length;
+  if (!second.length) return first.length;
+
+  const previousRow = Array.from({ length: second.length + 1 }, (_, index) => index);
+
+  for (let i = 0; i < first.length; i += 1) {
+    let prevDiagonal = previousRow[0];
+    previousRow[0] = i + 1;
+
+    for (let j = 0; j < second.length; j += 1) {
+      const temp = previousRow[j + 1];
+      const substitutionCost = first[i] === second[j] ? 0 : 1;
+      previousRow[j + 1] = Math.min(previousRow[j + 1] + 1, previousRow[j] + 1, prevDiagonal + substitutionCost);
+      prevDiagonal = temp;
+    }
+  }
+
+  return previousRow[second.length];
+}
 
 function stockText(quantity: number | null) {
   if (quantity === null) return "Out of stock";
@@ -16,19 +49,105 @@ function stockText(quantity: number | null) {
 
 export function ProductsCatalogClient({ products }: { products: DisplayProduct[] }) {
   const [search, setSearch] = useState("");
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      const persistedSearches = globalThis.localStorage?.getItem(SEARCH_HISTORY_KEY);
+      if (!persistedSearches) return [];
+      const parsed = JSON.parse(persistedSearches) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+        .slice(0, MAX_HISTORY_ITEMS);
+    } catch {
+      globalThis.localStorage?.removeItem(SEARCH_HISTORY_KEY);
+      return [];
+    }
+  });
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   const allProducts = useMemo(() => products.filter((product) => !product.isService), [products]);
 
+  const searchableTokens = useMemo(() => {
+    const tokens = new Set<string>();
+
+    allProducts.forEach((product) => {
+      product.name
+        .toLowerCase()
+        .split(/\s+/)
+        .forEach((token) => {
+          if (token.length > 2) tokens.add(token);
+        });
+    });
+
+    Object.entries(SEARCH_SYNONYMS).forEach(([rootWord, synonyms]) => {
+      tokens.add(rootWord);
+      synonyms.forEach((synonym) => tokens.add(synonym.toLowerCase()));
+    });
+
+    return [...tokens];
+  }, [allProducts]);
+
+  function saveSearchToHistory(query: string) {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return;
+
+    setRecentSearches((previous) => {
+      const next = [normalizedQuery, ...previous.filter((item) => item.toLowerCase() !== normalizedQuery.toLowerCase())].slice(
+        0,
+        MAX_HISTORY_ITEMS
+      );
+
+      globalThis.localStorage?.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  const suggestions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return recentSearches;
+
+    const exactProductMatches = allProducts
+      .map((product) => product.name)
+      .filter((name) => name.toLowerCase().includes(query));
+
+    const synonymMatches = Object.entries(SEARCH_SYNONYMS)
+      .filter(([rootWord, synonyms]) => rootWord.includes(query) || synonyms.some((synonym) => synonym.includes(query)))
+      .map(([rootWord]) => rootWord);
+
+    const typoSuggestions = searchableTokens
+      .filter((token) => {
+        if (token.length < 4 || query.length < 4) return false;
+        return levenshteinDistance(query, token) <= 2;
+      })
+      .slice(0, 3);
+
+    return [...new Set([...exactProductMatches, ...synonymMatches, ...typoSuggestions, ...recentSearches])].slice(0, MAX_SUGGESTIONS);
+  }, [allProducts, recentSearches, search, searchableTokens]);
+
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const synonymExpandedQuery = new Set<string>([query]);
+    Object.entries(SEARCH_SYNONYMS).forEach(([rootWord, synonyms]) => {
+      if (query === rootWord || synonyms.some((synonym) => synonym.includes(query) || query.includes(synonym))) {
+        synonymExpandedQuery.add(rootWord);
+        synonyms.forEach((synonym) => synonymExpandedQuery.add(synonym));
+      }
+    });
 
     return allProducts.filter((product) => {
+      const productName = product.name.toLowerCase();
+      const productMatchByTypo = query.length < 4
+        ? false
+        : productName.split(/\s+/).some((token) => levenshteinDistance(query, token) <= 2);
+
       const matchesSearch =
         query.length === 0 ||
-        product.name.toLowerCase().includes(query) ||
-        stockText(product.quantity).toLowerCase().includes(query);
+        [...synonymExpandedQuery].some((searchTerm) =>
+          productName.includes(searchTerm) || stockText(product.quantity).toLowerCase().includes(searchTerm)
+        ) ||
+        productMatchByTypo;
 
       const quantity = product.quantity ?? 0;
       const matchesAvailability =
@@ -56,14 +175,50 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
           <label className="sr-only" htmlFor="product-search">
             Search products
           </label>
+          <div className="relative">
           <input
             id="product-search"
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => {
+              globalThis.setTimeout(() => {
+                setShowSuggestions(false);
+                saveSearchToHistory(search);
+              }, 120);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                saveSearchToHistory(search);
+                setShowSuggestions(false);
+              }
+            }}
             placeholder="Search by product name"
             className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
           />
+          {showSuggestions && suggestions.length > 0 ? (
+            <div className="absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-2xl border border-neutral-200 bg-white p-1 shadow-lg">
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => {
+                    setSearch(suggestion);
+                    saveSearchToHistory(suggestion);
+                    setShowSuggestions(false);
+                  }}
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          </div>
           <label className="sr-only" htmlFor="availability-filter">
             Filter by availability
           </label>
