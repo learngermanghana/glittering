@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { EngagementPanel } from "@/components/EngagementPanel";
 import { Container } from "@/components/Container";
 import { getProductsCatalogData } from "@/lib/products";
+import { buildPageMetadata } from "@/lib/seo";
 import { SITE } from "@/lib/site";
-import { toSlug } from "@/lib/slugs";
+import { buildProductMetaDescription, findProductBySlug, getProductSlug } from "@/lib/productSeo";
 
 function buildWhatsAppProductLink(productName: string) {
   return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
@@ -16,7 +18,7 @@ function buildWhatsAppProductLink(productName: string) {
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const products = await getProductsCatalogData();
-  const product = products.find((item) => !item.isService && toSlug(item.name) === slug);
+  const product = findProductBySlug(products.filter((item) => !item.isService), slug);
 
   if (!product) notFound();
 
@@ -59,4 +61,31 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       </section>
     </Container>
   );
+}
+
+export async function generateStaticParams() {
+  const products = await getProductsCatalogData();
+  return products.filter((product) => !product.isService).map((product) => ({ slug: getProductSlug(product) }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const products = await getProductsCatalogData();
+  const product = findProductBySlug(products.filter((item) => !item.isService), slug);
+
+  if (!product) {
+    return buildPageMetadata({
+      title: "Product Not Found | Glittering Med Spa",
+      description: "The product you requested is not available.",
+      path: `/products/${slug}`,
+      noIndex: true,
+    });
+  }
+
+  return buildPageMetadata({
+    title: `${product.name} | Glittering Med Spa Products`,
+    description: buildProductMetaDescription(product),
+    path: `/products/${slug}`,
+    image: product.image,
+  });
 }

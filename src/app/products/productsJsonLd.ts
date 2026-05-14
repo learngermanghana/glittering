@@ -1,4 +1,5 @@
 import type { DisplayProduct } from "@/lib/productsData";
+import { getProductSlug } from "@/lib/productSeo";
 
 export function buildProductsItemListJsonLd(products: DisplayProduct[]) {
   const offers = products.slice(0, 30).map((product, index) => ({
@@ -13,7 +14,7 @@ export function buildProductsItemListJsonLd(products: DisplayProduct[]) {
         priceCurrency: "GHS",
         price: product.price.toFixed(2),
         availability: product.quantity !== null && product.quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-        url: "https://www.glitteringmedspa.com/products",
+        url: `https://www.glitteringmedspa.com/products/${getProductSlug(product)}`,
       },
     },
   }));
