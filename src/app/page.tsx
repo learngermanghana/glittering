@@ -487,11 +487,11 @@ export default async function HomePage() {
             {latestPosts.length ? (
               <div className="mt-6 grid gap-4 sm:grid-cols-3">
                 {latestPosts.map((post) => (
-                  <article key={post.link} className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
+                  <article key={post.linkUrl} className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
                     <h3 className="text-sm font-semibold text-neutral-900">{post.title}</h3>
-                    <p className="mt-2 text-xs leading-5 text-neutral-600 line-clamp-4">{post.summary}</p>
+                    <p className="mt-2 text-xs leading-5 text-neutral-600 line-clamp-4">{post.content}</p>
                     <a
-                      href={post.link}
+                      href={post.linkUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-3 inline-flex text-xs font-semibold text-brand-800 hover:underline"
