@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { WHATSAPP_LINK } from "@/lib/site";
 import type { DisplayService } from "@/lib/services";
+import { EngagementPanel } from "@/components/EngagementPanel";
 
 const priceFormatter = new Intl.NumberFormat("en-GH", {
   style: "currency",
@@ -166,6 +167,8 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
                     </button>
                   ) : null}
                 </div>
+
+                <EngagementPanel sourceProductId={service.id ?? serviceKey} label={service.name} />
 
                 <a
                   href={WHATSAPP_LINK}

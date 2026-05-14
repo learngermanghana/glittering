@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { SALES_WHATSAPP_LINK, SITE } from "@/lib/site";
 import type { DisplayProduct } from "@/lib/productsData";
+import { EngagementPanel } from "@/components/EngagementPanel";
 
 type AvailabilityFilter = "all" | "in-stock" | "out-of-stock";
 const DESCRIPTION_PREVIEW_LENGTH = 180;
@@ -317,6 +318,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                   />
                   {stockText(product.quantity)}
                 </div>
+                <EngagementPanel sourceProductId={product.id ?? cardKey} label={product.name} />
                 <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
                   {description ? (
                     <>
