@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { SITE } from "@/lib/site";
-import { toSlug } from "@/lib/slugs";
+import { SALES_WHATSAPP_LINK, SITE } from "@/lib/site";
+import { getProductSlug } from "@/lib/productSeo";
 import type { DisplayProduct } from "@/lib/productsData";
 import { EngagementPanel } from "@/components/EngagementPanel";
 
@@ -260,7 +260,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.map((product, index) => {
             const cardKey = `${product.id ?? product.name}-${index}`;
-            const productSlug = toSlug(product.name);
+            const productSlug = getProductSlug(product);
             const isOutOfStock = product.quantity !== null && product.quantity <= 0;
             const productImages = (product.images.length ? product.images : [product.image]).slice(0, 3);
             const isSedifexImage = productImages[0]?.startsWith("http") ?? false;

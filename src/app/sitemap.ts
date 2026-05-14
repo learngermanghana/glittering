@@ -1,4 +1,6 @@
 import type { MetadataRoute } from "next";
+import { getProductsCatalogData } from "@/lib/products";
+import { getProductSlug } from "@/lib/productSeo";
 
 type StaticRoute = {
   path: string;
@@ -24,13 +26,25 @@ const staticRoutes: StaticRoute[] = [
   { path: "/return-policy", changeFrequency: "yearly", priority: 0.4 },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
+  const products = await getProductsCatalogData();
 
-  return staticRoutes.map(({ path, changeFrequency, priority }) => ({
+  const staticEntries = staticRoutes.map(({ path, changeFrequency, priority }) => ({
     url: new URL(path, baseUrl).toString(),
     lastModified,
     changeFrequency,
     priority,
   }));
+
+  const productEntries = products
+    .filter((product) => !product.isService)
+    .map((product) => ({
+      url: new URL(`/products/${getProductSlug(product)}`, baseUrl).toString(),
+      lastModified,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+
+  return [...staticEntries, ...productEntries];
 }
