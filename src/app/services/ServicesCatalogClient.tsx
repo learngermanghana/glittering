@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { WHATSAPP_LINK } from "@/lib/site";
+import Link from "next/link";
+import { BOOKING_URL } from "@/lib/site";
 import type { DisplayService } from "@/lib/services";
 import { EngagementPanel } from "@/components/EngagementPanel";
 
@@ -170,14 +171,12 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
 
                 <EngagementPanel sourceProductId={service.id ?? serviceKey} label={service.name} />
 
-                <a
-                  href={WHATSAPP_LINK}
-                  target="_blank"
-                  rel="noreferrer"
+                <Link
+                  href={`${BOOKING_URL}?service=${encodeURIComponent(service.name)}`}
                   className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
                 >
                   Book this service
-                </a>
+                </Link>
               </article>
             );
           })}
