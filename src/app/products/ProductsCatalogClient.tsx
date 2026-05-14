@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
-import { SALES_WHATSAPP_LINK, SITE } from "@/lib/site";
+import { SITE } from "@/lib/site";
+import { toSlug } from "@/lib/slugs";
 import type { DisplayProduct } from "@/lib/productsData";
 import { EngagementPanel } from "@/components/EngagementPanel";
 
@@ -258,6 +260,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.map((product, index) => {
             const cardKey = `${product.id ?? product.name}-${index}`;
+            const productSlug = toSlug(product.name);
             const isOutOfStock = product.quantity !== null && product.quantity <= 0;
             const productImages = (product.images.length ? product.images : [product.image]).slice(0, 3);
             const isSedifexImage = productImages[0]?.startsWith("http") ?? false;
@@ -345,14 +348,12 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                     </p>
                   )}
                 </div>
-                <a
-                  href={SALES_WHATSAPP_LINK}
-                  target="_blank"
-                  rel="noreferrer"
+                <Link
+                  href={`/products/${productSlug}`}
                   className="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
                 >
-                  Ask about this product
-                </a>
+                  View product details
+                </Link>
               </article>
             );
           })}
