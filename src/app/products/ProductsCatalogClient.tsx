@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { SALES_WHATSAPP_LINK, SITE } from "@/lib/site";
+import { SITE } from "@/lib/site";
 import { getProductSlug } from "@/lib/productSeo";
 import type { DisplayProduct } from "@/lib/productsData";
 import { EngagementPanel } from "@/components/EngagementPanel";
@@ -164,7 +164,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
 
   const notFoundWhatsappLink = useMemo(() => {
     const requestedProduct = search.trim();
-    if (!requestedProduct) return SALES_WHATSAPP_LINK;
+    if (!requestedProduct) return `https://wa.me/${SITE.phoneIntl}`;
 
     return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
       `Hi Glittering Spa! I searched for "${requestedProduct}" on your website but could not find it. Please can you confirm if it is available in-store?`
