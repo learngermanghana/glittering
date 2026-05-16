@@ -486,7 +486,7 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     paymentCollectionMode: "manual_transfer",
     paymentStatus: "awaiting_verification",
     customerPaymentClaim: "claimed_paid",
-    syncStatus: "pending",
+    syncStatus: "confirmed",
     syncRequestedAt: new Date().toISOString(),
     approvalStatus: "approved",
     no_refund_policy_accepted: true,
@@ -515,7 +515,7 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
       depositAmount,
       paymentAmount: depositAmount,
       notes: notes || undefined,
-      syncStatus: "pending",
+      syncStatus: "confirmed",
       syncRequestedAt: new Date().toISOString(),
       attributes: normalizedAttributes,
       customer: {
