@@ -61,6 +61,40 @@ export default async function ProductsPage() {
           </div>
         </div>
 
+        <div className="mt-6 rounded-3xl border border-brand-200 bg-brand-50/40 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-brand-950">Checkout pricing + fulfillment contract (Website ↔ Sedifex)</h2>
+          <p className="mt-3 text-sm text-neutral-700">
+            Sedifex is the source of truth for checkout totals. All amounts must be sent and stored as integer minor units.
+          </p>
+          <div className="mt-4 grid gap-4 text-sm text-neutral-700 md:grid-cols-2">
+            <div>
+              <p className="font-semibold text-neutral-900">Canonical fields</p>
+              <p>fulfillment_type, subtotal, tax_total, delivery_fee, pre_processing_total, processing_fee_to_add, final_total, pricing_snapshot, payment_reference, payment_status, order_status.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-neutral-900">Required sequence</p>
+              <p>POST /checkout/preview → POST /checkout/create → POST /payments/paystack/webhook → GET /orders/{`{order_id}`}</p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700">
+            <p className="font-semibold text-neutral-900">MVP decisions in use</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>Refunds are currently out of scope.</li>
+              <li>Paystack processing fee is recovered via processing_fee_to_add.</li>
+              <li>PICKUP has no delivery fee; DELIVERY adds a configured delivery fee.</li>
+              <li>Tax is pulled from item configuration, and totals are recalculated server-side on checkout/create.</li>
+            </ul>
+          </div>
+          <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700">
+            <p className="font-semibold text-neutral-900">Critical item ID mapping before checkout/create</p>
+            <p className="mt-2">
+              Sometimes Sedifex cannot find an item when the website sends a store-prefixed ID. Always map to raw Sedifex
+              item IDs before checkout (example: store_123_draft-abc → draft-abc), and keep originalProductId only for
+              debugging.
+            </p>
+          </div>
+        </div>
+
         <ProductsCatalogClient products={products} />
       </section>
     </Container>
