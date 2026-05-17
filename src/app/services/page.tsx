@@ -82,9 +82,6 @@ export default async function ServicesPage() {
 
         {liveServices.length ? (
           <>
-            <p className="mt-4 text-sm text-neutral-600">
-              Live services from Sedifex. Showing name, category, description, price, and image.
-            </p>
             <ServicesCatalogClient services={liveServices} />
           </>
         ) : (
