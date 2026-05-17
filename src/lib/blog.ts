@@ -1,5 +1,5 @@
 const SEDIFEX_SITE_BASE_URL = process.env.SEDIFEX_SITE_BASE_URL ?? "https://www.sedifex.com";
-const SEDIFEX_STORE_ID = process.env.SEDIFEX_STORE_ID ?? "";
+const SEDIFEX_STORE_ID = process.env.SEDIFEX_STORE_ID ?? "37mJqg20MjOriggaIaOOuahDsgj1";
 
 export type BlogPost = {
   id: string;

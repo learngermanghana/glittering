@@ -13,10 +13,10 @@ import {
   topSellingServices,
 } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
-import { getBlogPosts } from "@/lib/blog";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { buildPageMetadata } from "@/lib/seo";
 import { fetchFirestoreDocument } from "@/lib/firebase";
+import { getProductsCatalogData } from "@/lib/products";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
@@ -60,10 +60,11 @@ export default async function HomePage() {
   const galleryImages = await getGalleryImages();
   const featuredImages = galleryImages.slice(0, 3);
   const [awoshie, spintex] = LOCATIONS;
-  const [latestPosts, promoStore] = await Promise.all([
-    getBlogPosts(3),
+  const [promoStore, homepageProducts] = await Promise.all([
     fetchFirestoreDocument<StorePromoDoc>("stores", PROMO_STORE_ID).catch(() => null),
+    getProductsCatalogData(),
   ]);
+  const featuredProducts = homepageProducts.slice(0, 3);
   const fallbackPromoStartDate = "2026-04-01";
   const fallbackPromoEndDate = "2026-04-15";
   const promoStartDateRaw = asPromoText(promoStore?.promoStartDate) ?? fallbackPromoStartDate;
@@ -246,7 +247,7 @@ export default async function HomePage() {
           <div className="mt-10 rounded-3xl border border-brand-200/70 bg-gradient-to-br from-white via-rose-50/40 to-brand-50 p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="text-sm text-neutral-600">Top Selling Right Now</div>
+                <div className="text-sm text-neutral-600">Featured Products & Services</div>
                 <h2 className="mt-1 text-2xl font-semibold tracking-tight">Most requested services & products</h2>
                 <p className="mt-2 text-sm text-neutral-600">
                   Quick picks clients ask for most. Tap WhatsApp and we’ll help you choose the best option.
@@ -280,7 +281,7 @@ export default async function HomePage() {
                 <div className="text-sm font-semibold text-brand-900">Top Products</div>
                 <div className="mt-4 space-y-3">
                   {topSellingProducts.map((name) => {
-                    const product = products.find((item) => item.name === name);
+                    const product = featuredProducts.find((item) => item.name === name) ?? products.find((item) => item.name === name);
                     if (!product) return null;
                     const isSedifexImage = product.image.startsWith("http");
                     return (
@@ -442,7 +443,7 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {products.slice(0, 3).map((product) => {
+              {featuredProducts.map((product) => {
                 const isSedifexImage = product.image.startsWith("http");
 
                 return (
@@ -469,44 +470,6 @@ export default async function HomePage() {
             </div>
           </div>
 
-
-          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm text-neutral-500">Blog</div>
-                <div className="mt-1 text-lg font-semibold">Latest from Glittering Med Spa</div>
-                <p className="mt-2 text-sm text-neutral-600">
-                  Read our newest skincare and wellness articles.
-                </p>
-              </div>
-              <Link className="text-sm font-semibold text-brand-800 hover:underline" href="/blog">
-                View all blog posts →
-              </Link>
-            </div>
-
-            {latestPosts.length ? (
-              <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                {latestPosts.map((post) => (
-                  <article key={post.linkUrl} className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
-                    <h3 className="text-sm font-semibold text-neutral-900">{post.title}</h3>
-                    <p className="mt-2 text-xs leading-5 text-neutral-600 line-clamp-4">{post.content}</p>
-                    <a
-                      href={post.linkUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-3 inline-flex text-xs font-semibold text-brand-800 hover:underline"
-                    >
-                      Read article →
-                    </a>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-6 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-6 text-sm text-neutral-600">
-                Blog posts are temporarily unavailable.
-              </div>
-            )}
-          </div>
 
           <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
