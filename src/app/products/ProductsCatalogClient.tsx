@@ -6,9 +6,14 @@ import Image from "next/image";
 import { SITE } from "@/lib/site";
 import { getProductSlug } from "@/lib/productSeo";
 import type { DisplayProduct } from "@/lib/productsData";
-import { EngagementPanel } from "@/components/EngagementPanel";
 
 type AvailabilityFilter = "all" | "in-stock" | "out-of-stock";
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+};
 const DESCRIPTION_PREVIEW_LENGTH = 180;
 const SEARCH_HISTORY_KEY = "products-search-history";
 const MAX_HISTORY_ITEMS = 6;
@@ -69,6 +74,13 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
+  const [cart, setCart] = useState<Record<string, CartItem>>({});
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [deliveryLocation, setDeliveryLocation] = useState("");
+  const [notes, setNotes] = useState("");
+  const [checkoutStatus, setCheckoutStatus] = useState("");
 
   const allProducts = useMemo(() => products.filter((product) => !product.isService), [products]);
 
@@ -162,6 +174,104 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
     });
   }, [allProducts, availabilityFilter, search]);
 
+
+
+  const cartItems = useMemo(() => Object.values(cart), [cart]);
+  const cartTotal = useMemo(() => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0), [cartItems]);
+
+  function addToCart(product: DisplayProduct, key: string) {
+    setCart((previous) => {
+      const existing = previous[key];
+      return {
+        ...previous,
+        [key]: {
+          id: key,
+          name: product.name,
+          price: product.price,
+          quantity: existing ? existing.quantity + 1 : 1,
+        },
+      };
+    });
+  }
+
+  function adjustCartQuantity(id: string, nextQuantity: number) {
+    setCart((previous) => {
+      if (nextQuantity <= 0) {
+        const next = { ...previous };
+        delete next[id];
+        return next;
+      }
+
+      const current = previous[id];
+      if (!current) return previous;
+      return { ...previous, [id]: { ...current, quantity: nextQuantity } };
+    });
+  }
+
+  const cartWhatsappLink = useMemo(() => {
+    if (!cartItems.length) return `https://wa.me/${SITE.phoneIntl}`;
+
+    const lines = cartItems.map((item) => `- ${item.name} x${item.quantity} (GHS ${(item.price * item.quantity).toFixed(2)})`);
+    const message = `Hi Glittering Spa! I want to checkout these items:\n${lines.join("\n")}\nTotal: GHS ${cartTotal.toFixed(2)}\nPlease process via Sedifex checkout.`;
+    return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(message)}`;
+  }, [cartItems, cartTotal]);
+
+
+
+  function isValidPhone(value: string) {
+    const digits = value.replace(/\D/g, "");
+    return digits.length >= 9 && digits.length <= 15;
+  }
+
+  async function checkoutWithPaystack() {
+    if (!cartItems.length) return;
+    if (!isValidPhone(phone)) {
+      setCheckoutStatus("Please enter a valid phone number, for example 024 000 0000 or +233 24 000 0000.");
+      return;
+    }
+
+    setCheckoutStatus("Preparing secure checkout...");
+    const subtotal = cartTotal;
+    const response = await fetch('/api/sedifex/checkout/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cart: cartItems.map((item) => ({ id: item.id, quantity: item.quantity })),
+        customer: { name, email, phone },
+        delivery: { location: deliveryLocation, notes },
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      setCheckoutStatus(data?.error ?? 'Unable to start checkout.');
+      return;
+    }
+
+    const checkoutUrl = data.authorizationUrl ?? data.checkoutUrl;
+    if (checkoutUrl) {
+      const reference = data.reference ?? data.paymentReference ?? data.payment_reference ?? data.clientOrderId;
+      const amountPaid = typeof data.amountPaid === 'number' ? data.amountPaid : subtotal;
+
+      sessionStorage.setItem('checkout:last_customer', JSON.stringify({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        deliveryLocation: deliveryLocation.trim(),
+        reference,
+        amountPaid,
+        amount: amountPaid,
+        currency: 'GHS',
+        status: 'success',
+      }));
+
+      window.location.href = checkoutUrl;
+      return;
+    }
+
+    setCheckoutStatus('Checkout link not available.');
+  }
+
   const notFoundWhatsappLink = useMemo(() => {
     const requestedProduct = search.trim();
     if (!requestedProduct) return `https://wa.me/${SITE.phoneIntl}`;
@@ -239,6 +349,50 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
         <p className="mt-3 text-xs text-neutral-600">
           Showing {filteredProducts.length} of {allProducts.length} catalog items.
         </p>
+      </div>
+
+      <div className="mt-6 rounded-3xl border border-brand-200 bg-brand-50/40 p-5 shadow-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold text-brand-950">Cart</h2>
+          <p className="text-sm text-neutral-700">Sedifex-ready cart format with item quantities and checkout summary.</p>
+        </div>
+        {cartItems.length === 0 ? (
+          <p className="mt-3 text-sm text-neutral-700">Your cart is empty. Add items below to start checkout.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {cartItems.map((item) => (
+              <div key={item.id} className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-3">
+                <div>
+                  <p className="text-sm font-semibold text-neutral-900">{item.name}</p>
+                  <p className="text-xs text-neutral-600">GHS {item.price.toFixed(2)} each</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => adjustCartQuantity(item.id, item.quantity - 1)} className="h-7 w-7 rounded-full border border-neutral-300 text-sm">-</button>
+                  <span className="text-sm font-semibold">{item.quantity}</span>
+                  <button type="button" onClick={() => adjustCartQuantity(item.id, item.quantity + 1)} className="h-7 w-7 rounded-full border border-neutral-300 text-sm">+</button>
+                </div>
+              </div>
+            ))}
+            <div className="mt-2 flex items-center justify-between rounded-2xl bg-white p-3">
+              <p className="font-semibold">Estimated total</p>
+              <p className="text-base font-bold text-brand-950">GHS {cartTotal.toFixed(2)}</p>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Full name" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
+              <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
+              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Phone" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
+              <input value={deliveryLocation} onChange={(event) => setDeliveryLocation(event.target.value)} placeholder="Delivery location" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
+              <input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Delivery notes (optional)" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm sm:col-span-2" />
+            </div>
+            <button type="button" onClick={checkoutWithPaystack} className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-900">
+              Checkout with Paystack
+            </button>
+            {checkoutStatus ? <p className="mt-2 text-xs text-neutral-700">{checkoutStatus}</p> : null}
+            <a href={cartWhatsappLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-2xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">
+              Contact store on WhatsApp
+            </a>
+          </div>
+        )}
       </div>
 
       {filteredProducts.length === 0 ? (
@@ -321,8 +475,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                   />
                   {stockText(product.quantity)}
                 </div>
-                <EngagementPanel sourceProductId={product.id ?? cardKey} label={product.name} />
-                <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
+                                <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
                   {description ? (
                     <>
                       <p className="leading-relaxed">{descriptionToShow}</p>
@@ -348,12 +501,21 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                     </p>
                   )}
                 </div>
-                <Link
-                  href={`/products/${productSlug}`}
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
-                >
-                  View product details
-                </Link>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => addToCart(product, cardKey)}
+                    className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-900"
+                  >
+                    Add to cart
+                  </button>
+                  <Link
+                    href={`/products/${productSlug}`}
+                    className="inline-flex items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
+                  >
+                    Details
+                  </Link>
+                </div>
               </article>
             );
           })}

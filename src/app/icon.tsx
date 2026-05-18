@@ -26,18 +26,20 @@ export default function Icon() {
           letterSpacing: "-0.04em",
         }}
       >
-        GS
+        INT
         <div
           style={{
             position: "absolute",
-            top: 8,
-            right: 8,
-            width: 10,
-            height: 10,
-            borderRadius: 999,
-            background: "#FDE68A",
+            bottom: 10,
+            right: 12,
+            color: "#FDE68A",
+            fontSize: 10,
+            letterSpacing: "0.06em",
+            fontWeight: 800,
           }}
-        />
+        >
+          SPA
+        </div>
       </div>
     ),
     {
