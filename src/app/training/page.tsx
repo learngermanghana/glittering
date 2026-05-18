@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SITE } from "@/lib/site";
-import { trainingCourses } from "@/lib/trainingCourses";
+import type { TrainingCourse } from "@/lib/trainingCourses";
 
 const trainingGallery = ["/training/1.jpeg", "/training/2.jpeg", "/training/3.jpeg", "/training/4.jpeg"];
 
@@ -16,7 +16,7 @@ type FormState = {
   studentName: string;
   phone: string;
   email: string;
-  course: string;
+  courseId: string;
   preferredClassTime: string;
   branch: string;
   notes: string;
@@ -30,11 +30,16 @@ type CheckoutResponse = {
   error?: string;
 };
 
+type CoursesResponse = {
+  courses?: TrainingCourse[];
+  error?: string;
+};
+
 const initialForm: FormState = {
   studentName: "",
   phone: "",
   email: "",
-  course: "",
+  courseId: "",
   preferredClassTime: "",
   branch: "",
   notes: "",
@@ -42,12 +47,41 @@ const initialForm: FormState = {
 
 export default function TrainingPage() {
   const [form, setForm] = useState<FormState>(initialForm);
+  const [courses, setCourses] = useState<TrainingCourse[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCourses() {
+      try {
+        setIsLoadingCourses(true);
+        const response = await fetch("/api/training/courses", { cache: "no-store" });
+        const data = (await response.json()) as CoursesResponse;
+        if (!response.ok) throw new Error(data.error ?? "Unable to load courses from Sedifex.");
+        if (!cancelled) setCourses(Array.isArray(data.courses) ? data.courses : []);
+      } catch (error) {
+        if (!cancelled) {
+          const errorMessage = error instanceof Error ? error.message : "Unable to load courses from Sedifex.";
+          setCourses([]);
+          setMessage({ kind: "error", text: errorMessage });
+        }
+      } finally {
+        if (!cancelled) setIsLoadingCourses(false);
+      }
+    }
+
+    void loadCourses();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const selectedCourse = useMemo(
-    () => trainingCourses.find((course) => course.course === form.course) ?? null,
-    [form.course]
+    () => courses.find((course) => course.id === form.courseId) ?? null,
+    [courses, form.courseId]
   );
 
   const canSubmit = Boolean(form.studentName.trim() && (form.phone.trim() || form.email.trim()) && selectedCourse && !isSubmitting);
@@ -82,6 +116,7 @@ export default function TrainingPage() {
           studentName: form.studentName.trim(),
           phone: form.phone.trim() || undefined,
           email: form.email.trim() || undefined,
+          courseId: selectedCourse.id,
           course: selectedCourse.course,
           preferredClassTime: form.preferredClassTime.trim() || undefined,
           branch: form.branch.trim() || undefined,
@@ -109,7 +144,7 @@ export default function TrainingPage() {
       <section className="py-12 sm:py-16">
         <SectionTitle
           title="Training School Registration"
-          subtitle="Choose your course, enter your contact details, and pay online securely through Sedifex Checkout."
+          subtitle="Choose a live course from Sedifex, enter your contact details, and pay online securely through Sedifex Checkout."
         />
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -131,7 +166,7 @@ export default function TrainingPage() {
             <div>
               <h2 className="text-xl font-semibold">Register and Pay Online</h2>
               <p className="mt-2 text-sm text-neutral-600">
-                We only need your basic details. Sedifex will generate the payment reference and checkout link automatically.
+                We only need your basic details. Courses and prices are pulled directly from Sedifex course items.
               </p>
             </div>
 
@@ -172,13 +207,16 @@ export default function TrainingPage() {
               <label className="text-sm font-semibold text-neutral-700">
                 Course / program *
                 <select
-                  value={form.course}
-                  onChange={(event) => updateField("course", event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none focus:border-brand-700"
+                  value={form.courseId}
+                  onChange={(event) => updateField("courseId", event.target.value)}
+                  disabled={isLoadingCourses || courses.length === 0}
+                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none focus:border-brand-700 disabled:cursor-not-allowed disabled:bg-neutral-100"
                 >
-                  <option value="">Choose course</option>
-                  {trainingCourses.map((course) => (
-                    <option key={course.course} value={course.course}>
+                  <option value="">
+                    {isLoadingCourses ? "Loading courses from Sedifex..." : courses.length ? "Choose course" : "No course items found"}
+                  </option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
                       {course.course} — GHS {course.price.toFixed(2)}
                     </option>
                   ))}
@@ -229,7 +267,7 @@ export default function TrainingPage() {
 
             <div className="mt-6 rounded-2xl border border-brand-200 bg-brand-50/50 p-4 text-sm text-neutral-700">
               <p className="font-semibold text-neutral-900">Sedifex mapping</p>
-              <p className="mt-1">Your name, phone, course, preferred time, branch, and notes are attached to the Sedifex checkout record. Payment mode, payment status, and reference are generated by Sedifex.</p>
+              <p className="mt-1">The selected live Sedifex course item becomes the checkout item. Name, phone, preferred time, branch, and notes are attached as checkout metadata. Sedifex generates the payment reference and payment status.</p>
             </div>
 
             <button
@@ -267,7 +305,7 @@ export default function TrainingPage() {
               <h3 className="font-semibold text-neutral-900">After payment</h3>
               <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-neutral-600">
                 <li>Sedifex creates the payment reference.</li>
-                <li>Your selected course becomes the checkout item.</li>
+                <li>Your selected course item is used for checkout.</li>
                 <li>The school receives your registration details in the payment metadata.</li>
                 <li>The team can contact you to confirm class start date and requirements.</li>
               </ul>
@@ -287,13 +325,23 @@ export default function TrainingPage() {
                 </tr>
               </thead>
               <tbody>
-                {trainingCourses.map((row) => (
-                  <tr key={row.course} className="border-b border-black/5 align-top">
-                    <td className="py-2 pr-4 font-medium text-neutral-900">{row.course}</td>
-                    <td className="py-2 pr-4 text-neutral-700">{row.duration}</td>
-                    <td className="py-2 text-neutral-700">GHS {row.price.toFixed(2)}</td>
+                {isLoadingCourses ? (
+                  <tr>
+                    <td colSpan={3} className="py-4 text-neutral-600">Loading courses from Sedifex...</td>
                   </tr>
-                ))}
+                ) : courses.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="py-4 text-neutral-600">No course items found in Sedifex for this store.</td>
+                  </tr>
+                ) : (
+                  courses.map((row) => (
+                    <tr key={row.id} className="border-b border-black/5 align-top">
+                      <td className="py-2 pr-4 font-medium text-neutral-900">{row.course}</td>
+                      <td className="py-2 pr-4 text-neutral-700">{row.duration || "—"}</td>
+                      <td className="py-2 text-neutral-700">GHS {row.price.toFixed(2)}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
