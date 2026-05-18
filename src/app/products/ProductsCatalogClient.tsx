@@ -202,12 +202,16 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
     });
   }
 
-  const cartWhatsappLink = useMemo(() => {
-    if (!cartItems.length) return `https://wa.me/${SITE.phoneIntl}`;
+  const sedifexCheckoutLink = useMemo(() => {
+    if (!cartItems.length) return "/book";
 
-    const lines = cartItems.map((item) => `- ${item.name} x${item.quantity} (GHS ${(item.price * item.quantity).toFixed(2)})`);
-    const message = `Hi Glittering Spa! I want to checkout these items:\n${lines.join("\n")}\nTotal: GHS ${cartTotal.toFixed(2)}\nPlease process via Sedifex checkout.`;
-    return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(message)}`;
+    const params = new URLSearchParams({
+      source: "products-cart",
+      total: cartTotal.toFixed(2),
+      items: cartItems.map((item) => `${item.name} x${item.quantity}`).join(", "),
+    });
+
+    return `/book?${params.toString()}`;
   }, [cartItems, cartTotal]);
 
   const notFoundWhatsappLink = useMemo(() => {
@@ -315,8 +319,8 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
               <p className="font-semibold">Estimated total</p>
               <p className="text-base font-bold text-brand-950">GHS {cartTotal.toFixed(2)}</p>
             </div>
-            <a href={cartWhatsappLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-2xl bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-900">
-              Checkout via WhatsApp (Sedifex support)
+            <a href={sedifexCheckoutLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-2xl bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-900">
+              Book directly through Sedifex
             </a>
           </div>
         )}
