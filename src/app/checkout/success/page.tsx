@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ function formatPhone(value?: string) {
   return phone;
 }
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const search = useSearchParams();
   const [details, setDetails] = useState<Record<string, unknown> | null>(null);
   const [snapshot] = useState<Snapshot | null>(() => {
@@ -37,7 +37,6 @@ export default function CheckoutSuccessPage() {
   });
 
   const urlReference = search.get("reference") ?? search.get("trxref") ?? undefined;
-
 
   useEffect(() => {
     if (!urlReference) return;
@@ -76,5 +75,13 @@ export default function CheckoutSuccessPage() {
         <p><strong>Status:</strong> {status}</p>
       </div>
     </section>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<section className="mx-auto max-w-xl px-4 py-16 text-sm text-neutral-600">Loading your payment details…</section>}>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
