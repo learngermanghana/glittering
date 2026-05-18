@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type Snapshot = { name?: string; email?: string; phone?: string; reference?: string; amountPaid?: number; amount?: number; status?: string };
 
 function firstValue<T>(...values: Array<T | undefined | null>) {
