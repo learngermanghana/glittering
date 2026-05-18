@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
@@ -77,25 +78,36 @@ export default async function BlogPage() {
           </p>
         </div>
 
-        <div className="mt-10 space-y-5">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2">
           {posts.length ? (
             posts.map((post) => (
-              <article key={post.id} className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-wide text-brand-700">
-                  {formatDate(post.publishedAt)}
-                </div>
-                <h2 className="mt-2 text-xl font-semibold text-neutral-950">{post.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-neutral-700 line-clamp-3">{getExcerpt(post.content)}</p>
-                {post.linkUrl ? (
-                  <a
-                    href={post.linkUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex text-sm font-semibold text-brand-800 hover:underline"
-                  >
-                    Read full post →
-                  </a>
+              <article
+                key={post.id}
+                className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm transition hover:shadow-md"
+              >
+                {post.imageUrl ? (
+                  <div className="relative h-48 w-full bg-neutral-100">
+                    <Image src={post.imageUrl} alt={post.title} fill className="object-cover" sizes="(min-width: 640px) 50vw, 100vw" />
+                  </div>
                 ) : null}
+
+                <div className="p-6">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-brand-700">
+                    {formatDate(post.publishedAt)}
+                  </div>
+                  <h2 className="mt-2 text-xl font-semibold text-neutral-950">{post.title}</h2>
+                  <p className="mt-3 text-sm leading-6 text-neutral-700 line-clamp-3">{getExcerpt(post.content)}</p>
+                  {post.linkUrl ? (
+                    <a
+                      href={post.linkUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex text-sm font-semibold text-brand-800 hover:underline"
+                    >
+                      Read full post →
+                    </a>
+                  ) : null}
+                </div>
               </article>
             ))
           ) : (
