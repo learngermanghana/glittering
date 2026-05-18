@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findTrainingCourse, slugifyTrainingCourse } from "@/lib/trainingCourses";
+import { findTrainingCourse } from "@/lib/trainingCourses";
 
 const DEFAULT_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
 const DEFAULT_CONTRACT_VERSION = "2026-04-13";
@@ -9,6 +9,7 @@ type TrainingCheckoutRequest = {
   phone?: string;
   email?: string;
   course?: string;
+  courseId?: string;
   preferredClassTime?: string;
   branch?: string;
   notes?: string;
@@ -59,19 +60,19 @@ export async function POST(request: Request) {
     const studentName = readString(body.studentName, 140);
     const phone = readString(body.phone, 80);
     const email = readString(body.email, 220).toLowerCase();
-    const courseName = readString(body.course, 180);
+    const courseLookup = readString(body.courseId || body.course, 180);
     const preferredClassTime = readString(body.preferredClassTime, 160);
     const branch = readString(body.branch, 140);
     const notes = readString(body.notes, 1000);
-    const course = findTrainingCourse(courseName);
+    const course = await findTrainingCourse(courseLookup);
 
     if (!studentName) return NextResponse.json({ error: "Student name is required." }, { status: 400 });
     if (!phone && !email) return NextResponse.json({ error: "Enter phone or email." }, { status: 400 });
     if (phone && !isValidPhone(phone)) return NextResponse.json({ error: "Enter a valid phone number." }, { status: 400 });
     if (email && !isValidEmail(email)) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
-    if (!course) return NextResponse.json({ error: "Choose a valid course." }, { status: 400 });
+    if (!course) return NextResponse.json({ error: "Course not found in Sedifex. Confirm the course item exists with itemType course." }, { status: 400 });
 
-    const storeId = process.env.SEDIFEX_TRAINING_STORE_ID?.trim() || process.env.SEDIFEX_WEBSITE_STORE_ID?.trim() || DEFAULT_STORE_ID;
+    const storeId = process.env.SEDIFEX_TRAINING_STORE_ID?.trim() || process.env.SEDIFEX_WEBSITE_STORE_ID?.trim() || course.storeId || DEFAULT_STORE_ID;
     const reference = `REG-${storeId.slice(0, 6).toUpperCase()}-${Date.now()}`;
     const itemName = `Training Registration - ${course.course}`;
     const checkoutEmail = email || fallbackEmailFromPhone(phone);
@@ -101,8 +102,10 @@ export async function POST(request: Request) {
       items: [
         {
           type: "SERVICE",
-          item_type: "service",
-          item_id: `training-registration-${slugifyTrainingCourse(course.course)}`,
+          item_type: "course",
+          item_id: course.id,
+          productId: course.id,
+          serviceId: course.id,
           qty: 1,
           name: itemName,
           itemName,
@@ -115,8 +118,9 @@ export async function POST(request: Request) {
         pageType: "student_registration",
         source: "glittering_training_page",
         registrationData: {
+          courseId: course.id,
           course: course.course,
-          duration: course.duration,
+          duration: course.duration || null,
           preferredClassTime: preferredClassTime || null,
           branch: branch || null,
           notes: notes || null,
