@@ -75,12 +75,6 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const [cart, setCart] = useState<Record<string, CartItem>>({});
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [deliveryLocation, setDeliveryLocation] = useState("");
-  const [notes, setNotes] = useState("");
-  const [checkoutStatus, setCheckoutStatus] = useState("");
 
   const allProducts = useMemo(() => products.filter((product) => !product.isService), [products]);
 
@@ -216,62 +210,6 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
     return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(message)}`;
   }, [cartItems, cartTotal]);
 
-
-
-  function isValidPhone(value: string) {
-    const digits = value.replace(/\D/g, "");
-    return digits.length >= 9 && digits.length <= 15;
-  }
-
-  async function checkoutWithPaystack() {
-    if (!cartItems.length) return;
-    if (!isValidPhone(phone)) {
-      setCheckoutStatus("Please enter a valid phone number, for example 024 000 0000 or +233 24 000 0000.");
-      return;
-    }
-
-    setCheckoutStatus("Preparing secure checkout...");
-    const subtotal = cartTotal;
-    const response = await fetch('/api/sedifex/checkout/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        cart: cartItems.map((item) => ({ id: item.id, quantity: item.quantity })),
-        customer: { name, email, phone },
-        delivery: { location: deliveryLocation, notes },
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      setCheckoutStatus(data?.error ?? 'Unable to start checkout.');
-      return;
-    }
-
-    const checkoutUrl = data.authorizationUrl ?? data.checkoutUrl;
-    if (checkoutUrl) {
-      const reference = data.reference ?? data.paymentReference ?? data.payment_reference ?? data.clientOrderId;
-      const amountPaid = typeof data.amountPaid === 'number' ? data.amountPaid : subtotal;
-
-      sessionStorage.setItem('checkout:last_customer', JSON.stringify({
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        deliveryLocation: deliveryLocation.trim(),
-        reference,
-        amountPaid,
-        amount: amountPaid,
-        currency: 'GHS',
-        status: 'success',
-      }));
-
-      window.location.href = checkoutUrl;
-      return;
-    }
-
-    setCheckoutStatus('Checkout link not available.');
-  }
-
   const notFoundWhatsappLink = useMemo(() => {
     const requestedProduct = search.trim();
     if (!requestedProduct) return `https://wa.me/${SITE.phoneIntl}`;
@@ -377,19 +315,8 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
               <p className="font-semibold">Estimated total</p>
               <p className="text-base font-bold text-brand-950">GHS {cartTotal.toFixed(2)}</p>
             </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Full name" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
-              <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Phone" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
-              <input value={deliveryLocation} onChange={(event) => setDeliveryLocation(event.target.value)} placeholder="Delivery location" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
-              <input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Delivery notes (optional)" className="rounded-xl border border-neutral-300 px-3 py-2 text-sm sm:col-span-2" />
-            </div>
-            <button type="button" onClick={checkoutWithPaystack} className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-900">
-              Checkout with Paystack
-            </button>
-            {checkoutStatus ? <p className="mt-2 text-xs text-neutral-700">{checkoutStatus}</p> : null}
-            <a href={cartWhatsappLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-2xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">
-              Contact store on WhatsApp
+            <a href={cartWhatsappLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-2xl bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-900">
+              Checkout via WhatsApp (Sedifex support)
             </a>
           </div>
         )}
