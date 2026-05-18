@@ -8,12 +8,24 @@ import { getProductSlug } from "@/lib/productSeo";
 import type { DisplayProduct } from "@/lib/productsData";
 
 type AvailabilityFilter = "all" | "in-stock" | "out-of-stock";
+
 type CartItem = {
   id: string;
   name: string;
   price: number;
   quantity: number;
+  maxQuantity: number | null;
 };
+
+type CheckoutStatus = { kind: "success" | "error"; text: string } | null;
+
+type CheckoutResponse = {
+  ok?: boolean;
+  checkoutUrl?: string;
+  authorizationUrl?: string;
+  error?: string;
+};
+
 const DESCRIPTION_PREVIEW_LENGTH = 180;
 const SEARCH_HISTORY_KEY = "products-search-history";
 const MAX_HISTORY_ITEMS = 6;
@@ -22,7 +34,7 @@ const MAX_SUGGESTIONS = 8;
 const SEARCH_SYNONYMS: Record<string, string[]> = {
   sneakers: ["shoe", "shoes", "trainer", "trainers", "footwear"],
   sandals: ["slipper", "slippers", "flip flops", "slides"],
-  adidas: ["adiddas", "addidas", "addidas", "adi das"],
+  adidas: ["adiddas", "addidas", "adi das"],
   nike: ["naik", "nik", "nyke"],
   face: ["facial", "facials", "skincare", "skin care"],
 };
@@ -50,9 +62,14 @@ function levenshteinDistance(first: string, second: string) {
 }
 
 function stockText(quantity: number | null) {
-  if (quantity === null) return "Out of stock";
+  if (quantity === null) return "Available";
   if (quantity <= 0) return "Out of stock";
   return `${quantity} in stock`;
+}
+
+function clampCartQuantity(quantity: number, maxQuantity: number | null) {
+  if (maxQuantity !== null) return Math.max(0, Math.min(quantity, maxQuantity));
+  return Math.max(0, quantity);
 }
 
 export function ProductsCatalogClient({ products }: { products: DisplayProduct[] }) {
@@ -63,9 +80,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
       if (!persistedSearches) return [];
       const parsed = JSON.parse(persistedSearches) as unknown;
       if (!Array.isArray(parsed)) return [];
-      return parsed
-        .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-        .slice(0, MAX_HISTORY_ITEMS);
+      return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0).slice(0, MAX_HISTORY_ITEMS);
     } catch {
       globalThis.localStorage?.removeItem(SEARCH_HISTORY_KEY);
       return [];
@@ -75,12 +90,14 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const [cart, setCart] = useState<Record<string, CartItem>>({});
+  const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>(null);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [customer, setCustomer] = useState({ name: "", phone: "", email: "", deliveryLocation: "", deliveryNotes: "" });
 
   const allProducts = useMemo(() => products.filter((product) => !product.isService), [products]);
 
   const searchableTokens = useMemo(() => {
     const tokens = new Set<string>();
-
     allProducts.forEach((product) => {
       product.name
         .toLowerCase()
@@ -89,12 +106,10 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
           if (token.length > 2) tokens.add(token);
         });
     });
-
     Object.entries(SEARCH_SYNONYMS).forEach(([rootWord, synonyms]) => {
       tokens.add(rootWord);
       synonyms.forEach((synonym) => tokens.add(synonym.toLowerCase()));
     });
-
     return [...tokens];
   }, [allProducts]);
 
@@ -103,11 +118,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
     if (!normalizedQuery) return;
 
     setRecentSearches((previous) => {
-      const next = [normalizedQuery, ...previous.filter((item) => item.toLowerCase() !== normalizedQuery.toLowerCase())].slice(
-        0,
-        MAX_HISTORY_ITEMS
-      );
-
+      const next = [normalizedQuery, ...previous.filter((item) => item.toLowerCase() !== normalizedQuery.toLowerCase())].slice(0, MAX_HISTORY_ITEMS);
       globalThis.localStorage?.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
       return next;
     });
@@ -117,14 +128,10 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
     const query = search.trim().toLowerCase();
     if (!query) return recentSearches;
 
-    const exactProductMatches = allProducts
-      .map((product) => product.name)
-      .filter((name) => name.toLowerCase().includes(query));
-
+    const exactProductMatches = allProducts.map((product) => product.name).filter((name) => name.toLowerCase().includes(query));
     const synonymMatches = Object.entries(SEARCH_SYNONYMS)
       .filter(([rootWord, synonyms]) => rootWord.includes(query) || synonyms.some((synonym) => synonym.includes(query)))
       .map(([rootWord]) => rootWord);
-
     const typoSuggestions = searchableTokens
       .filter((token) => {
         if (token.length < 4 || query.length < 4) return false;
@@ -147,42 +154,44 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
 
     return allProducts.filter((product) => {
       const productName = product.name.toLowerCase();
-      const productMatchByTypo = query.length < 4
-        ? false
-        : productName.split(/\s+/).some((token) => levenshteinDistance(query, token) <= 2);
-
+      const productMatchByTypo = query.length < 4 ? false : productName.split(/\s+/).some((token) => levenshteinDistance(query, token) <= 2);
       const matchesSearch =
         query.length === 0 ||
-        [...synonymExpandedQuery].some((searchTerm) =>
-          productName.includes(searchTerm) || stockText(product.quantity).toLowerCase().includes(searchTerm)
-        ) ||
+        [...synonymExpandedQuery].some((searchTerm) => productName.includes(searchTerm) || stockText(product.quantity).toLowerCase().includes(searchTerm)) ||
         productMatchByTypo;
-
-      const quantity = product.quantity ?? 0;
-      const matchesAvailability =
-        availabilityFilter === "all" ||
-        (availabilityFilter === "in-stock" && quantity > 0) ||
-        (availabilityFilter === "out-of-stock" && quantity <= 0);
-
+      const quantity = product.quantity ?? 1;
+      const matchesAvailability = availabilityFilter === "all" || (availabilityFilter === "in-stock" && quantity > 0) || (availabilityFilter === "out-of-stock" && quantity <= 0);
       return matchesSearch && matchesAvailability;
     });
   }, [allProducts, availabilityFilter, search]);
 
-
-
   const cartItems = useMemo(() => Object.values(cart), [cart]);
+  const cartCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
   const cartTotal = useMemo(() => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0), [cartItems]);
 
-  function addToCart(product: DisplayProduct, key: string) {
+  function addToCart(product: DisplayProduct) {
+    if (!product.id) {
+      setCheckoutStatus({ kind: "error", text: "This product is missing its Sedifex product ID." });
+      return;
+    }
+
+    if (product.quantity !== null && product.quantity <= 0) {
+      setCheckoutStatus({ kind: "error", text: `${product.name} is out of stock.` });
+      return;
+    }
+
+    setCheckoutStatus(null);
     setCart((previous) => {
-      const existing = previous[key];
+      const existing = previous[product.id as string];
+      const nextQuantity = clampCartQuantity((existing?.quantity ?? 0) + 1, product.quantity);
       return {
         ...previous,
-        [key]: {
-          id: key,
+        [product.id as string]: {
+          id: product.id as string,
           name: product.name,
           price: product.price,
-          quantity: existing ? existing.quantity + 1 : 1,
+          quantity: nextQuantity,
+          maxQuantity: product.quantity,
         },
       };
     });
@@ -190,93 +199,130 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
 
   function adjustCartQuantity(id: string, nextQuantity: number) {
     setCart((previous) => {
-      if (nextQuantity <= 0) {
+      const current = previous[id];
+      if (!current) return previous;
+      const safeQuantity = clampCartQuantity(nextQuantity, current.maxQuantity);
+      if (safeQuantity <= 0) {
         const next = { ...previous };
         delete next[id];
         return next;
       }
-
-      const current = previous[id];
-      if (!current) return previous;
-      return { ...previous, [id]: { ...current, quantity: nextQuantity } };
+      return { ...previous, [id]: { ...current, quantity: safeQuantity } };
     });
   }
 
-  const sedifexCheckoutLink = useMemo(() => {
-    if (!cartItems.length) return "/book";
+  function updateCustomer(field: keyof typeof customer, value: string) {
+    setCustomer((previous) => ({ ...previous, [field]: value }));
+  }
 
-    const params = new URLSearchParams({
-      source: "products-cart",
-      total: cartTotal.toFixed(2),
-      items: cartItems.map((item) => `${item.name} x${item.quantity}`).join(", "),
-    });
+  async function handleCheckout() {
+    setCheckoutStatus(null);
 
-    return `/book?${params.toString()}`;
-  }, [cartItems, cartTotal]);
+    if (!cartItems.length) {
+      setCheckoutStatus({ kind: "error", text: "Add at least one product before checkout." });
+      return;
+    }
+    if (!customer.name.trim()) {
+      setCheckoutStatus({ kind: "error", text: "Enter your name before checkout." });
+      return;
+    }
+    if (!customer.phone.trim()) {
+      setCheckoutStatus({ kind: "error", text: "Enter your phone number before checkout." });
+      return;
+    }
+    if (!customer.deliveryLocation.trim()) {
+      setCheckoutStatus({ kind: "error", text: "Enter your delivery or pickup location before checkout." });
+      return;
+    }
+
+    setIsCheckingOut(true);
+    try {
+      const response = await fetch("/api/sedifex/checkout/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cart: cartItems.map((item) => ({ id: item.id, quantity: item.quantity })),
+          customer: {
+            name: customer.name.trim(),
+            phone: customer.phone.trim(),
+            email: customer.email.trim() || undefined,
+          },
+          delivery: {
+            location: customer.deliveryLocation.trim(),
+            notes: customer.deliveryNotes.trim() || undefined,
+          },
+        }),
+      });
+
+      const data = (await response.json()) as CheckoutResponse;
+      const checkoutUrl = data.checkoutUrl ?? data.authorizationUrl;
+      if (!response.ok || !checkoutUrl) throw new Error(data.error ?? "Unable to create checkout.");
+
+      setCheckoutStatus({ kind: "success", text: "Checkout created. Redirecting to secure payment..." });
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to start checkout.";
+      setCheckoutStatus({ kind: "error", text: message });
+      setIsCheckingOut(false);
+    }
+  }
 
   const notFoundWhatsappLink = useMemo(() => {
     const requestedProduct = search.trim();
     if (!requestedProduct) return `https://wa.me/${SITE.phoneIntl}`;
-
-    return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
-      `Hi Glittering Spa! I searched for "${requestedProduct}" on your website but could not find it. Please can you confirm if it is available in-store?`
-    )}`;
+    return `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(`Hi Glittering Spa! I searched for "${requestedProduct}" on your website but could not find it. Please can you confirm if it is available in-store?`)}`;
   }, [search]);
 
   return (
     <>
       <div className="mt-8 rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-5">
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <label className="sr-only" htmlFor="product-search">
-            Search products
-          </label>
+          <label className="sr-only" htmlFor="product-search">Search products</label>
           <div className="relative">
-          <input
-            id="product-search"
-            type="search"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setShowSuggestions(true);
-            }}
-            onFocus={() => setShowSuggestions(true)}
-            onBlur={() => {
-              globalThis.setTimeout(() => {
-                setShowSuggestions(false);
-                saveSearchToHistory(search);
-              }, 120);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                saveSearchToHistory(search);
-                setShowSuggestions(false);
-              }
-            }}
-            placeholder="Search by product name"
-            className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-          />
-          {showSuggestions && suggestions.length > 0 ? (
-            <div className="absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-2xl border border-neutral-200 bg-white p-1 shadow-lg">
-              {suggestions.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  onClick={() => {
-                    setSearch(suggestion);
-                    saveSearchToHistory(suggestion);
-                    setShowSuggestions(false);
-                  }}
-                  className="block w-full rounded-xl px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          ) : null}
+            <input
+              id="product-search"
+              type="search"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => {
+                globalThis.setTimeout(() => {
+                  setShowSuggestions(false);
+                  saveSearchToHistory(search);
+                }, 120);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  saveSearchToHistory(search);
+                  setShowSuggestions(false);
+                }
+              }}
+              placeholder="Search by product name"
+              className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
+            />
+            {showSuggestions && suggestions.length > 0 ? (
+              <div className="absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-2xl border border-neutral-200 bg-white p-1 shadow-lg">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => {
+                      setSearch(suggestion);
+                      saveSearchToHistory(suggestion);
+                      setShowSuggestions(false);
+                    }}
+                    className="block w-full rounded-xl px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
-          <label className="sr-only" htmlFor="availability-filter">
-            Filter by availability
-          </label>
+          <label className="sr-only" htmlFor="availability-filter">Filter by availability</label>
           <select
             id="availability-filter"
             value={availabilityFilter}
@@ -288,170 +334,181 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
             <option value="out-of-stock">Out of stock</option>
           </select>
         </div>
-        <p className="mt-3 text-xs text-neutral-600">
-          Showing {filteredProducts.length} of {allProducts.length} catalog items.
-        </p>
+        <p className="mt-3 text-xs text-neutral-600">Showing {filteredProducts.length} of {allProducts.length} catalog items.</p>
       </div>
 
-      <div className="mt-6 rounded-3xl border border-brand-200 bg-brand-50/40 p-5 shadow-sm">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-brand-950">Cart</h2>
-          <p className="text-sm text-neutral-700">Sedifex-ready cart format with item quantities and checkout summary.</p>
-        </div>
-        {cartItems.length === 0 ? (
-          <p className="mt-3 text-sm text-neutral-700">Your cart is empty. Add items below to start checkout.</p>
-        ) : (
-          <div className="mt-3 space-y-2">
-            {cartItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between rounded-2xl border border-black/10 bg-white p-3">
-                <div>
-                  <p className="text-sm font-semibold text-neutral-900">{item.name}</p>
-                  <p className="text-xs text-neutral-600">GHS {item.price.toFixed(2)} each</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => adjustCartQuantity(item.id, item.quantity - 1)} className="h-7 w-7 rounded-full border border-neutral-300 text-sm">-</button>
-                  <span className="text-sm font-semibold">{item.quantity}</span>
-                  <button type="button" onClick={() => adjustCartQuantity(item.id, item.quantity + 1)} className="h-7 w-7 rounded-full border border-neutral-300 text-sm">+</button>
-                </div>
-              </div>
-            ))}
-            <div className="mt-2 flex items-center justify-between rounded-2xl bg-white p-3">
-              <p className="font-semibold">Estimated total</p>
-              <p className="text-base font-bold text-brand-950">GHS {cartTotal.toFixed(2)}</p>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
+        <div className="rounded-3xl border border-brand-200 bg-brand-50/40 p-5 shadow-sm lg:order-2 lg:sticky lg:top-24 lg:self-start">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-brand-950">Your cart</h2>
+              <p className="mt-1 text-sm text-neutral-700">Add products, enter your details, then pay online.</p>
             </div>
-            <a href={sedifexCheckoutLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-2xl bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-900">
-              Book directly through Sedifex
-            </a>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-950">{cartCount} item{cartCount === 1 ? "" : "s"}</span>
           </div>
-        )}
-      </div>
 
-      {filteredProducts.length === 0 ? (
-        <div className="mt-8 rounded-3xl border border-dashed border-black/15 bg-neutral-50 px-6 py-10 text-center text-sm text-neutral-600">
-          <p>No products matched your search. Try another keyword or filter.</p>
-          <p className="mt-2">
-            Some products may still be available in-store even if they are not listed online.
-          </p>
-          <a
-            href={notFoundWhatsappLink}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-4 inline-flex items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-100"
-          >
-            Contact store on WhatsApp
-          </a>
-        </div>
-      ) : (
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {filteredProducts.map((product, index) => {
-            const cardKey = `${product.id ?? product.name}-${index}`;
-            const productSlug = getProductSlug(product);
-            const isOutOfStock = product.quantity !== null && product.quantity <= 0;
-            const productImages = (product.images.length ? product.images : [product.image]).slice(0, 3);
-            const isSedifexImage = productImages[0]?.startsWith("http") ?? false;
-            const description = product.description.trim();
-            const hasLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
-            const isExpanded = expandedDescriptions[cardKey] ?? false;
-            const descriptionToShow = hasLongDescription && !isExpanded
-              ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}…`
-              : description;
-
-            return (
-              <article
-                key={cardKey}
-                className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm"
-                aria-label={product.name}
-              >
-                <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
-                  <Image
-                    src={productImages[0] ?? product.image}
-                    alt={product.name}
-                    fill
-                    className={isSedifexImage ? "object-contain p-2" : "object-cover"}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
-                </div>
-                {productImages.length > 1 ? (
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    {productImages.map((imageSrc, imageIndex) => {
-                      const isRemoteImage = imageSrc.startsWith("http");
-                      return (
-                        <div
-                          key={`${product.id ?? product.name}-${imageSrc}-${imageIndex}`}
-                          className="relative aspect-square overflow-hidden rounded-lg border border-black/10 bg-neutral-100"
-                        >
-                          <Image
-                            src={imageSrc}
-                            alt={`${product.name} photo ${imageIndex + 1}`}
-                            fill
-                            className={isRemoteImage ? "object-contain p-1" : "object-cover"}
-                            sizes="80px"
-                          />
-                        </div>
-                      );
-                    })}
+          {cartItems.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-dashed border-black/10 bg-white p-4 text-sm text-neutral-700">Your cart is empty. Choose a product and tap Add to cart.</p>
+          ) : (
+            <div className="mt-4 space-y-2">
+              {cartItems.map((item) => (
+                <div key={item.id} className="rounded-2xl border border-black/10 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900">{item.name}</p>
+                      <p className="text-xs text-neutral-600">GHS {item.price.toFixed(2)} each</p>
+                    </div>
+                    <button type="button" onClick={() => adjustCartQuantity(item.id, 0)} className="text-xs font-semibold text-red-600 hover:underline">Remove</button>
                   </div>
-                ) : null}
-                <div className="mt-4 flex items-start justify-between gap-3">
-                  <h2 className="text-base font-semibold">{product.name}</h2>
-                  <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-900">
-                    GHS {product.price.toFixed(2)}
-                  </span>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => adjustCartQuantity(item.id, item.quantity - 1)} className="h-8 w-8 rounded-full border border-neutral-300 text-sm">-</button>
+                      <span className="min-w-6 text-center text-sm font-semibold">{item.quantity}</span>
+                      <button type="button" onClick={() => adjustCartQuantity(item.id, item.quantity + 1)} className="h-8 w-8 rounded-full border border-neutral-300 text-sm">+</button>
+                    </div>
+                    <p className="text-sm font-bold text-brand-950">GHS {(item.price * item.quantity).toFixed(2)}</p>
+                  </div>
                 </div>
-                <div className="mt-2 flex items-center gap-2 text-xs text-neutral-600">
-                  <span
-                    className={`inline-flex h-2.5 w-2.5 rounded-full ${
-                      isOutOfStock ? "bg-red-500" : product.quantity === null ? "bg-amber-500" : "bg-emerald-500"
-                    }`}
-                  />
-                  {stockText(product.quantity)}
-                </div>
-                                <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
-                  {description ? (
-                    <>
-                      <p className="leading-relaxed">{descriptionToShow}</p>
-                      {hasLongDescription ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedDescriptions((previous) => ({
-                              ...previous,
-                              [cardKey]: !isExpanded,
-                            }))
-                          }
-                          className="mt-2 inline-flex text-xs font-semibold text-brand-900 underline-offset-2 hover:underline"
-                          aria-expanded={isExpanded}
-                        >
-                          {isExpanded ? "View less" : "View more"}
-                        </button>
-                      ) : null}
-                    </>
-                  ) : (
-                    <p>
-                      Contact the spa team for verified ingredients, usage directions, contraindications, and treatment suitability.
-                    </p>
-                  )}
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => addToCart(product, cardKey)}
-                    className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-900"
-                  >
-                    Add to cart
-                  </button>
-                  <Link
-                    href={`/products/${productSlug}`}
-                    className="inline-flex items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
-                  >
-                    Details
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
+              ))}
+              <div className="mt-2 flex items-center justify-between rounded-2xl bg-white p-3">
+                <p className="font-semibold">Estimated total</p>
+                <p className="text-base font-bold text-brand-950">GHS {cartTotal.toFixed(2)}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-5 grid gap-3">
+            <label className="text-xs font-semibold text-neutral-700">
+              Name
+              <input value={customer.name} onChange={(event) => updateCustomer("name", event.target.value)} placeholder="Your full name" className="mt-1 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none ring-brand-500 transition focus:ring-2" />
+            </label>
+            <label className="text-xs font-semibold text-neutral-700">
+              Phone
+              <input value={customer.phone} onChange={(event) => updateCustomer("phone", event.target.value)} placeholder="Phone / WhatsApp number" className="mt-1 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none ring-brand-500 transition focus:ring-2" />
+            </label>
+            <label className="text-xs font-semibold text-neutral-700">
+              Email optional
+              <input value={customer.email} onChange={(event) => updateCustomer("email", event.target.value)} placeholder="Email address" type="email" className="mt-1 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none ring-brand-500 transition focus:ring-2" />
+            </label>
+            <label className="text-xs font-semibold text-neutral-700">
+              Delivery / pickup location
+              <input value={customer.deliveryLocation} onChange={(event) => updateCustomer("deliveryLocation", event.target.value)} placeholder="Example: Awoshie branch pickup or your delivery area" className="mt-1 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none ring-brand-500 transition focus:ring-2" />
+            </label>
+            <label className="text-xs font-semibold text-neutral-700">
+              Notes optional
+              <textarea value={customer.deliveryNotes} onChange={(event) => updateCustomer("deliveryNotes", event.target.value)} placeholder="Delivery notes, color choice, or special request" rows={3} className="mt-1 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none ring-brand-500 transition focus:ring-2" />
+            </label>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCheckout}
+            disabled={isCheckingOut || cartItems.length === 0}
+            className={`mt-4 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-sm ${isCheckingOut || cartItems.length === 0 ? "cursor-not-allowed bg-neutral-400" : "bg-brand-950 hover:bg-brand-900"}`}
+          >
+            {isCheckingOut ? "Creating checkout..." : "Pay now with Sedifex Checkout"}
+          </button>
+
+          <p className="mt-2 text-xs text-neutral-600">No manual payment reference needed. Sedifex will generate the payment link and reference.</p>
+
+          {checkoutStatus ? (
+            <div className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${checkoutStatus.kind === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
+              {checkoutStatus.text}
+            </div>
+          ) : null}
         </div>
-      )}
+
+        <div className="lg:order-1">
+          {filteredProducts.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-black/15 bg-neutral-50 px-6 py-10 text-center text-sm text-neutral-600">
+              <p>No products matched your search. Try another keyword or filter.</p>
+              <p className="mt-2">Some products may still be available in-store even if they are not listed online.</p>
+              <a href={notFoundWhatsappLink} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-100">
+                Contact store on WhatsApp
+              </a>
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredProducts.map((product, index) => {
+                const cardKey = `${product.id ?? product.name}-${index}`;
+                const productSlug = getProductSlug(product);
+                const isOutOfStock = product.quantity !== null && product.quantity <= 0;
+                const productImages = (product.images.length ? product.images : [product.image]).slice(0, 3);
+                const isSedifexImage = productImages[0]?.startsWith("http") ?? false;
+                const description = product.description.trim();
+                const hasLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
+                const isExpanded = expandedDescriptions[cardKey] ?? false;
+                const descriptionToShow = hasLongDescription && !isExpanded ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}…` : description;
+
+                return (
+                  <article key={cardKey} className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm" aria-label={product.name}>
+                    <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
+                      <Image src={productImages[0] ?? product.image} alt={product.name} fill className={isSedifexImage ? "object-contain p-2" : "object-cover"} sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw" />
+                    </div>
+
+                    {productImages.length > 1 ? (
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {productImages.map((imageSrc, imageIndex) => {
+                          const isRemoteImage = imageSrc.startsWith("http");
+                          return (
+                            <div key={`${product.id ?? product.name}-${imageSrc}-${imageIndex}`} className="relative aspect-square overflow-hidden rounded-lg border border-black/10 bg-neutral-100">
+                              <Image src={imageSrc} alt={`${product.name} photo ${imageIndex + 1}`} fill className={isRemoteImage ? "object-contain p-1" : "object-cover"} sizes="80px" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-4 flex items-start justify-between gap-3">
+                      <h2 className="text-base font-semibold">{product.name}</h2>
+                      <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-900">GHS {product.price.toFixed(2)}</span>
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2 text-xs text-neutral-600">
+                      <span className={`inline-flex h-2.5 w-2.5 rounded-full ${isOutOfStock ? "bg-red-500" : product.quantity === null ? "bg-amber-500" : "bg-emerald-500"}`} />
+                      {stockText(product.quantity)}
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
+                      {description ? (
+                        <>
+                          <p className="leading-relaxed">{descriptionToShow}</p>
+                          {hasLongDescription ? (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedDescriptions((previous) => ({ ...previous, [cardKey]: !isExpanded }))}
+                              className="mt-2 inline-flex text-xs font-semibold text-brand-900 underline-offset-2 hover:underline"
+                              aria-expanded={isExpanded}
+                            >
+                              {isExpanded ? "View less" : "View more"}
+                            </button>
+                          ) : null}
+                        </>
+                      ) : (
+                        <p>Contact the spa team for verified ingredients, usage directions, contraindications, and treatment suitability.</p>
+                      )}
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => addToCart(product)}
+                        disabled={isOutOfStock}
+                        className={`inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold text-white ${isOutOfStock ? "cursor-not-allowed bg-neutral-400" : "bg-brand-950 hover:bg-brand-900"}`}
+                      >
+                        {isOutOfStock ? "Out of stock" : cart[product.id ?? ""] ? "Add one more" : "Add to cart"}
+                      </button>
+                      <Link href={`/products/${productSlug}`} className="inline-flex items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">
+                        Details
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }
