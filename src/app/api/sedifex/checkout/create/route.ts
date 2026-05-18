@@ -43,6 +43,11 @@ export async function POST(request: Request) {
     const amount = items.reduce((sum, item) => sum + item.totalPrice, 0);
     const clientOrderId = `HAJ-PAY-${Date.now()}`;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.glitteringmedspa.com";
+    const selectedItemsSummary = items.map((item) => `${item.name} x${item.quantity}`).join(", ");
+    const checkoutReturnParams = new URLSearchParams({
+      reference: clientOrderId,
+      course: selectedItemsSummary,
+    });
 
     const payload = {
       storeId: STORE_ID,
@@ -62,8 +67,8 @@ export async function POST(request: Request) {
       amount,
       customer: { name: customer.name?.trim() || "", email: customer.email?.trim() || "", phone: customer.phone?.trim() || "" },
       delivery: { location: delivery.location?.trim() || "", notes: delivery.notes?.trim() || "" },
-      returnUrl: `${appUrl}/checkout/success`,
-      cancelUrl: `${appUrl}/checkout/failed`,
+      returnUrl: `${appUrl}/checkout/success?${checkoutReturnParams.toString()}`,
+      cancelUrl: `${appUrl}/checkout/failed?${checkoutReturnParams.toString()}`,
       syncStatus: "pending",
       syncRequestedAt: new Date().toISOString(),
     };
