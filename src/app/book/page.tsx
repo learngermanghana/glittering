@@ -63,10 +63,6 @@ export default function BookPage() {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
   }, [formData.serviceId, serviceOptions]);
 
-  const hasContactMethod = useMemo(() => {
-    return Boolean(formData.phone.trim() || formData.email.trim());
-  }, [formData.email, formData.phone]);
-
   const depositAmountValue = useMemo(() => {
     const value = formData.depositAmount.trim();
     if (!value) return 0;
@@ -89,12 +85,9 @@ export default function BookPage() {
     if (!formData.paymentMethod.trim()) errors.paymentMethod = "Payment method is required.";
     if (!formData.paymentReference.trim()) errors.paymentReference = "Payment reference is required.";
 
-    if (!hasContactMethod) {
-      errors.phone = "Provide at least one contact method.";
-      errors.email = "Provide at least one contact method.";
-    }
-
-    if (formData.email.trim() && !isValidEmail(formData.email.trim())) {
+    if (!formData.email.trim()) {
+      errors.email = "Email is required for online checkout.";
+    } else if (!isValidEmail(formData.email.trim())) {
       errors.email = "Please provide a valid email address.";
     }
 
@@ -122,7 +115,6 @@ export default function BookPage() {
     formData.paymentReference,
     formData.serviceId,
     formData.time,
-    hasContactMethod,
   ]);
 
   const clientValidationMessage = useMemo(() => {
@@ -137,7 +129,7 @@ export default function BookPage() {
       Boolean(formData.date.trim()),
       Boolean(formData.time.trim()),
       Boolean(formData.branch.trim()),
-      Boolean(formData.phone.trim() || formData.email.trim()),
+      Boolean(formData.email.trim()),
       Boolean(formData.paymentMethod.trim()),
       Boolean(formData.paymentReference.trim()),
       formData.cancellationAccepted,
@@ -161,7 +153,6 @@ export default function BookPage() {
     formData.name,
     formData.paymentMethod,
     formData.paymentReference,
-    formData.phone,
     formData.serviceId,
     formData.time,
   ]);
