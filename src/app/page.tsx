@@ -7,16 +7,14 @@ import {
   WHATSAPP_LINK,
   ENQUIRIES_WHATSAPP_LINK,
   LOCATIONS,
-  products,
   SALES_WHATSAPP_LINK,
-  topSellingProducts,
-  topSellingServices,
 } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { buildPageMetadata } from "@/lib/seo";
 import { fetchFirestoreDocument } from "@/lib/firebase";
 import { getProductsCatalogData } from "@/lib/products";
+import { getServicesCatalogData } from "@/lib/services";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
@@ -60,11 +58,14 @@ export default async function HomePage() {
   const galleryImages = await getGalleryImages();
   const featuredImages = galleryImages.slice(0, 3);
   const [awoshie, spintex] = LOCATIONS;
-  const [promoStore, homepageProducts] = await Promise.all([
+  const [promoStore, homepageProducts, homepageServices] = await Promise.all([
     fetchFirestoreDocument<StorePromoDoc>("stores", PROMO_STORE_ID).catch(() => null),
     getProductsCatalogData(),
+    getServicesCatalogData(),
   ]);
-  const featuredProducts = homepageProducts.slice(0, 3);
+  const featuredProducts = homepageProducts.filter((product) => !product.isService).slice(0, 3);
+  const liveTopServices = homepageServices.filter((service) => service.price > 0).slice(0, 3);
+  const liveTopProducts = featuredProducts;
   const fallbackPromoStartDate = "2026-04-01";
   const fallbackPromoEndDate = "2026-04-15";
   const promoStartDateRaw = asPromoText(promoStore?.promoStartDate) ?? fallbackPromoStartDate;
@@ -248,44 +249,52 @@ export default async function HomePage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <div className="text-sm text-neutral-600">Featured Products & Services</div>
-                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Most requested services & products</h2>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Latest services & products</h2>
                 <p className="mt-2 text-sm text-neutral-600">
-                  Quick picks clients ask for most. Tap WhatsApp and we’ll help you choose the best option.
+                  Live picks from Sedifex. Browse the current services and products available on the site.
                 </p>
               </div>
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                href="/book"
                 className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-900 shadow-sm"
               >
                 Reserve your slot
-              </a>
+              </Link>
             </div>
 
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl border border-black/10 bg-white p-5">
-                <div className="text-sm font-semibold text-brand-900">Top Services</div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-brand-900">Top Services</div>
+                  <Link href="/services" className="text-xs font-semibold text-brand-800 hover:underline">View all</Link>
+                </div>
                 <div className="mt-4 space-y-3">
-                  {topSellingServices.map((service) => (
-                    <div key={service.name} className="rounded-xl border border-rose-100 bg-rose-50/40 p-3">
+                  {liveTopServices.length ? liveTopServices.map((service) => (
+                    <div key={service.id ?? service.name} className="rounded-xl border border-rose-100 bg-rose-50/40 p-3">
                       <p className="text-sm font-semibold text-neutral-900">{service.name}</p>
-                      <p className="text-xs text-brand-800">{service.category}</p>
-                      <p className="mt-1 text-xs text-neutral-600">{service.summary}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-brand-800">
+                        <span>{service.category}</span>
+                        <span>•</span>
+                        <span>{new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }).format(service.price)}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-neutral-600">{service.description || "Book this service online or contact the spa team for details."}</p>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="rounded-xl border border-dashed border-rose-100 bg-rose-50/40 p-3 text-sm text-neutral-600">No live services are available right now.</p>
+                  )}
                 </div>
               </div>
 
               <div className="rounded-2xl border border-black/10 bg-white p-5">
-                <div className="text-sm font-semibold text-brand-900">Top Products</div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-brand-900">Top Products</div>
+                  <Link href="/products" className="text-xs font-semibold text-brand-800 hover:underline">View all</Link>
+                </div>
                 <div className="mt-4 space-y-3">
-                  {topSellingProducts.map((name) => {
-                    const product = featuredProducts.find((item) => item.name === name) ?? products.find((item) => item.name === name);
-                    if (!product) return null;
+                  {liveTopProducts.length ? liveTopProducts.map((product) => {
                     const isSedifexImage = product.image.startsWith("http");
                     return (
-                      <div key={product.name} className="flex items-center gap-3 rounded-xl border border-rose-100 bg-rose-50/40 p-3">
+                      <div key={product.id ?? product.name} className="flex items-center gap-3 rounded-xl border border-rose-100 bg-rose-50/40 p-3">
                         <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-black/10 bg-white">
                           <Image
                             src={product.image}
@@ -297,11 +306,14 @@ export default async function HomePage() {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-neutral-900">{product.name}</p>
-                          <p className="mt-0.5 text-xs text-neutral-600">{product.description}</p>
+                          <p className="text-xs text-brand-800">{new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }).format(product.price)}</p>
+                          <p className="mt-0.5 text-xs text-neutral-600">{product.description || "Available from the live product catalog."}</p>
                         </div>
                       </div>
                     );
-                  })}
+                  }) : (
+                    <p className="rounded-xl border border-dashed border-rose-100 bg-rose-50/40 p-3 text-sm text-neutral-600">No live products are available right now.</p>
+                  )}
                 </div>
                 <a
                   href={SALES_WHATSAPP_LINK}
