@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { BOOKING_URL } from "@/lib/site";
 import type { DisplayService } from "@/lib/services";
-import { EngagementPanel } from "@/components/EngagementPanel";
 
 const priceFormatter = new Intl.NumberFormat("en-GH", {
   style: "currency",
@@ -45,26 +44,15 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
       return matchesCategory && matchesSearch;
     });
 
-    if (sortOrder === "price-low") {
-      return [...filtered].sort((a, b) => a.price - b.price);
-    }
-
-    if (sortOrder === "price-high") {
-      return [...filtered].sort((a, b) => b.price - a.price);
-    }
-
-    if (sortOrder === "name") {
-      return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
-    }
+    if (sortOrder === "price-low") return [...filtered].sort((a, b) => a.price - b.price);
+    if (sortOrder === "price-high") return [...filtered].sort((a, b) => b.price - a.price);
+    if (sortOrder === "name") return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
 
     return filtered;
   }, [searchTerm, selectedCategory, services, sortOrder]);
 
   const toggleDescription = (serviceKey: string) => {
-    setExpandedDescriptions((current) => ({
-      ...current,
-      [serviceKey]: !current[serviceKey],
-    }));
+    setExpandedDescriptions((current) => ({ ...current, [serviceKey]: !current[serviceKey] }));
   };
 
   return (
@@ -89,9 +77,7 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
               className="w-full rounded-2xl border border-neutral-300 bg-white px-3 py-2 text-sm font-normal text-neutral-900 outline-none transition focus:border-neutral-500"
             >
               {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
+                <option key={category} value={category}>{category}</option>
               ))}
             </select>
           </label>
@@ -111,9 +97,7 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
           </label>
         </div>
 
-        <p className="mt-3 text-xs text-neutral-500">
-          Showing {filteredServices.length} of {services.length} services
-        </p>
+        <p className="mt-3 text-xs text-neutral-500">Showing {filteredServices.length} of {services.length} services</p>
       </div>
 
       {filteredServices.length ? (
@@ -122,16 +106,10 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
             const serviceKey = `${service.id ?? service.name}-${index}`;
             const hasLongDescription = service.description.length > DESCRIPTION_TRUNCATE_LENGTH;
             const isExpanded = !!expandedDescriptions[serviceKey];
-            const displayDescription =
-              hasLongDescription && !isExpanded
-                ? `${service.description.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim()}...`
-                : service.description;
+            const displayDescription = hasLongDescription && !isExpanded ? `${service.description.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim()}...` : service.description;
 
             return (
-              <article
-                key={serviceKey}
-                className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm"
-              >
+              <article key={serviceKey} className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
                 <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
                   <Image
                     src={service.image}
@@ -168,8 +146,6 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
                     </button>
                   ) : null}
                 </div>
-
-                <EngagementPanel sourceProductId={service.id ?? serviceKey} label={service.name} />
 
                 <Link
                   href={`${BOOKING_URL}?service=${encodeURIComponent(service.name)}`}
