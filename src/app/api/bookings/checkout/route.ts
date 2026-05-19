@@ -1,27 +1,25 @@
 import { NextResponse } from "next/server";
 import {
-  createCheckoutReference,
-  createSedifexCheckout,
-  previewSedifexCheckout,
+  createHostedServiceCheckout,
+  createIntegrationBooking,
+  getCheckoutReturnUrl,
+  getPrimarySedifexStoreId,
+  readBookingId,
   readCheckoutUrl,
-  type CheckoutItem,
+  readSedifexOrderId,
 } from "@/lib/sedifexCheckout";
 
-const BRANCHES = [
-  { label: "Glittering Med Spa Main (Awoshie)", value: "Glittering Med Spa Main", storeId: "37mJqg20MjOriggaIaOOuahDsgj1" },
-  { label: "Glittering Spa Annex (Awoshie)", value: "Glittering Spa Annex", storeId: "2EeDEIDS1FO814KVfaaUVdv66bM2" },
-  { label: "Glittering Spa Spintex", value: "Glittering Spa Spintex", storeId: "kT9QTWUkACMby6OwI2RO1bxG0WL2" },
-] as const;
+const BRANCH_LOCATIONS = ["Glittering Med Spa Main (Awoshie)", "Glittering Spa Annex (Awoshie)", "Glittering Spa Spintex"] as const;
 
 type CheckoutRequestBody = {
   serviceId?: string;
   serviceName?: string;
+  servicePrice?: number | null;
   bookingDate?: string;
   bookingTime?: string;
   customerName?: string;
   customerPhone?: string;
   customerEmail?: string;
-  branchLocationId?: string;
   branchLocationName?: string;
   preferredContactMethod?: string;
   notes?: string;
@@ -30,6 +28,15 @@ type CheckoutRequestBody = {
 
 function readString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function readNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function isValidEmail(email: string) {
@@ -60,27 +67,17 @@ function isPastBooking(date: string, time: string) {
   return bookingDateTime.getTime() < Date.now();
 }
 
-function resolveBranch(body: CheckoutRequestBody) {
-  const branchStoreId = readString(body.branchLocationId);
-  const branchName = readString(body.branchLocationName);
-  return (
-    BRANCHES.find((branch) => branch.storeId === branchStoreId) ??
-    BRANCHES.find((branch) => branch.value === branchName || branch.label === branchName) ??
-    null
-  );
-}
-
-function fallbackEmailFromPhone(phone: string) {
-  const digits = phone.replace(/[^\d]/g, "");
-  return `${digits || "customer"}@glittering.local`;
+function normalizeBranchLocation(value: string) {
+  return BRANCH_LOCATIONS.find((location) => location === value) ?? "";
 }
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CheckoutRequestBody;
-
+    const storeId = getPrimarySedifexStoreId();
     const serviceId = readString(body.serviceId);
     const serviceName = readString(body.serviceName);
+    const servicePrice = readNumber(body.servicePrice);
     const bookingDate = readString(body.bookingDate);
     const bookingTime = readString(body.bookingTime);
     const customerName = readString(body.customerName);
@@ -88,10 +85,11 @@ export async function POST(request: Request) {
     const customerEmail = readString(body.customerEmail).toLowerCase();
     const preferredContactMethod = readString(body.preferredContactMethod) || "WhatsApp";
     const notes = readString(body.notes);
-    const branch = resolveBranch(body);
+    const branchLocationName = normalizeBranchLocation(readString(body.branchLocationName));
 
-    if (!branch) return NextResponse.json({ error: "Choose a valid Glittering branch." }, { status: 400 });
+    if (!branchLocationName) return NextResponse.json({ error: "Choose a valid Glittering location." }, { status: 400 });
     if (!serviceId) return NextResponse.json({ error: "Please select a service." }, { status: 400 });
+    if (!servicePrice || servicePrice <= 0) return NextResponse.json({ error: "Service price is required before checkout can be created." }, { status: 400 });
     if (!bookingDate || !isValidDate(bookingDate)) return NextResponse.json({ error: "Booking date must use YYYY-MM-DD format." }, { status: 400 });
     if (!bookingTime || !isValidTime(bookingTime)) return NextResponse.json({ error: "Booking time must use HH:mm format." }, { status: 400 });
     if (isPastBooking(bookingDate, bookingTime)) return NextResponse.json({ error: "Booking date/time must be in the future." }, { status: 400 });
@@ -103,85 +101,107 @@ export async function POST(request: Request) {
     const customer = {
       name: customerName,
       phone: customerPhone || undefined,
-      email: customerEmail || fallbackEmailFromPhone(customerPhone),
+      email: customerEmail || undefined,
     };
 
-    const checkoutItem: CheckoutItem = {
-      productId: serviceId,
-      quantity: 1,
-      merchantId: branch.storeId,
-      type: "SERVICE",
-      itemName: serviceName || undefined,
-      serviceName: serviceName || undefined,
-    };
-
-    const reference = createCheckoutReference(branch.storeId);
-    const pricingSnapshot = await previewSedifexCheckout(branch.storeId, [checkoutItem]);
-
-    const booking = {
-      preferredDate: bookingDate,
-      preferredTime: bookingTime,
-      bookingDate,
-      bookingTime,
-      preferredBranch: branch.value,
-      branchLocationId: branch.storeId,
-      branchLocationName: branch.value,
+    const syncRequestedAt = new Date().toISOString();
+    const bookingPayload = {
       serviceId,
       serviceName: serviceName || undefined,
-      notes: notes || undefined,
-      sourceChannel: "glittering_website",
-      recordType: "service_booking",
-    };
-
-    const attributes = {
+      customer,
       customerName,
       customerPhone: customerPhone || undefined,
       customerEmail: customerEmail || undefined,
-      serviceName: serviceName || undefined,
       bookingDate,
       bookingTime,
-      branchLocationId: branch.storeId,
-      branchLocationName: branch.value,
-      preferred_branch: branch.value,
-      preferred_date: bookingDate,
-      preferred_time: bookingTime,
-      preferred_contact_method: preferredContactMethod,
       notes: notes || undefined,
-      bookingStatus: "pending_payment",
+      paymentMethod: "paystack",
+      paymentAmount: servicePrice,
+      depositAmount: servicePrice,
+      quantity: 1,
+      bookingStatus: "booked",
       paymentCollectionMode: "online_checkout",
-      paymentStatus: "pending",
+      paymentStatus: "checkout_created",
       syncStatus: "pending",
-      syncRequestedAt: new Date().toISOString(),
-      no_refund_policy_accepted: true,
-      service_name: serviceName || undefined,
-      source: "glittering_website_booking_form",
+      syncRequestedAt,
+      attributes: {
+        source: "website_booking_form",
+        channel: "client-website",
+        orderType: "service",
+        serviceName: serviceName || undefined,
+        service_name: serviceName || undefined,
+        customerName,
+        customerPhone: customerPhone || undefined,
+        customerEmail: customerEmail || undefined,
+        bookingDate,
+        bookingTime,
+        branchLocationName,
+        preferred_branch: branchLocationName,
+        preferred_date: bookingDate,
+        preferred_time: bookingTime,
+        preferred_contact_method: preferredContactMethod,
+        notes: notes || undefined,
+        paymentMethod: "paystack",
+        payment_method: "paystack",
+        paymentAmount: servicePrice,
+        depositAmount: servicePrice,
+        bookingStatus: "booked",
+        paymentCollectionMode: "online_checkout",
+        paymentStatus: "checkout_created",
+        syncStatus: "pending",
+        syncRequestedAt,
+        no_refund_policy_accepted: true,
+      },
     };
 
-    const checkout = await createSedifexCheckout(branch.storeId, [checkoutItem], {
-      reference,
-      pricingSnapshot,
+    const createdBooking = await createIntegrationBooking(storeId, bookingPayload);
+    const bookingId = readBookingId(createdBooking);
+    if (!bookingId) {
+      return NextResponse.json({ error: "Sedifex booking was created but no bookingId was returned." }, { status: 502 });
+    }
+
+    const clientOrderId = `BOOKING-${bookingId}`;
+    const returnUrl = getCheckoutReturnUrl();
+    if (!returnUrl) {
+      return NextResponse.json({ error: "Configure SEDIFEX_CHECKOUT_RETURN_URL or NEXT_PUBLIC_SITE_URL before creating checkout." }, { status: 500 });
+    }
+
+    const checkout = await createHostedServiceCheckout({
+      storeId,
+      bookingId,
+      clientOrderId,
+      orderType: "service",
+      amount: servicePrice,
+      currency: "GHS",
       customer,
-      booking,
-      attributes,
+      returnUrl,
       metadata: {
-        booking,
-        attributes,
-        customer,
+        bookingId,
+        clientOrderId,
+        channel: "client-website",
         source: "glittering_website_booking_form",
+        branchLocationName,
+        serviceId,
+        serviceName: serviceName || undefined,
+        bookingDate,
+        bookingTime,
       },
     });
 
     const checkoutUrl = readCheckoutUrl(checkout);
     if (!checkoutUrl) {
-      return NextResponse.json({ error: "Sedifex checkout was created but no checkout URL was returned." }, { status: 502 });
+      return NextResponse.json({ error: "Sedifex checkout was created but no authorizationUrl was returned." }, { status: 502 });
     }
 
     return NextResponse.json({
       ok: true,
       checkoutUrl,
-      reference,
-      pricingSnapshot,
+      authorizationUrl: checkoutUrl,
+      bookingId,
+      clientOrderId,
+      sedifexOrderId: readSedifexOrderId(checkout) || undefined,
       checkout,
+      booking: createdBooking,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create Sedifex checkout.";
