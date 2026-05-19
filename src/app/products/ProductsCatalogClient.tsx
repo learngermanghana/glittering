@@ -77,6 +77,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [deliveryLocation, setDeliveryLocation] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -221,6 +222,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
           cart: cartItems.map((item) => ({ id: item.id, quantity: item.quantity })),
           customer: {
             name: customerName,
+            email: customerEmail,
             phone: customerPhone,
           },
           delivery: {
@@ -369,6 +371,13 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                 onChange={(event) => setCustomerPhone(event.target.value)}
                 placeholder="Phone number"
                 className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm"
+              />
+              <input
+                type="email"
+                value={customerEmail}
+                onChange={(event) => setCustomerEmail(event.target.value)}
+                placeholder="Email address (optional)"
+                className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm sm:col-span-2"
               />
               <input
                 type="text"
