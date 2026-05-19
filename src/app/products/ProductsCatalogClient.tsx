@@ -338,7 +338,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
-        <div className="rounded-3xl border border-brand-200 bg-brand-50/40 p-5 shadow-sm lg:order-2 lg:sticky lg:top-24 lg:self-start">
+        <div className="rounded-3xl border border-brand-200 bg-brand-50/40 p-5 shadow-sm lg:order-2 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:self-start">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-brand-950">Your cart</h2>
@@ -400,22 +400,24 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
             </label>
           </div>
 
-          <button
-            type="button"
-            onClick={handleCheckout}
-            disabled={isCheckingOut || cartItems.length === 0}
-            className={`mt-4 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-sm ${isCheckingOut || cartItems.length === 0 ? "cursor-not-allowed bg-neutral-400" : "bg-brand-950 hover:bg-brand-900"}`}
-          >
-            {isCheckingOut ? "Creating checkout..." : "Pay now with Sedifex Checkout"}
-          </button>
+          <div className="sticky bottom-0 -mx-5 mt-4 border-t border-brand-200 bg-brand-50/95 px-5 pb-1 pt-4 backdrop-blur">
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={isCheckingOut || cartItems.length === 0}
+              className={`inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-sm ${isCheckingOut || cartItems.length === 0 ? "cursor-not-allowed bg-neutral-400" : "bg-brand-950 hover:bg-brand-900"}`}
+            >
+              {isCheckingOut ? "Creating checkout..." : "Pay now with Sedifex Checkout"}
+            </button>
 
-          <p className="mt-2 text-xs text-neutral-600">No manual payment reference needed. Sedifex will generate the payment link and reference.</p>
+            <p className="mt-2 text-xs text-neutral-600">No manual payment reference needed. Sedifex will generate the payment link and reference.</p>
 
-          {checkoutStatus ? (
-            <div className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${checkoutStatus.kind === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
-              {checkoutStatus.text}
-            </div>
-          ) : null}
+            {checkoutStatus ? (
+              <div className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${checkoutStatus.kind === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
+                {checkoutStatus.text}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className="lg:order-1">
