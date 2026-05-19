@@ -66,8 +66,6 @@ export default function BookPage() {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
   }, [formData.serviceId, serviceOptions]);
 
-  const hasContactMethod = useMemo(() => Boolean(formData.phone.trim() || formData.email.trim()), [formData.email, formData.phone]);
-
   const validationErrors = useMemo(() => {
     const errors: Record<string, string> = {};
 
@@ -79,12 +77,9 @@ export default function BookPage() {
     if (!formData.time.trim()) errors.time = "Time is required.";
     if (!formData.branch.trim()) errors.branch = "Preferred branch is required.";
 
-    if (!hasContactMethod) {
-      errors.phone = "Provide at least one contact method.";
-      errors.email = "Provide at least one contact method.";
-    }
-
-    if (formData.email.trim() && !isValidEmail(formData.email.trim())) {
+    if (!formData.email.trim()) {
+      errors.email = "Email is required for secure online payment.";
+    } else if (!isValidEmail(formData.email.trim())) {
       errors.email = "Please provide a valid email address.";
     }
 
@@ -101,7 +96,6 @@ export default function BookPage() {
     formData.name,
     formData.serviceId,
     formData.time,
-    hasContactMethod,
     selectedServicePrice,
   ]);
 
@@ -114,7 +108,7 @@ export default function BookPage() {
       Boolean(formData.date.trim()),
       Boolean(formData.time.trim()),
       Boolean(formData.branch.trim()),
-      Boolean(formData.phone.trim() || formData.email.trim()),
+      Boolean(formData.email.trim()),
       formData.cancellationAccepted,
     ];
 
@@ -123,7 +117,7 @@ export default function BookPage() {
     const percentage = Math.round((completed / total) * 100);
 
     return { completed, total, percentage, remaining: total - completed };
-  }, [formData.branch, formData.cancellationAccepted, formData.date, formData.email, formData.name, formData.phone, formData.serviceId, formData.time]);
+  }, [formData.branch, formData.cancellationAccepted, formData.date, formData.email, formData.name, formData.serviceId, formData.time]);
 
   const canSubmit = !isSubmitting && !clientValidationMessage;
   const inputClassName = (field: string) =>
@@ -236,7 +230,7 @@ export default function BookPage() {
           bookingTime: formData.time,
           customerName: formData.name.trim(),
           customerPhone: formData.phone.trim() || undefined,
-          customerEmail: formData.email.trim() || undefined,
+          customerEmail: formData.email.trim(),
           branchLocationId: selectedBranch?.storeId,
           branchLocationName: formData.branch,
           preferredContactMethod: formData.contactMethod,
@@ -260,7 +254,7 @@ export default function BookPage() {
             preferred_contact_method: formData.contactMethod,
             customerName: formData.name.trim(),
             customerPhone: formData.phone.trim() || undefined,
-            customerEmail: formData.email.trim() || undefined,
+            customerEmail: formData.email.trim(),
             notes: formData.notes.trim() || undefined,
             source: "website_booking_form",
             channel: "client-website",
@@ -272,7 +266,7 @@ export default function BookPage() {
           customer: {
             name: formData.name.trim(),
             phone: formData.phone.trim() || undefined,
-            email: formData.email.trim() || undefined,
+            email: formData.email.trim(),
           },
         }),
       });
@@ -385,8 +379,9 @@ export default function BookPage() {
 
             <div className="mt-5">
               <label className="text-sm font-semibold text-neutral-700">
-                Email
-                <input name="email" value={formData.email} onChange={handleChange} placeholder="Email address" className={inputClassName("email")} type="email" />
+                Email *
+                <input name="email" value={formData.email} onChange={handleChange} placeholder="Email address for payment receipt" className={inputClassName("email")} type="email" required />
+                <span className="mt-2 block text-xs font-normal text-neutral-500">Sedifex Checkout requires an email to open the secure Paystack payment page.</span>
                 {fieldErrors.email && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.email}</span>}
               </label>
             </div>
