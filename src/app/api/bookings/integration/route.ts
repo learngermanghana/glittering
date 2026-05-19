@@ -6,6 +6,7 @@ const GLITTERING_MAIN_BOOKING_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
 const SEDIFEX_STORE_ID = process.env.SEDIFEX_WEBSITE_STORE_ID ?? process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID ?? GLITTERING_MAIN_BOOKING_STORE_ID;
 // Glittering bookings and payments must always use the main Sedifex store.
 const SEDIFEX_BOOKING_TARGET_STORE_ID = process.env.SEDIFEX_BOOKING_TARGET_STORE_ID ?? GLITTERING_MAIN_BOOKING_STORE_ID;
+const SEDIFEX_MASTER_BOOKING_SERVICE_ID = process.env.SEDIFEX_MASTER_BOOKING_SERVICE_ID?.trim() ?? "";
 const SEDIFEX_CONTRACT_VERSION = process.env.SEDIFEX_CONTRACT_VERSION ?? "2026-04-13";
 const SEDIFEX_API_KEY = process.env.SEDIFEX_INTEGRATION_API_KEY;
 const BOOKING_ALLOWED_SERVICES_BY_BRANCH = parseJsonSafely<Record<string, string[]>>(
@@ -20,6 +21,10 @@ const BLOCKED_SLOT_KEYS = new Set(
 );
 
 type BookingAttributes = {
+  selectedBranchStoreId?: string;
+  selected_branch_store_id?: string;
+  selectedBranchServiceId?: string;
+  selected_branch_service_id?: string;
   customerName?: string;
   customerPhone?: string;
   customerEmail?: string;
@@ -348,25 +353,6 @@ async function resolveServiceId(context: ServiceResolutionContext) {
 }
 
 
-async function normalizeServiceForMainStore(requestedServiceId: string, requestedServiceName: string) {
-  const services = await loadAvailableServices(SEDIFEX_BOOKING_TARGET_STORE_ID);
-
-  if (requestedServiceId && services.some((service) => service.id === requestedServiceId)) {
-    return { ok: true as const, serviceId: requestedServiceId };
-  }
-
-  const normalizedName = normalizeServiceName(requestedServiceName || "");
-  if (normalizedName) {
-    const matched = services.find((service) => normalizeServiceName(service.name) === normalizedName);
-    if (matched) return { ok: true as const, serviceId: matched.id };
-  }
-
-  return {
-    ok: false as const,
-    message: "Selected service is unavailable. Please choose a service configured under Glittering main booking store.",
-  };
-}
-
 async function validateAndNormalizePayload(payload: BookingRequestBody): Promise<ValidationResult> {
   const attributes = (payload.attributes ?? {}) as BookingAttributes;
   const slotId = readStringFrom(payload.slotId, payload.slotID, payload.slot_id);
@@ -399,19 +385,13 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
   const branchContext = resolveBranchStoreContext({ branchLocationName, branchLocationId });
   const resolvedBranchName = branchContext?.name ?? branchLocationName;
 
-  const seedServiceId = await resolveServiceId({
+  const selectedBranchServiceId = await resolveServiceId({
     requestedServiceId: payload.serviceId,
     requestedServiceName: rawServiceName,
     preferredBranch,
-    storeId: SEDIFEX_BOOKING_TARGET_STORE_ID,
+    storeId: branchContext?.storeId ?? branchLocationId ?? SEDIFEX_STORE_ID,
   });
-  const serviceResolution = await normalizeServiceForMainStore(seedServiceId, rawServiceName);
-  if (!serviceResolution.ok) {
-    return {
-      error: serviceResolution.message,
-    };
-  }
-  const serviceId = serviceResolution.serviceId;
+  const serviceId = SEDIFEX_MASTER_BOOKING_SERVICE_ID || selectedBranchServiceId;
 
   if (!bookingDate || !bookingTime) {
     return { error: "Booking date and time are required." };
@@ -488,6 +468,10 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     bookingTime: normalizedBookingTime,
     branchLocationId: branchLocationId || undefined,
     branchLocationName: resolvedBranchName || undefined,
+    selectedBranchStoreId: branchContext?.storeId ?? branchLocationId ?? undefined,
+    selected_branch_store_id: branchContext?.storeId ?? branchLocationId ?? undefined,
+    selectedBranchServiceId: selectedBranchServiceId || undefined,
+    selected_branch_service_id: selectedBranchServiceId || undefined,
     eventLocation: eventLocation || undefined,
     customerStayLocation: customerStayLocation || undefined,
     paymentMethod: paymentMethod || undefined,
@@ -515,6 +499,7 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     no_refund_policy_accepted: true,
     preferred_date: normalizedBookingDate,
     preferred_time: normalizedBookingTime,
+    service_name: rawServiceName || undefined,
   };
 
   return {
@@ -560,7 +545,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const targetStoreId = SEDIFEX_BOOKING_TARGET_STORE_ID;
+    const targetStoreId = SEDIFEX_BOOKING_TARGET_STORE_ID || "37mJqg20MjOriggaIaOOuahDsgj1";
     const response = await fetch(
       `${SEDIFEX_BASE_URL}/v1IntegrationBookings?storeId=${encodeURIComponent(targetStoreId)}`,
       {
@@ -576,10 +561,16 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       console.error("Sedifex booking create failed", {
-        storeId: targetStoreId,
+        targetStoreId,
+        branchLocationName: normalized.branchLocationName,
+        selectedBranchStoreId:
+          (normalized.attributes as Record<string, unknown> | undefined)?.selectedBranchStoreId ?? normalized.branchLocationId,
+        branchLocationId: normalized.branchLocationId,
+        selectedBranchServiceId:
+          (normalized.attributes as Record<string, unknown> | undefined)?.selectedBranchServiceId ?? body.serviceId,
+        incomingServiceId: body.serviceId,
         serviceId: normalized.serviceId,
         serviceName: normalized.serviceName,
-        branchLocationName: normalized.branchLocationName,
         status: response.status,
         sedifexMessage: parsedResponse?.error ?? parsedResponse?.message ?? responseText,
       });
@@ -606,7 +597,13 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     if (url.searchParams.get("view") === "services") {
-      const activeStoreId = SEDIFEX_BOOKING_TARGET_STORE_ID;
+      const requestedStoreId = url.searchParams.get("storeId")?.trim() ?? "";
+      const requestedBranchName = url.searchParams.get("branch")?.trim() ?? "";
+      const branchContext = resolveBranchStoreContext({
+        branchLocationName: requestedBranchName,
+        branchLocationId: requestedStoreId,
+      });
+      const activeStoreId = branchContext?.storeId ?? requestedStoreId ?? SEDIFEX_STORE_ID;
       const services = await loadAvailableServices(activeStoreId);
       return NextResponse.json({
         services,
