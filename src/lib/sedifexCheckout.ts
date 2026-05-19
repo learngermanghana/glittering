@@ -85,6 +85,8 @@ type CreateProductCheckoutInput = ProductCheckoutBaseInput & {
   metadata?: Record<string, unknown>;
 };
 
+type SedifexAuthPurpose = "booking" | "checkout";
+
 const DEFAULT_SEDIFEX_BASE_URL = "https://us-central1-sedifex-web.cloudfunctions.net";
 const SEDIFEX_UNAUTHORIZED_PREFIX = "SEDIFEX_UNAUTHORIZED:";
 
@@ -112,6 +114,18 @@ const getIntegrationBaseUrl = () =>
     readEnv("SEDIFEX_INTEGRATION_API_BASE_URL") || readEnv("SEDIFEX_INTEGRATION_BASE_URL") || DEFAULT_SEDIFEX_BASE_URL,
   );
 
+const appendStoreIdQuery = (rawUrl: string, storeId: string) => {
+  const url = new URL(rawUrl);
+  url.searchParams.set("storeId", storeId);
+  return url.toString();
+};
+
+const getIntegrationBookingsUrl = (storeId: string) => {
+  const directUrl = readEnv("SEDIFEX_INTEGRATION_BOOKINGS_URL");
+  const baseUrl = directUrl ? normalizeAbsoluteUrl("SEDIFEX_INTEGRATION_BOOKINGS_URL", directUrl) : `${getIntegrationBaseUrl()}/v1IntegrationBookings`;
+  return appendStoreIdQuery(baseUrl, storeId);
+};
+
 const getCheckoutPreviewUrl = () => {
   const directUrl = readEnv("SEDIFEX_INTEGRATION_CHECKOUT_PREVIEW_URL");
   return directUrl ? normalizeAbsoluteUrl("SEDIFEX_INTEGRATION_CHECKOUT_PREVIEW_URL", directUrl) : `${getIntegrationBaseUrl()}/integration/checkout/preview`;
@@ -136,27 +150,37 @@ export const getCheckoutCancelUrl = () => {
 
 const getContractVersion = () => readEnv("SEDIFEX_INTEGRATION_API_VERSION") || readEnv("SEDIFEX_CONTRACT_VERSION") || "2026-04-13";
 
-const getSedifexCheckoutKey = () => {
-  const key = readEnv("SEDIFEX_CHECKOUT_API_KEY") || readEnv("SEDIFEX_INTEGRATION_API_KEY");
+const getSedifexApiKey = (purpose: SedifexAuthPurpose) => {
+  const key =
+    purpose === "booking"
+      ? readEnv("SEDIFEX_BOOKING_API_KEY") || readEnv("SEDIFEX_INTEGRATION_API_KEY") || readEnv("SEDIFEX_CHECKOUT_API_KEY")
+      : readEnv("SEDIFEX_CHECKOUT_API_KEY") || readEnv("SEDIFEX_INTEGRATION_API_KEY") || readEnv("SEDIFEX_BOOKING_API_KEY");
+
   if (!key) {
-    throw new Error("Configure SEDIFEX_CHECKOUT_API_KEY or SEDIFEX_INTEGRATION_API_KEY for Sedifex checkout.");
+    throw new Error(
+      purpose === "booking"
+        ? "Configure SEDIFEX_BOOKING_API_KEY or SEDIFEX_INTEGRATION_API_KEY for Sedifex booking creation."
+        : "Configure SEDIFEX_CHECKOUT_API_KEY or SEDIFEX_INTEGRATION_API_KEY for Sedifex checkout.",
+    );
   }
+
   return key;
 };
 
-const buildSedifexHeaders = (_storeId: string) => {
-  const checkoutKey = getSedifexCheckoutKey();
+const buildSedifexHeaders = (purpose: SedifexAuthPurpose) => {
+  const apiKey = getSedifexApiKey(purpose);
   return {
     Accept: "application/json",
     "Content-Type": "application/json",
     "X-Sedifex-Contract-Version": getContractVersion(),
-    "x-api-key": checkoutKey,
+    Authorization: `Bearer ${apiKey}`,
+    "x-api-key": apiKey,
   };
 };
 
 export function isSedifexUnauthorizedError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "");
-  return message.includes(SEDIFEX_UNAUTHORIZED_PREFIX) || /\bunauthorized\b/i.test(message) || /\bforbidden\b/i.test(message);
+  return message.includes(SEDIFEX_UNAUTHORIZED_PREFIX) || /\bunauthorized\b/i.test(message) || /\bforbidden\b/i.test(message) || /invalid-api-key/i.test(message);
 }
 
 async function readJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
@@ -171,7 +195,7 @@ async function readJsonResponse<T>(response: Response, fallbackMessage: string):
   if (!response.ok) {
     const errorPayload = parsed as { error?: string; message?: string };
     const serverMessage = errorPayload.error ?? errorPayload.message ?? text;
-    if (response.status === 401 || response.status === 403 || /\bunauthorized\b/i.test(serverMessage) || /\bforbidden\b/i.test(serverMessage)) {
+    if (response.status === 401 || response.status === 403 || /\bunauthorized\b/i.test(serverMessage) || /\bforbidden\b/i.test(serverMessage) || /invalid-api-key/i.test(serverMessage)) {
       throw new Error(`${SEDIFEX_UNAUTHORIZED_PREFIX} ${serverMessage || response.status}`);
     }
     throw new Error(serverMessage || `${fallbackMessage}: ${text}`);
@@ -251,10 +275,9 @@ export function getTrustedCustomerTotal(preview?: SedifexCheckoutPreviewResponse
 }
 
 export async function createIntegrationBooking(storeId: string, payload: Record<string, unknown>) {
-  const params = new URLSearchParams({ storeId });
-  const response = await fetch(`${getIntegrationBaseUrl()}/v1IntegrationBookings?${params.toString()}`, {
+  const response = await fetch(getIntegrationBookingsUrl(storeId), {
     method: "POST",
-    headers: buildSedifexHeaders(storeId),
+    headers: buildSedifexHeaders("booking"),
     body: JSON.stringify(payload),
     cache: "no-store",
   });
@@ -264,7 +287,7 @@ export async function createIntegrationBooking(storeId: string, payload: Record<
 export async function createHostedServiceCheckout(input: CreateHostedCheckoutInput) {
   const response = await fetch(getCheckoutCreateUrl(), {
     method: "POST",
-    headers: buildSedifexHeaders(input.storeId),
+    headers: buildSedifexHeaders("checkout"),
     body: JSON.stringify({
       storeId: input.storeId,
       store_id: input.storeId,
@@ -306,7 +329,7 @@ export async function previewProductCheckout(input: ProductCheckoutBaseInput) {
 
   const response = await fetch(getCheckoutPreviewUrl(), {
     method: "POST",
-    headers: buildSedifexHeaders(input.storeId),
+    headers: buildSedifexHeaders("checkout"),
     body: JSON.stringify({
       storeId: input.storeId,
       store_id: input.storeId,
@@ -334,7 +357,7 @@ export async function createProductCheckout(input: CreateProductCheckoutInput) {
   const items = toProductCheckoutItems(input.items, input.storeId);
   const response = await fetch(getCheckoutCreateUrl(), {
     method: "POST",
-    headers: buildSedifexHeaders(input.storeId),
+    headers: buildSedifexHeaders("checkout"),
     body: JSON.stringify({
       storeId: input.storeId,
       store_id: input.storeId,
