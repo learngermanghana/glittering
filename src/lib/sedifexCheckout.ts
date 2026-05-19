@@ -81,6 +81,7 @@ type CreateProductCheckoutInput = ProductCheckoutBaseInput & {
 };
 
 const DEFAULT_SEDIFEX_BASE_URL = "https://us-central1-sedifex-web.cloudfunctions.net";
+const SEDIFEX_UNAUTHORIZED_PREFIX = "SEDIFEX_UNAUTHORIZED:";
 
 const readEnv = (key: string) => process.env[key]?.trim() ?? "";
 
@@ -130,24 +131,28 @@ export const getCheckoutCancelUrl = () => {
 
 const getContractVersion = () => readEnv("SEDIFEX_INTEGRATION_API_VERSION") || readEnv("SEDIFEX_CONTRACT_VERSION") || "2026-04-13";
 
-const getSedifexToken = () => {
-  const token = readEnv("SEDIFEX_INTEGRATION_API_KEY") || readEnv("SEDIFEX_MERCHANT_TOKEN") || readEnv("SEDIFEX_MAIN_MERCHANT_TOKEN") || readEnv("SEDIFEX_CHECKOUT_MERCHANT_TOKEN");
-  if (!token) throw new Error("Configure SEDIFEX_INTEGRATION_API_KEY or SEDIFEX_MERCHANT_TOKEN for the main 37... Sedifex store.");
-  return token;
+const getSedifexIntegrationKey = () => {
+  const key = readEnv("SEDIFEX_INTEGRATION_API_KEY");
+  if (!key) {
+    throw new Error("Configure SEDIFEX_INTEGRATION_API_KEY for Sedifex checkout. Merchant tokens are not accepted by checkout endpoints.");
+  }
+  return key;
 };
 
-const buildSedifexHeaders = (storeId: string) => {
-  const token = getSedifexToken();
+const buildSedifexHeaders = (_storeId: string) => {
+  const integrationKey = getSedifexIntegrationKey();
   return {
     Accept: "application/json",
     "Content-Type": "application/json",
     "X-Sedifex-Contract-Version": getContractVersion(),
-    Authorization: `Bearer ${token}`,
-    "x-api-key": token,
-    "x-sedifex-store-id": storeId,
-    "x-sedifex-merchant-id": storeId,
+    "x-api-key": integrationKey,
   };
 };
+
+export function isSedifexUnauthorizedError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return message.includes(SEDIFEX_UNAUTHORIZED_PREFIX) || /\bunauthorized\b/i.test(message) || /\bforbidden\b/i.test(message);
+}
 
 async function readJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
   const text = await response.text().catch(() => "");
@@ -160,7 +165,11 @@ async function readJsonResponse<T>(response: Response, fallbackMessage: string):
 
   if (!response.ok) {
     const errorPayload = parsed as { error?: string; message?: string };
-    throw new Error(errorPayload.error ?? errorPayload.message ?? `${fallbackMessage}: ${text}`);
+    const serverMessage = errorPayload.error ?? errorPayload.message ?? text;
+    if (response.status === 401 || response.status === 403 || /\bunauthorized\b/i.test(serverMessage) || /\bforbidden\b/i.test(serverMessage)) {
+      throw new Error(`${SEDIFEX_UNAUTHORIZED_PREFIX} ${serverMessage || response.status}`);
+    }
+    throw new Error(serverMessage || `${fallbackMessage}: ${text}`);
   }
   return parsed;
 }
