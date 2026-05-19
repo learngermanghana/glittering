@@ -75,12 +75,19 @@ export async function POST(request: Request) {
       if (catalogProduct.quantity !== null && catalogProduct.quantity < quantity) throw new Error(`Only ${catalogProduct.quantity} left for ${catalogProduct.name}.`);
       if (!catalogProduct.price || catalogProduct.price <= 0) throw new Error(`${catalogProduct.name} has no valid price.`);
 
+      const normalizedProductId = normalizeSedifexItemId(displayId, storeId);
+
       return {
         type: "PRODUCT",
         item_type: "product",
-        item_id: normalizeSedifexItemId(displayId, storeId),
+        item_id: normalizedProductId,
+        productId: normalizedProductId,
+        originalProductId: displayId,
         qty: quantity,
+        quantity,
         name: catalogProduct.name,
+        unitPrice: catalogProduct.price,
+        price: catalogProduct.price,
       };
     });
 
