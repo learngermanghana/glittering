@@ -75,6 +75,12 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const [cart, setCart] = useState<Record<string, CartItem>>({});
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryLocation, setDeliveryLocation] = useState("");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const allProducts = useMemo(() => products.filter((product) => !product.isService), [products]);
 
@@ -202,17 +208,47 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
     });
   }
 
-  const sedifexCheckoutLink = useMemo(() => {
-    if (!cartItems.length) return "/book";
+  async function startSedifexCheckout() {
+    if (!cartItems.length || checkoutLoading) return;
 
-    const params = new URLSearchParams({
-      source: "products-cart",
-      total: cartTotal.toFixed(2),
-      items: cartItems.map((item) => `${item.name} x${item.quantity}`).join(", "),
-    });
+    try {
+      setCheckoutLoading(true);
+      setCheckoutError(null);
+      const response = await fetch("/api/sedifex/checkout/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cart: cartItems.map((item) => ({ id: item.id, quantity: item.quantity })),
+          customer: {
+            name: customerName,
+            phone: customerPhone,
+          },
+          delivery: {
+            location: deliveryLocation,
+            notes: deliveryNotes,
+          },
+        }),
+      });
 
-    return `/book?${params.toString()}`;
-  }, [cartItems, cartTotal]);
+      const data = (await response.json()) as { checkoutUrl?: string; authorizationUrl?: string; error?: string };
+      if (!response.ok) {
+        setCheckoutError(data.error ?? "Unable to start checkout right now.");
+        return;
+      }
+
+      const redirectUrl = data.checkoutUrl ?? data.authorizationUrl;
+      if (!redirectUrl) {
+        setCheckoutError("Checkout was created but no redirect link was returned.");
+        return;
+      }
+
+      globalThis.location.href = redirectUrl;
+    } catch {
+      setCheckoutError("Network error while creating checkout. Please try again.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
 
   const notFoundWhatsappLink = useMemo(() => {
     const requestedProduct = search.trim();
@@ -319,9 +355,44 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
               <p className="font-semibold">Estimated total</p>
               <p className="text-base font-bold text-brand-950">GHS {cartTotal.toFixed(2)}</p>
             </div>
-            <a href={sedifexCheckoutLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-2xl bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-900">
-              Book directly through Sedifex
-            </a>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                type="text"
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                placeholder="Full name"
+                className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm"
+              />
+              <input
+                type="tel"
+                value={customerPhone}
+                onChange={(event) => setCustomerPhone(event.target.value)}
+                placeholder="Phone number"
+                className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm"
+              />
+              <input
+                type="text"
+                value={deliveryLocation}
+                onChange={(event) => setDeliveryLocation(event.target.value)}
+                placeholder="Delivery location (optional)"
+                className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm sm:col-span-2"
+              />
+              <textarea
+                value={deliveryNotes}
+                onChange={(event) => setDeliveryNotes(event.target.value)}
+                placeholder="Extra delivery notes (optional)"
+                className="min-h-20 rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm sm:col-span-2"
+              />
+            </div>
+            {checkoutError ? <p className="text-sm text-red-600">{checkoutError}</p> : null}
+            <button
+              type="button"
+              onClick={startSedifexCheckout}
+              disabled={checkoutLoading}
+              className="mt-2 inline-flex w-full items-center justify-center rounded-2xl bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {checkoutLoading ? "Creating checkout..." : "Checkout with Sedifex"}
+            </button>
           </div>
         )}
       </div>
