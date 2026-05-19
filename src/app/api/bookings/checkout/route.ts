@@ -4,12 +4,14 @@ import {
   createIntegrationBooking,
   getCheckoutReturnUrl,
   getPrimarySedifexStoreId,
+  isSedifexUnauthorizedError,
   readBookingId,
   readCheckoutUrl,
   readSedifexOrderId,
 } from "@/lib/sedifexCheckout";
 
 const BRANCH_LOCATIONS = ["Glittering Med Spa Main (Awoshie)", "Glittering Spa Annex (Awoshie)", "Glittering Spa Spintex"] as const;
+const CUSTOMER_CHECKOUT_SETUP_ERROR = "Online payment is temporarily unavailable for this service. Please contact Glittering Spa support to complete your booking.";
 
 type CheckoutRequestBody = {
   serviceId?: string;
@@ -157,13 +159,13 @@ export async function POST(request: Request) {
     const createdBooking = await createIntegrationBooking(storeId, bookingPayload);
     const bookingId = readBookingId(createdBooking);
     if (!bookingId) {
-      return NextResponse.json({ error: "Sedifex booking was created but no bookingId was returned." }, { status: 502 });
+      return NextResponse.json({ error: "We could not prepare your booking for payment. Please contact support." }, { status: 502 });
     }
 
     const clientOrderId = `BOOKING-${bookingId}`;
     const returnUrl = getCheckoutReturnUrl();
     if (!returnUrl) {
-      return NextResponse.json({ error: "Configure SEDIFEX_CHECKOUT_RETURN_URL or NEXT_PUBLIC_SITE_URL before creating checkout." }, { status: 500 });
+      return NextResponse.json({ error: CUSTOMER_CHECKOUT_SETUP_ERROR }, { status: 500 });
     }
 
     const checkout = await createHostedServiceCheckout({
@@ -190,7 +192,7 @@ export async function POST(request: Request) {
 
     const checkoutUrl = readCheckoutUrl(checkout);
     if (!checkoutUrl) {
-      return NextResponse.json({ error: "Sedifex checkout was created but no authorizationUrl was returned." }, { status: 502 });
+      return NextResponse.json({ error: "We could not open the payment page. Please contact support." }, { status: 502 });
     }
 
     return NextResponse.json({
@@ -206,6 +208,9 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create Sedifex checkout.";
     console.error("glittering.checkout.create.failed", { message });
-    return NextResponse.json({ error: message }, { status: 502 });
+    if (isSedifexUnauthorizedError(error)) {
+      return NextResponse.json({ error: CUSTOMER_CHECKOUT_SETUP_ERROR }, { status: 502 });
+    }
+    return NextResponse.json({ error: "We could not create your payment link right now. Please contact support or try again shortly." }, { status: 502 });
   }
 }
