@@ -6,39 +6,48 @@ import { categories, SITE, WHATSAPP_LINK } from "@/lib/site";
 import { getServicesCatalogData } from "@/lib/services";
 import { buildPageMetadata, getAbsoluteUrl } from "@/lib/seo";
 import { ServicesCatalogClient } from "@/app/services/ServicesCatalogClient";
+import { getServiceSlug } from "@/lib/serviceSeo";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Services | Glittering Med Spa",
-  description: "Explore spa, beauty, salon, and nail services at Glittering Med Spa.",
+  title: "Spa, Beauty, Massage, Waxing & Nails Services in Accra | Glittering Med Spa",
+  description:
+    "Book spa, beauty, massage, waxing, facials, nails, salon, and body treatment services at Glittering Med Spa in Awoshie and Spintex, Accra.",
   path: "/services",
 });
 
-
 export default async function ServicesPage() {
   const liveServices = await getServicesCatalogData();
+  const catalogItems = liveServices.length ? liveServices.slice(0, 40) : [];
 
   const servicesSchema = {
     "@context": "https://schema.org",
-    "@type": "Service",
-    provider: {
-      "@type": "Organization",
-      name: SITE.name,
-      url: getAbsoluteUrl("/"),
-    },
-    serviceType: "Spa, beauty, salon, and nails",
-    areaServed: "Accra, Ghana",
-    hasOfferCatalog: {
-      "@type": "OfferCatalog",
-      name: "Glittering Med Spa Services",
-      itemListElement: categories.slice(0, 8).map((category) => ({
-        "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: category.title,
-          description: category.desc,
+    "@type": "OfferCatalog",
+    name: "Glittering Med Spa Services in Accra",
+    url: getAbsoluteUrl("/services"),
+    itemListElement: catalogItems.map((service) => ({
+      "@type": "Offer",
+      priceCurrency: "GHS",
+      price: service.price.toFixed(2),
+      url: getAbsoluteUrl(`/services/${getServiceSlug(service)}`),
+      itemOffered: {
+        "@type": "Service",
+        name: service.name,
+        description: service.description,
+        serviceType: service.category,
+        image: service.image,
+        provider: {
+          "@type": "LocalBusiness",
+          name: SITE.name,
+          telephone: `+${SITE.phoneIntl}`,
+          email: SITE.email,
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Accra",
+            addressCountry: "GH",
+          },
         },
-      })),
-    },
+      },
+    })),
   };
 
   const faqSchema = {
@@ -50,23 +59,23 @@ export default async function ServicesPage() {
         name: "What services can I book at Glittering Med Spa?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You can book spa, beauty, salon, nail, facial, massage, waxing, and body treatment services.",
+          text: "You can book spa, beauty, salon, nail, facial, massage, waxing, and body treatment services at Glittering Med Spa in Accra.",
         },
       },
       {
         "@type": "Question",
-        name: "How do I make a booking?",
+        name: "Where is Glittering Med Spa located?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Use the WhatsApp booking buttons on the page to send your preferred service, date, and time.",
+          text: "Glittering Med Spa serves clients from Awoshie and Spintex in Accra, Ghana. Choose your preferred branch during booking.",
         },
       },
       {
         "@type": "Question",
-        name: "Do you have package options?",
+        name: "Can I pay online for a service booking?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "We offer customizable service combinations based on your goals, timing, and preferred branch.",
+          text: "Yes. The website supports online booking and secure Sedifex Checkout for service payments.",
         },
       },
     ],
@@ -78,12 +87,19 @@ export default async function ServicesPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(servicesSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
 
-        <SectionTitle title="Services" />
+        <SectionTitle
+          title="Spa, Beauty, Massage, Waxing & Nails Services in Accra"
+          subtitle="Explore live Glittering Med Spa services from Sedifex. Search by treatment, category, or description, then book your preferred location online."
+        />
+
+        <div className="mb-6 rounded-3xl border border-black/10 bg-white p-5 text-sm leading-7 text-neutral-700 shadow-sm">
+          <p>
+            Glittering Med Spa offers facials, massage, waxing, nails, salon, beauty, spa, and body treatment services for clients in Awoshie, Spintex, and across Accra. Service availability can differ by branch, so choose your preferred location when booking.
+          </p>
+        </div>
 
         {liveServices.length ? (
-          <>
-            <ServicesCatalogClient services={liveServices} />
-          </>
+          <ServicesCatalogClient services={liveServices} />
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {categories.map((c) => (
@@ -112,7 +128,6 @@ export default async function ServicesPage() {
             ))}
           </div>
         )}
-
 
         <div className="mt-12">
           <SectionTitle
