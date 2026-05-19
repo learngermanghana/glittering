@@ -420,9 +420,8 @@ async function validateAndNormalizePayload(payload: BookingRequestBody): Promise
     return { error: "Customer name is required." };
   }
 
-  const hasContactMethod = Boolean(customerPhone || email);
-  if (!hasContactMethod) {
-    return { error: "Provide at least one contact method: phone or email." };
+  if (!email) {
+    return { error: "Email is required for online checkout." };
   }
 
   if (email && !isValidEmail(email)) {
