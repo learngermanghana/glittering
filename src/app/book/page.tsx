@@ -9,7 +9,6 @@ const BRANCH_OPTIONS = [
   { label: "Glittering Spa Annex (Awoshie)", value: "Glittering Spa Annex", storeId: "2EeDEIDS1FO814KVfaaUVdv66bM2" },
   { label: "Glittering Spa Spintex", value: "Glittering Spa Spintex", storeId: "kT9QTWUkACMby6OwI2RO1bxG0WL2" },
 ] as const;
-const GLITTERING_MAIN_BOOKING_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
 const PAYMENT_OPTIONS = ["Momo", "Bank transfer", "Cash"] as const;
 type ServiceOption = { id: string; name: string; price?: number | null };
@@ -197,7 +196,7 @@ export default function BookPage() {
       try {
         const params = new URLSearchParams({
           view: "services",
-          storeId: GLITTERING_MAIN_BOOKING_STORE_ID,
+          storeId: branch.storeId,
           branch: branch.value,
         });
         const response = await fetch(`/api/bookings/integration?${params.toString()}`, { cache: "no-store" });
@@ -210,7 +209,7 @@ export default function BookPage() {
         if (!cancelled) {
           const nextServices = Array.isArray(payload.services) ? payload.services : [];
           setServiceOptions(nextServices);
-          setActiveStoreId(payload.storeId ?? GLITTERING_MAIN_BOOKING_STORE_ID);
+          setActiveStoreId(payload.storeId ?? branch.storeId);
           setFormData((prev) => {
             const hasSelectedService = nextServices.some((service) => service.id === prev.serviceId);
             return hasSelectedService ? prev : { ...prev, serviceId: "" };
@@ -219,7 +218,7 @@ export default function BookPage() {
       } catch {
         if (!cancelled) {
           setServiceOptions([]);
-          setActiveStoreId(GLITTERING_MAIN_BOOKING_STORE_ID);
+          setActiveStoreId(branch.storeId);
         }
       }
     }
@@ -309,6 +308,10 @@ export default function BookPage() {
           syncStatus: "pending",
           syncRequestedAt: new Date().toISOString(),
           attributes: {
+            selectedBranchStoreId: selectedBranch?.storeId,
+            selected_branch_store_id: selectedBranch?.storeId,
+            selectedBranchServiceId: formData.serviceId,
+            selected_branch_service_id: formData.serviceId,
             customerName: formData.name.trim(),
             customerPhone: formData.phone.trim() || undefined,
             customerEmail: formData.email.trim() || undefined,
