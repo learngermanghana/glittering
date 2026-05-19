@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 import { getProductsCatalogData } from "@/lib/products";
 import {
-  createCheckoutReference,
-  createSedifexCheckout,
-  previewSedifexCheckout,
+  createProductCheckout,
+  getCheckoutCancelUrl,
+  getCheckoutReturnUrl,
+  getPrimarySedifexStoreId,
+  getTrustedCustomerTotal,
+  normalizeSedifexItemId,
+  previewProductCheckout,
   readCheckoutUrl,
-  type CheckoutItem,
+  readSedifexOrderId,
+  type ProductCheckoutItem,
 } from "@/lib/sedifexCheckout";
 
-const STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
+const CLIENT_SOURCE_CHANNEL = "client_website";
+const CLIENT_SOURCE_LABEL = "Client Website";
 
 type CheckoutCreateBody = {
   cart?: Array<{ id?: string; quantity?: number }>;
@@ -26,18 +32,16 @@ function isValidPhone(value: string) {
 }
 
 function isValidEmail(value: string) {
-  if (!value) return true;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function fallbackEmailFromPhone(phone: string) {
-  const digits = phone.replace(/[^\d]/g, "");
-  return `${digits || "buyer"}@glittering.local`;
 }
 
 function normalizeCartQuantity(value: unknown) {
   const quantity = Math.floor(Number(value));
   return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
+}
+
+function createClientOrderId() {
+  return `WEB-PAY-${Date.now()}`;
 }
 
 export async function POST(request: Request) {
@@ -49,6 +53,7 @@ export async function POST(request: Request) {
     const customerEmail = readString(body.customer?.email).toLowerCase();
     const deliveryLocation = readString(body.delivery?.location);
     const deliveryNotes = readString(body.delivery?.notes);
+    const storeId = getPrimarySedifexStoreId();
 
     if (!rawCart.length) return NextResponse.json({ error: "Cart is empty. Add at least one product." }, { status: 400 });
     if (!customerName) return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
@@ -57,76 +62,73 @@ export async function POST(request: Request) {
     if (!deliveryLocation) return NextResponse.json({ error: "Please enter a delivery or pickup location." }, { status: 400 });
 
     const catalog = await getProductsCatalogData();
-    const catalogMap = new Map(catalog.map((product) => [String(product.id ?? ""), product]));
+    const catalogMap = new Map(catalog.filter((product) => !product.isService).map((product) => [String(product.id ?? ""), product]));
 
-    const items: CheckoutItem[] = rawCart.map((line) => {
-      const id = readString(line.id);
+    const items: ProductCheckoutItem[] = rawCart.map((line) => {
+      const displayId = readString(line.id);
       const quantity = normalizeCartQuantity(line.quantity);
-      if (!id) throw new Error("A cart item is missing its product ID.");
-      if (!quantity) throw new Error("Cart quantity must be greater than 0.");
+      if (!displayId) throw new Error("A cart item is missing its product ID.");
+      if (!quantity) throw new Error("Cart quantity must be at least 1.");
 
-      const catalogProduct = catalogMap.get(id);
-      if (!catalogProduct) throw new Error(`Product not found: ${id}`);
-      if (catalogProduct.quantity !== null && catalogProduct.quantity < quantity) {
-        throw new Error(`Only ${catalogProduct.quantity} left for ${catalogProduct.name}.`);
-      }
-      if (!catalogProduct.price || catalogProduct.price <= 0) {
-        throw new Error(`${catalogProduct.name} has no valid price.`);
-      }
+      const catalogProduct = catalogMap.get(displayId);
+      if (!catalogProduct) throw new Error(`Product not found or not available for checkout: ${displayId}`);
+      if (catalogProduct.quantity !== null && catalogProduct.quantity < quantity) throw new Error(`Only ${catalogProduct.quantity} left for ${catalogProduct.name}.`);
+      if (!catalogProduct.price || catalogProduct.price <= 0) throw new Error(`${catalogProduct.name} has no valid price.`);
 
       return {
-        productId: id,
-        quantity,
-        merchantId: STORE_ID,
         type: "PRODUCT",
-        itemName: catalogProduct.name,
-        productName: catalogProduct.name,
+        item_type: "product",
+        item_id: normalizeSedifexItemId(displayId, storeId),
+        qty: quantity,
+        name: catalogProduct.name,
       };
     });
 
-    const reference = createCheckoutReference(STORE_ID);
-    const pricingSnapshot = await previewSedifexCheckout(STORE_ID, items);
-    const checkout = await createSedifexCheckout(STORE_ID, items, {
-      reference,
-      pricingSnapshot,
-      customer: {
-        name: customerName,
-        email: customerEmail || fallbackEmailFromPhone(customerPhone),
-        phone: customerPhone,
-      },
-      attributes: {
-        source: "glittering_website_products_page",
-        orderType: "product_order",
-        deliveryLocation,
-        deliveryNotes: deliveryNotes || undefined,
-        customerName,
-        customerPhone,
-        customerEmail: customerEmail || undefined,
-        paymentCollectionMode: "online_checkout",
-        paymentStatus: "pending",
-        orderStatus: "pending_payment",
-        syncStatus: "pending",
-        syncRequestedAt: new Date().toISOString(),
-      },
+    const customer = { name: customerName, email: customerEmail, phone: customerPhone };
+    const delivery = { location: deliveryLocation, notes: deliveryNotes || undefined };
+    const preview = await previewProductCheckout({ storeId, items, customer, delivery, fulfillmentType: "DELIVERY" });
+    const localAmount = rawCart.reduce((sum, line) => {
+      const product = catalogMap.get(readString(line.id));
+      return sum + (product?.price ?? 0) * normalizeCartQuantity(line.quantity);
+    }, 0);
+    const clientOrderId = createClientOrderId();
+    const returnUrl = `${getCheckoutReturnUrl()}?reference=${encodeURIComponent(clientOrderId)}`;
+    const cancelUrl = `${getCheckoutCancelUrl()}&reference=${encodeURIComponent(clientOrderId)}`;
+
+    const checkout = await createProductCheckout({
+      storeId,
+      clientOrderId,
+      sourceChannel: CLIENT_SOURCE_CHANNEL,
+      sourceLabel: CLIENT_SOURCE_LABEL,
+      items,
+      customer,
+      delivery,
+      fulfillmentType: "DELIVERY",
+      returnUrl,
+      cancelUrl,
+      preview,
+      localAmount,
       metadata: {
+        clientOrderId,
+        channel: CLIENT_SOURCE_CHANNEL,
         source: "glittering_website_products_page",
-        orderType: "product_order",
-        delivery: { location: deliveryLocation, notes: deliveryNotes || undefined },
-        customer: { name: customerName, email: customerEmail || undefined, phone: customerPhone },
+        delivery,
+        items,
       },
     });
 
     const checkoutUrl = readCheckoutUrl(checkout);
-    if (!checkoutUrl) {
-      return NextResponse.json({ error: "Sedifex checkout was created but no checkout URL was returned." }, { status: 502 });
-    }
+    if (!checkoutUrl) return NextResponse.json({ error: "Sedifex checkout was created but no payment URL was returned." }, { status: 502 });
 
     return NextResponse.json({
       ok: true,
       checkoutUrl,
       authorizationUrl: checkoutUrl,
-      reference,
-      pricingSnapshot,
+      clientOrderId,
+      reference: checkout.reference ?? checkout.paymentReference ?? checkout.payment_reference ?? clientOrderId,
+      sedifexOrderId: readSedifexOrderId(checkout) || undefined,
+      preview,
+      customerTotal: getTrustedCustomerTotal(preview),
       checkout,
     });
   } catch (error) {
