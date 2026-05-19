@@ -45,8 +45,13 @@ export type ProductCheckoutItem = {
   type: "PRODUCT";
   item_type: "product";
   item_id: string;
+  productId?: string;
+  originalProductId?: string;
   qty: number;
+  quantity?: number;
   name?: string;
+  unitPrice?: number;
+  price?: number;
 };
 
 type ProductCheckoutBaseInput = {
@@ -131,21 +136,21 @@ export const getCheckoutCancelUrl = () => {
 
 const getContractVersion = () => readEnv("SEDIFEX_INTEGRATION_API_VERSION") || readEnv("SEDIFEX_CONTRACT_VERSION") || "2026-04-13";
 
-const getSedifexIntegrationKey = () => {
-  const key = readEnv("SEDIFEX_INTEGRATION_API_KEY");
+const getSedifexCheckoutKey = () => {
+  const key = readEnv("SEDIFEX_CHECKOUT_API_KEY") || readEnv("SEDIFEX_INTEGRATION_API_KEY");
   if (!key) {
-    throw new Error("Configure SEDIFEX_INTEGRATION_API_KEY for Sedifex checkout. Merchant tokens are not accepted by checkout endpoints.");
+    throw new Error("Configure SEDIFEX_CHECKOUT_API_KEY or SEDIFEX_INTEGRATION_API_KEY for Sedifex checkout.");
   }
   return key;
 };
 
 const buildSedifexHeaders = (_storeId: string) => {
-  const integrationKey = getSedifexIntegrationKey();
+  const checkoutKey = getSedifexCheckoutKey();
   return {
     Accept: "application/json",
     "Content-Type": "application/json",
     "X-Sedifex-Contract-Version": getContractVersion(),
-    "x-api-key": integrationKey,
+    "x-api-key": checkoutKey,
   };
 };
 
@@ -178,6 +183,48 @@ export function normalizeSedifexItemId(rawId: string, storeId: string) {
   const id = rawId.trim();
   const prefix = `${storeId}_`;
   return storeId && id.startsWith(prefix) ? id.slice(prefix.length) : id;
+}
+
+function toProductCheckoutCart(items: ProductCheckoutItem[], storeId: string) {
+  return items.map((item) => {
+    const productId = item.productId || item.item_id;
+    return {
+      productId,
+      item_id: productId,
+      originalProductId: item.originalProductId || productId,
+      merchantId: storeId,
+      merchant_id: storeId,
+      storeId,
+      store_id: storeId,
+      quantity: item.qty,
+      qty: item.qty,
+      type: "PRODUCT",
+      item_type: "product",
+    };
+  });
+}
+
+function toProductCheckoutItems(items: ProductCheckoutItem[], storeId: string) {
+  return items.map((item) => {
+    const productId = item.productId || item.item_id;
+    return {
+      id: productId,
+      item_id: productId,
+      productId,
+      originalProductId: item.originalProductId || productId,
+      merchantId: storeId,
+      merchant_id: storeId,
+      storeId,
+      store_id: storeId,
+      name: item.name,
+      unitPrice: item.unitPrice ?? item.price,
+      price: item.price ?? item.unitPrice,
+      qty: item.qty,
+      quantity: item.qty,
+      type: "PRODUCT",
+      item_type: "product",
+    };
+  });
 }
 
 export function readBookingId(response: SedifexBookingCreateResponse) {
@@ -227,11 +274,17 @@ export async function createHostedServiceCheckout(input: CreateHostedCheckoutInp
       client_order_id: input.clientOrderId,
       orderType: input.orderType,
       order_type: input.orderType,
+      sourceChannel: "client_website",
+      source_channel: "client_website",
+      sourceLabel: "Client Website",
+      source_label: "Client Website",
       currency: input.currency ?? "GHS",
       amount: input.amount,
       customer: input.customer,
       returnUrl: input.returnUrl,
       metadata: { bookingId: input.bookingId, channel: "client-website", ...(input.metadata ?? {}) },
+      syncStatus: "pending",
+      syncRequestedAt: new Date().toISOString(),
     }),
     cache: "no-store",
   });
@@ -239,6 +292,18 @@ export async function createHostedServiceCheckout(input: CreateHostedCheckoutInp
 }
 
 export async function previewProductCheckout(input: ProductCheckoutBaseInput) {
+  const normalizedItems = toProductCheckoutItems(input.items, input.storeId).map((item) => ({
+    type: "PRODUCT",
+    item_type: "product",
+    item_id: item.item_id,
+    productId: item.productId,
+    qty: item.qty,
+    quantity: item.quantity,
+    name: item.name,
+    unitPrice: item.unitPrice,
+    price: item.price,
+  }));
+
   const response = await fetch(getCheckoutPreviewUrl(), {
     method: "POST",
     headers: buildSedifexHeaders(input.storeId),
@@ -249,7 +314,8 @@ export async function previewProductCheckout(input: ProductCheckoutBaseInput) {
       merchant_id: input.storeId,
       currency: "GHS",
       fulfillment_type: input.fulfillmentType ?? "DELIVERY",
-      items: input.items,
+      delivery_address_id: null,
+      items: normalizedItems,
       customer: input.customer,
       delivery: input.delivery,
       sourceChannel: "client_website",
@@ -264,6 +330,8 @@ export async function previewProductCheckout(input: ProductCheckoutBaseInput) {
 
 export async function createProductCheckout(input: CreateProductCheckoutInput) {
   const amount = getTrustedCustomerTotal(input.preview) ?? input.localAmount;
+  const cart = toProductCheckoutCart(input.items, input.storeId);
+  const items = toProductCheckoutItems(input.items, input.storeId);
   const response = await fetch(getCheckoutCreateUrl(), {
     method: "POST",
     headers: buildSedifexHeaders(input.storeId),
@@ -281,8 +349,9 @@ export async function createProductCheckout(input: CreateProductCheckoutInput) {
       orderType: "product",
       order_type: "product",
       currency: "GHS",
+      cart,
+      items,
       amount,
-      items: input.items,
       customer: input.customer,
       delivery: input.delivery,
       returnUrl: input.returnUrl,
@@ -291,7 +360,9 @@ export async function createProductCheckout(input: CreateProductCheckoutInput) {
       metadata: input.metadata,
       paymentCollectionMode: "online_checkout",
       paymentStatus: "checkout_created",
+      payment_status: "checkout_created",
       orderStatus: "pending_payment",
+      order_status: "pending_payment",
       syncStatus: "pending",
       syncRequestedAt: new Date().toISOString(),
     }),
