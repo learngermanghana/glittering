@@ -91,6 +91,18 @@ export default async function HomePage() {
     `Hi Glittering Spa! I want to register for the promo (${promoWindow}) at Awoshie.\nName: ____\nService: ____\nDate: ____\nTime: ____`
   )}`;
 
+  const homepageJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE.name,
+    url: "https://www.glitteringmedspa.com/",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://www.glitteringmedspa.com/products?search={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <div className="relative">
       {/* subtle background glow */}
@@ -100,6 +112,7 @@ export default async function HomePage() {
       </div>
 
       <Container>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageJsonLd) }} />
         <section className="py-12 sm:py-16">
           <div className="overflow-hidden rounded-3xl border border-brand-900/20 bg-brand-950 text-white shadow-lg">
             <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
