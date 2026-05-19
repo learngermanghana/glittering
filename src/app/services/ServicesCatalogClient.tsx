@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { BOOKING_URL } from "@/lib/site";
 import type { DisplayService } from "@/lib/services";
+import { getServiceSlug } from "@/lib/serviceSeo";
 
 const priceFormatter = new Intl.NumberFormat("en-GH", {
   style: "currency",
@@ -104,24 +105,29 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
         <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredServices.map((service, index) => {
             const serviceKey = `${service.id ?? service.name}-${index}`;
+            const serviceHref = `/services/${getServiceSlug(service)}`;
             const hasLongDescription = service.description.length > DESCRIPTION_TRUNCATE_LENGTH;
             const isExpanded = !!expandedDescriptions[serviceKey];
             const displayDescription = hasLongDescription && !isExpanded ? `${service.description.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim()}...` : service.description;
 
             return (
               <article key={serviceKey} className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
-                  <Image
-                    src={service.image}
-                    alt={service.name}
-                    fill
-                    className="object-contain p-2"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
-                </div>
+                <Link href={serviceHref} className="block">
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
+                    <Image
+                      src={service.image}
+                      alt={service.name}
+                      fill
+                      className="object-contain p-2 transition duration-300 hover:scale-[1.02]"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  </div>
+                </Link>
 
                 <div className="mt-4 flex items-start justify-between gap-3">
-                  <h2 className="text-base font-semibold">{service.name}</h2>
+                  <Link href={serviceHref} className="text-base font-semibold hover:underline">
+                    {service.name}
+                  </Link>
                   <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-900">
                     {priceFormatter.format(service.price)}
                   </span>
@@ -147,12 +153,20 @@ export function ServicesCatalogClient({ services }: ServicesCatalogClientProps) 
                   ) : null}
                 </div>
 
-                <Link
-                  href={`${BOOKING_URL}?service=${encodeURIComponent(service.name)}`}
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
-                >
-                  Book this service
-                </Link>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <Link
+                    href={serviceHref}
+                    className="inline-flex items-center justify-center rounded-2xl border border-neutral-300 px-4 py-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+                  >
+                    View details
+                  </Link>
+                  <Link
+                    href={`${BOOKING_URL}?service=${encodeURIComponent(service.name)}`}
+                    className="inline-flex items-center justify-center rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
+                  >
+                    Book
+                  </Link>
+                </div>
               </article>
             );
           })}
