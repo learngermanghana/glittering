@@ -2,25 +2,18 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/Container";
-import {
-  SITE,
-  WHATSAPP_LINK,
-  ENQUIRIES_WHATSAPP_LINK,
-  LOCATIONS,
-  products,
-  SALES_WHATSAPP_LINK,
-  topSellingProducts,
-  topSellingServices,
-} from "@/lib/site";
+import { SITE, ENQUIRIES_WHATSAPP_LINK, LOCATIONS } from "@/lib/site";
 import { getGalleryImages } from "@/lib/gallery";
 import { SeoInternalLinks } from "@/components/SeoInternalLinks";
 import { buildPageMetadata } from "@/lib/seo";
 import { fetchFirestoreDocument } from "@/lib/firebase";
 import { getProductsCatalogData } from "@/lib/products";
+import { getServicesCatalogData } from "@/lib/services";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
-  description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
+  description:
+    "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services online.",
   path: "/",
 });
 
@@ -35,9 +28,50 @@ type StorePromoDoc = {
 };
 
 const PROMO_STORE_ID = "37mJqg20MjOriggaIaOOuahDsgj1";
-const FALLBACK_PROMO_IMAGE_URL =
-  "https://storage.googleapis.com/sedifeximage/product-images/1775413546139-IMG_1076.jpg";
+const FALLBACK_PROMO_IMAGE_URL = "https://storage.googleapis.com/sedifeximage/product-images/1775413546139-IMG_1076.jpg";
 const FALLBACK_PROMO_IMAGE_ALT = "Glittering Med Spa promotional offer";
+
+const moneyFormatter = new Intl.NumberFormat("en-GH", {
+  style: "currency",
+  currency: "GHS",
+});
+
+const branchCards = [
+  {
+    name: "Main Awoshie",
+    value: "Glittering Med Spa Main (Awoshie)",
+    description: "Choose this branch for main Awoshie services and bookings.",
+  },
+  {
+    name: "Annex Awoshie",
+    value: "Glittering Spa Annex (Awoshie)",
+    description: "Pick the annex when you want services available at that location.",
+  },
+  {
+    name: "Spintex",
+    value: "Glittering Spa Spintex",
+    description: "Select Spintex to view and book services available there.",
+  },
+];
+
+const trustItems = [
+  {
+    title: "Secure checkout",
+    text: "Payments go through Sedifex Checkout, not manual reference typing.",
+  },
+  {
+    title: "Live prices",
+    text: "Homepage services and products are pulled from the live catalog.",
+  },
+  {
+    title: "Branch-aware booking",
+    text: "Your selected location controls the available services shown at booking.",
+  },
+  {
+    title: "Verified status",
+    text: "Payment confirmation depends on Sedifex payment status, not browser return alone.",
+  },
+];
 
 function asPromoText(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -56,15 +90,25 @@ function formatPromoDate(value?: string | null) {
   return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" }).format(parsed);
 }
 
+function truncateText(value: string, length = 120) {
+  const normalized = value.trim();
+  if (normalized.length <= length) return normalized;
+  return `${normalized.slice(0, length).trimEnd()}…`;
+}
+
 export default async function HomePage() {
-  const galleryImages = await getGalleryImages();
-  const featuredImages = galleryImages.slice(0, 3);
-  const [awoshie, spintex] = LOCATIONS;
-  const [promoStore, homepageProducts] = await Promise.all([
+  const [galleryImages, promoStore, homepageProducts, homepageServices] = await Promise.all([
+    getGalleryImages(),
     fetchFirestoreDocument<StorePromoDoc>("stores", PROMO_STORE_ID).catch(() => null),
     getProductsCatalogData(),
+    getServicesCatalogData(),
   ]);
-  const featuredProducts = homepageProducts.slice(0, 3);
+
+  const featuredImages = galleryImages.slice(0, 3);
+  const [awoshie, spintex] = LOCATIONS;
+  const featuredProducts = homepageProducts.filter((product) => !product.isService).slice(0, 3);
+  const featuredServices = homepageServices.filter((service) => service.price > 0).slice(0, 3);
+
   const fallbackPromoStartDate = "2026-04-01";
   const fallbackPromoEndDate = "2026-04-15";
   const promoStartDateRaw = asPromoText(promoStore?.promoStartDate) ?? fallbackPromoStartDate;
@@ -72,103 +116,57 @@ export default async function HomePage() {
   const promoEndDate = parsePromoDate(promoEndDateRaw);
   const now = new Date();
   const endOfPromoDate = promoEndDate ? new Date(promoEndDate) : null;
-  if (endOfPromoDate) {
-    endOfPromoDate.setHours(23, 59, 59, 999);
-  }
+  if (endOfPromoDate) endOfPromoDate.setHours(23, 59, 59, 999);
+
   const promoIsExpired = endOfPromoDate ? now > endOfPromoDate : false;
-  const promoTitle = asPromoText(promoStore?.promoTitle) ?? "Limited April Promo";
-  const promoSummary = asPromoText(promoStore?.promoSummary) ?? "Glittering Med Spa 50% OFF Services";
+  const promoTitle = asPromoText(promoStore?.promoTitle) ?? "Current Promo";
+  const promoSummary = asPromoText(promoStore?.promoSummary) ?? "Glittering Med Spa service offer";
   const promoStart = formatPromoDate(promoStartDateRaw);
   const promoEnd = formatPromoDate(promoEndDateRaw);
   const promoWindow = promoStart && promoEnd ? `${promoStart} - ${promoEnd}` : promoStart ?? promoEnd ?? "Limited-time offer";
   const promoWebsiteUrl = asPromoText(promoStore?.promoWebsiteUrl);
   const promoImageUrl = asPromoText(promoStore?.promoImageUrl) ?? FALLBACK_PROMO_IMAGE_URL;
   const promoImageAlt = asPromoText(promoStore?.promoImageAlt) ?? FALLBACK_PROMO_IMAGE_ALT;
-  const spintexPromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
-    `Hi Glittering Spa! I want to register for the promo (${promoWindow}) at Spintex.\nName: ____\nService: ____\nDate: ____\nTime: ____`
-  )}`;
-  const awoshiePromoLink = `https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(
-    `Hi Glittering Spa! I want to register for the promo (${promoWindow}) at Awoshie.\nName: ____\nService: ____\nDate: ____\nTime: ____`
-  )}`;
-
-  const homepageJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: SITE.name,
-    url: "https://www.glitteringmedspa.com/",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://www.glitteringmedspa.com/products?search={search_term_string}",
-      "query-input": "required name=search_term_string",
-    },
-  };
 
   return (
     <div className="relative">
-      {/* subtle background glow */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-[-120px] top-[-120px] h-[320px] w-[320px] rounded-full bg-brand-200/40 blur-3xl" />
         <div className="absolute right-[-120px] top-[80px] h-[320px] w-[320px] rounded-full bg-gold-500/20 blur-3xl" />
       </div>
 
       <Container>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageJsonLd) }} />
         <section className="py-12 sm:py-16">
           <div className="overflow-hidden rounded-3xl border border-brand-900/20 bg-brand-950 text-white shadow-lg">
-            <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="grid gap-0 lg:grid-cols-[1.12fr_0.88fr]">
               <div className="p-6 sm:p-8 lg:p-10">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">Welcome to Glittering Spa</p>
-                <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-6xl">Relax. Glow. Restore. Right here in Ghana.</h1>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">Glittering Med Spa Ghana</p>
+                <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-6xl">Book beauty services and shop spa products online.</h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-brand-100 sm:text-lg">
-                  Premium self-care med spa in Accra, Ghana with Spa, Beauty, Salon and Nails in Awoshie and Spintex.
+                  Choose a service, select your branch, or shop products with secure Sedifex Checkout. WhatsApp remains available for support, but the main action is now booking and checkout.
                 </p>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <a
-                    href={ENQUIRIES_WHATSAPP_LINK}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-2xl bg-white px-6 py-3 text-center text-sm font-semibold text-brand-950 hover:bg-white/90"
-                  >
-                    Make Enquiries on WhatsApp
-                  </a>
-                  <a
-                    href={awoshie.directionsLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-2xl border border-white/40 bg-white/10 px-6 py-3 text-center text-sm font-semibold hover:bg-white/20"
-                  >
-                    Get Directions (Awoshie)
-                  </a>
-                  <a
-                    href={spintex.directionsLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-2xl border border-white/40 bg-white/10 px-6 py-3 text-center text-sm font-semibold hover:bg-white/20"
-                  >
-                    Get Directions (Spintex)
+                  <Link href="/book" className="rounded-2xl bg-white px-6 py-3 text-center text-sm font-semibold text-brand-950 hover:bg-white/90">
+                    Book a Service
+                  </Link>
+                  <Link href="/products" className="rounded-2xl bg-gold-400 px-6 py-3 text-center text-sm font-semibold text-brand-950 hover:bg-gold-300">
+                    Shop Products
+                  </Link>
+                  <a href={ENQUIRIES_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="rounded-2xl border border-white/40 bg-white/10 px-6 py-3 text-center text-sm font-semibold hover:bg-white/20">
+                    Ask on WhatsApp
                   </a>
                 </div>
-                <div className="mt-5">
-                  <a
-                    href="https://sedifex.com/join-customers/0e9ba2fa082640cbb2d78e39"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-semibold text-gold-300 underline decoration-gold-400/70 underline-offset-4 hover:text-gold-200"
-                  >
-                    Join our customer list
-                  </a>
+
+                <div className="mt-6 flex flex-wrap gap-2 text-xs font-medium text-brand-100">
+                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">Awoshie</span>
+                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">Spintex</span>
+                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">Secure checkout</span>
+                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">Live catalog</span>
                 </div>
               </div>
-              <div className="relative min-h-[260px]">
-                <Image
-                  src="/gallery/pexels-didsss-1830447.jpg"
-                  alt="Luxury spa treatment room with warm lighting"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                  priority
-                />
+              <div className="relative min-h-[280px]">
+                <Image src="/gallery/pexels-didsss-1830447.jpg" alt="Luxury spa treatment room with warm lighting" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 40vw" priority />
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-950/70 via-brand-950/20 to-transparent lg:bg-gradient-to-l" />
               </div>
             </div>
@@ -179,367 +177,192 @@ export default async function HomePage() {
             Open Mon–Sat 7am–8pm • Sun 12–8pm • {SITE.location}
           </div>
 
+          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="text-sm text-neutral-500">Choose your branch</div>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Start with the location you want to visit</h2>
+                <p className="mt-2 max-w-2xl text-sm text-neutral-600">Each location can have different available services. Pick a branch, then continue to booking.</p>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
+                <a href={awoshie.directionsLink} target="_blank" rel="noreferrer" className="font-semibold text-brand-800 hover:underline">Awoshie directions</a>
+                <span>•</span>
+                <a href={spintex.directionsLink} target="_blank" rel="noreferrer" className="font-semibold text-brand-800 hover:underline">Spintex directions</a>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              {branchCards.map((branch) => (
+                <Link key={branch.value} href={`/book?branch=${encodeURIComponent(branch.value)}`} className="rounded-3xl border border-brand-100 bg-brand-50/40 p-5 transition hover:-translate-y-0.5 hover:border-brand-300 hover:bg-white hover:shadow-sm">
+                  <p className="text-base font-semibold text-neutral-950">{branch.name}</p>
+                  <p className="mt-2 text-sm leading-6 text-neutral-600">{branch.description}</p>
+                  <span className="mt-4 inline-flex text-sm font-semibold text-brand-800">Choose this branch →</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
           {!promoIsExpired ? (
-            <div className="mt-8 overflow-hidden rounded-3xl border border-gold-500/40 bg-gradient-to-r from-brand-900 via-brand-900 to-brand-950 text-white shadow-sm">
+            <div className="mt-10 overflow-hidden rounded-3xl border border-gold-500/40 bg-gradient-to-r from-brand-900 via-brand-900 to-brand-950 text-white shadow-sm">
               <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
                 <div className="p-6 sm:p-8">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-400">{promoTitle}</p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{promoSummary}</h2>
                   <p className="mt-2 text-sm text-brand-100 sm:text-base">
-                    Offer runs from <span className="font-semibold text-white">{promoWindow}</span>. Register now and choose your
-                    branch.
+                    Offer runs from <span className="font-semibold text-white">{promoWindow}</span>. View services and complete your booking online.
                   </p>
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                     {promoWebsiteUrl ? (
-                      <a
-                        href={promoWebsiteUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
-                      >
-                        View promo services
+                      <a href={promoWebsiteUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90">
+                        View promo
                       </a>
                     ) : (
-                      <Link
-                        href="/services"
-                        className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90"
-                      >
-                        View promo services
+                      <Link href="/services" className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-white/90">
+                        View services
                       </Link>
                     )}
-                    <a
-                      href={spintexPromoLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
-                    >
-                      Register now (Spintex)
-                    </a>
-                    <a
-                      href={awoshiePromoLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20"
-                    >
-                      Register now (Awoshie)
-                    </a>
+                    <Link href="/book" className="rounded-2xl border border-white/40 bg-white/10 px-5 py-2.5 text-center text-sm font-semibold hover:bg-white/20">
+                      Book with checkout
+                    </Link>
                   </div>
                 </div>
                 <div className="relative min-h-[260px]">
-                  <Image
-                    src={promoImageUrl}
-                    alt={promoImageAlt}
-                    fill
-                    className="object-contain p-3"
-                    sizes="(max-width: 1024px) 100vw, 30vw"
-                  />
+                  <Image src={promoImageUrl} alt={promoImageAlt} fill className="object-contain p-3" sizes="(max-width: 1024px) 100vw, 30vw" />
                   <div className="absolute inset-0 bg-gradient-to-t from-brand-950/50 to-transparent lg:bg-gradient-to-l" />
                 </div>
               </div>
             </div>
           ) : null}
 
-          {/* green band like your sample */}
-          <div className="mt-10 rounded-3xl bg-brand-900 text-brand-50 p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="mt-10 rounded-3xl border border-brand-200/70 bg-gradient-to-br from-white via-rose-50/40 to-brand-50 p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="text-lg font-semibold text-gold-500">Need a quick booking?</div>
-                <div className="text-brand-100 text-sm">Message us and we’ll confirm time + service.</div>
+                <div className="text-sm text-neutral-600">Live catalog</div>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Featured services and products</h2>
+                <p className="mt-2 text-sm text-neutral-600">These cards are pulled from live service and product data. Book services or shop products directly.</p>
               </div>
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-brand-950 hover:bg-white/90 text-center"
-              >
-                Book Now
-              </a>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link href="/services" className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">
+                  View all services
+                </Link>
+                <Link href="/products" className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-900">
+                  Shop products
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-5 lg:grid-cols-2">
+              <div className="rounded-3xl border border-black/10 bg-white p-5">
+                <div className="text-sm font-semibold text-brand-900">Top Services</div>
+                <div className="mt-4 grid gap-4">
+                  {featuredServices.length ? (
+                    featuredServices.map((service) => (
+                      <div key={service.id ?? service.name} className="overflow-hidden rounded-2xl border border-rose-100 bg-rose-50/40 sm:grid sm:grid-cols-[110px_1fr]">
+                        <div className="relative min-h-[120px] bg-white sm:min-h-full">
+                          <Image src={service.image} alt={service.name} fill className="object-contain p-2" sizes="110px" />
+                        </div>
+                        <div className="p-4">
+                          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-neutral-900">{service.name}</p>
+                              <p className="text-xs text-brand-800">{service.category}</p>
+                            </div>
+                            <p className="text-sm font-bold text-brand-950">{moneyFormatter.format(service.price)}</p>
+                          </div>
+                          <p className="mt-2 text-xs leading-5 text-neutral-600">{truncateText(service.description || "Book this service online.")}</p>
+                          <Link href={`/book?service=${encodeURIComponent(service.name)}`} className="mt-3 inline-flex rounded-xl bg-brand-950 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-900">
+                            Book this service
+                          </Link>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="rounded-2xl border border-dashed border-rose-100 bg-rose-50/40 p-4 text-sm text-neutral-600">No live services are available right now.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-black/10 bg-white p-5">
+                <div className="text-sm font-semibold text-brand-900">Top Products</div>
+                <div className="mt-4 grid gap-4">
+                  {featuredProducts.length ? (
+                    featuredProducts.map((product) => {
+                      const isSedifexImage = product.image.startsWith("http");
+                      return (
+                        <div key={product.id ?? product.name} className="overflow-hidden rounded-2xl border border-rose-100 bg-rose-50/40 sm:grid sm:grid-cols-[110px_1fr]">
+                          <div className="relative min-h-[120px] bg-white sm:min-h-full">
+                            <Image src={product.image} alt={product.name} fill className={isSedifexImage ? "object-contain p-2" : "object-cover"} sizes="110px" />
+                          </div>
+                          <div className="p-4">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                              <p className="text-sm font-semibold text-neutral-900">{product.name}</p>
+                              <p className="text-sm font-bold text-brand-950">{moneyFormatter.format(product.price)}</p>
+                            </div>
+                            <p className="mt-2 text-xs leading-5 text-neutral-600">{truncateText(product.description || "Available from the live product catalog.")}</p>
+                            <Link href="/products" className="mt-3 inline-flex rounded-xl bg-brand-950 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-900">
+                              Buy product
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="rounded-2xl border border-dashed border-rose-100 bg-rose-50/40 p-4 text-sm text-neutral-600">No live products are available right now.</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="mt-10 rounded-3xl border border-brand-200/70 bg-gradient-to-br from-white via-rose-50/40 to-brand-50 p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="text-sm text-neutral-600">Featured Products & Services</div>
-                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Most requested services & products</h2>
-                <p className="mt-2 text-sm text-neutral-600">
-                  Quick picks clients ask for most. Tap WhatsApp and we’ll help you choose the best option.
-                </p>
+          <div className="mt-10 grid gap-4 md:grid-cols-4">
+            {trustItems.map((item) => (
+              <div key={item.title} className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-950 text-sm font-bold text-white">✓</div>
+                <p className="mt-4 text-sm font-semibold text-neutral-950">{item.title}</p>
+                <p className="mt-2 text-xs leading-5 text-neutral-600">{item.text}</p>
               </div>
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-900 shadow-sm"
-              >
-                Reserve your slot
-              </a>
-            </div>
+            ))}
+          </div>
 
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-black/10 bg-white p-5">
-                <div className="text-sm font-semibold text-brand-900">Top Services</div>
-                <div className="mt-4 space-y-3">
-                  {topSellingServices.map((service) => (
-                    <div key={service.name} className="rounded-xl border border-rose-100 bg-rose-50/40 p-3">
-                      <p className="text-sm font-semibold text-neutral-900">{service.name}</p>
-                      <p className="text-xs text-brand-800">{service.category}</p>
-                      <p className="mt-1 text-xs text-neutral-600">{service.summary}</p>
+          <div className="mt-10 grid gap-5 lg:grid-cols-[1fr_0.9fr]">
+            {featuredImages.length ? (
+              <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm text-neutral-500">Gallery</div>
+                    <div className="mt-1 text-lg font-semibold">A peek at our latest looks</div>
+                  </div>
+                  <Link className="text-sm font-semibold text-brand-800 hover:underline" href="/gallery">
+                    View gallery →
+                  </Link>
+                </div>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                  {featuredImages.map((src, index) => (
+                    <div key={`${src}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50">
+                      <Image src={src} alt={`Featured gallery image ${index + 1}`} fill className="object-contain p-2" sizes="(max-width: 640px) 100vw, 20vw" />
                     </div>
                   ))}
                 </div>
               </div>
+            ) : null}
 
-              <div className="rounded-2xl border border-black/10 bg-white p-5">
-                <div className="text-sm font-semibold text-brand-900">Top Products</div>
-                <div className="mt-4 space-y-3">
-                  {topSellingProducts.map((name) => {
-                    const product = featuredProducts.find((item) => item.name === name) ?? products.find((item) => item.name === name);
-                    if (!product) return null;
-                    const isSedifexImage = product.image.startsWith("http");
-                    return (
-                      <div key={product.name} className="flex items-center gap-3 rounded-xl border border-rose-100 bg-rose-50/40 p-3">
-                        <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-black/10 bg-white">
-                          <Image
-                            src={product.image}
-                            alt={product.name}
-                            fill
-                            className={isSedifexImage ? "object-contain p-1" : "object-cover"}
-                            sizes="56px"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-neutral-900">{product.name}</p>
-                          <p className="mt-0.5 text-xs text-neutral-600">{product.description}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <a
-                  href={SALES_WHATSAPP_LINK}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex text-sm font-semibold text-brand-800 hover:underline"
-                >
-                  Chat sales team →
+            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
+              <div className="text-sm text-neutral-500">Training School</div>
+              <div className="mt-1 text-lg font-semibold">Admissions now open</div>
+              <p className="mt-2 text-sm leading-6 text-neutral-600">Learn beauty and wellness skills with hands-on practice at Glittering Spa. Registration captures student data and sends it to the team fast.</p>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <Link className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-900" href="/training">
+                  Register Now
+                </Link>
+                <a href={ENQUIRIES_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">
+                  Ask a question
                 </a>
               </div>
-            </div>
-          </div>
-
-          {/* cards */}
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-              <div className="text-sm text-neutral-500">Services</div>
-              <div className="mt-1 text-lg font-semibold">Spa • Beauty • Salon • Nails</div>
-              <Link className="mt-4 inline-block text-sm font-semibold text-brand-800 hover:underline" href="/services">
-                View services →
-              </Link>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-              <div className="text-sm text-neutral-500">Products</div>
-              <div className="mt-1 text-lg font-semibold">Glow essentials and best-sellers</div>
-              <Link className="mt-4 inline-block text-sm font-semibold text-brand-800 hover:underline" href="/products">
-                Explore products →
-              </Link>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-              <div className="text-sm text-neutral-500">Gallery</div>
-              <div className="mt-1 text-lg font-semibold">See our work</div>
-              <Link className="mt-4 inline-block text-sm font-semibold text-brand-800 hover:underline" href="/gallery">
-                Open gallery →
-              </Link>
-            </div>
-          </div>
-
-          {featuredImages.length ? (
-            <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="text-sm text-neutral-500">Gallery</div>
-                  <div className="mt-1 text-lg font-semibold">A peek at our latest looks</div>
-                </div>
-                <Link className="text-sm font-semibold text-brand-800 hover:underline" href="/gallery">
-                  View full gallery →
-                </Link>
-              </div>
-
-              <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                {featuredImages.map((src, index) => (
-                  <div
-                    key={`${src}-${index}`}
-                    className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
-                  >
-                    <Image
-                      src={src}
-                      alt={`Featured gallery image ${index + 1}`}
-                      fill
-                      className="object-contain p-2"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="text-sm text-neutral-500">Training School</div>
-                <div className="mt-1 text-lg font-semibold">Admissions now open</div>
-                <p className="mt-2 text-sm text-neutral-600">
-                  Learn beauty and wellness skills with hands-on practice at Glittering Spa. Register now and send your
-                  student data directly to our WhatsApp in one click.
-                </p>
-                <div className="mt-4 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2">
-                  <p>• Courses include lashes, nails, makeup, facials, massage, wig making, and body therapy.</p>
-                  <p>• Training options run from two weeks to one year depending on your selected course.</p>
-                  <p>• Registration captures apprentice bio-data, guarantor details, and health declaration.</p>
-                  <p>• Submit fast on WhatsApp and our team will follow up with your start details.</p>
-                </div>
-              </div>
-              <Link
-                className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-900"
-                href="/training"
-              >
-                Register Now
-              </Link>
-            </div>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {["/training/5.jpeg", "/training/6.jpeg", "/training/7.jpeg"].map((src, index) => (
-                <div
-                  key={src}
-                  className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
-                >
-                  <Image
-                    src={src}
-                    alt={`Training highlight ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm text-neutral-500">Products</div>
-                <div className="mt-1 text-lg font-semibold">Sample products our clients love</div>
-                <p className="mt-2 text-sm text-neutral-600">
-                  Browse a few favorites and chat with our sales team for availability.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link
-                  href="/products"
-                  className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold hover:bg-neutral-50 shadow-sm"
-                >
-                  View all products
-                </Link>
-                <a
-                  href={SALES_WHATSAPP_LINK}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center rounded-2xl bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-900 shadow-sm"
-                >
-                  Talk to our sales team
-                </a>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {featuredProducts.map((product) => {
-                const isSedifexImage = product.image.startsWith("http");
-
-                return (
-                  <div
-                    key={product.name}
-                    className="overflow-hidden rounded-2xl border border-black/10 bg-neutral-50"
-                  >
-                    <div className="relative aspect-[4/3]">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className={isSedifexImage ? "object-contain p-2" : "object-cover"}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <div className="text-sm font-semibold text-neutral-900">{product.name}</div>
-                      <p className="mt-1 text-xs text-neutral-600">{product.description}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-
-          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm text-neutral-500">Instagram</div>
-                <div className="mt-1 text-lg font-semibold">Follow our latest updates</div>
-                <p className="mt-2 text-sm text-neutral-600">Fresh looks, client glow-ups, and behind-the-scenes.</p>
-              </div>
-              <a
-                href="https://www.instagram.com/glittering__spa"
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm font-semibold text-brand-800 hover:underline"
-              >
-                Visit Instagram @glittering__spa →
-              </a>
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-6 text-sm text-neutral-600">
-              Visit our Instagram to see the latest posts.
             </div>
           </div>
 
           <SeoInternalLinks />
-
-          <div className="mt-10 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm text-neutral-500">Testimonials</div>
-                <div className="mt-1 text-lg font-semibold">Loved by our guests</div>
-              </div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-brand-700">5.0 Average Rating</div>
-            </div>
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-3">
-              {[
-                {
-                  quote: "The massage was heavenly and the space felt so calming. I walked out glowing.",
-                  name: "A. Mensah",
-                },
-                {
-                  quote: "Impeccable service and attention to detail. My nails have never looked better!",
-                  name: "R. Owusu",
-                },
-                {
-                  quote: "Friendly team, beautiful ambience, and my facial left me radiant.",
-                  name: "K. Boateng",
-                },
-              ].map((item) => (
-                <div key={item.name} className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
-                  <div className="text-brand-600 text-sm">★★★★★</div>
-                  <p className="mt-3 text-sm text-neutral-700 leading-6">“{item.quote}”</p>
-                  <div className="mt-4 text-sm font-semibold text-neutral-900">{item.name}</div>
-                </div>
-              ))}
-            </div>
-          </div>
         </section>
       </Container>
     </div>
