@@ -41,6 +41,7 @@ export default function BookPage() {
     email: "",
     branch: "",
     contactMethod: "WhatsApp",
+    notes: "",
     cancellationAccepted: false,
   });
 
@@ -118,7 +119,7 @@ export default function BookPage() {
     });
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
     clearFieldError(name);
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -155,6 +156,7 @@ export default function BookPage() {
           customerEmail: formData.email.trim() || undefined,
           branchLocationName: formData.branch,
           preferredContactMethod: formData.contactMethod,
+          notes: formData.notes.trim() || undefined,
           noRefundPolicyAccepted: formData.cancellationAccepted,
         }),
       });
@@ -205,6 +207,8 @@ export default function BookPage() {
               <label className="text-sm font-semibold text-neutral-700">Preferred Contact Method<select name="contactMethod" value={formData.contactMethod} onChange={handleInputChange} required className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200">{CONTACT_OPTIONS.map((contactOption) => <option key={contactOption} value={contactOption}>{contactOption}</option>)}</select></label>
             </div>
 
+            <div className="mt-5"><label className="text-sm font-semibold text-neutral-700">Notes / Special requests<textarea name="notes" value={formData.notes} onChange={handleInputChange} placeholder="Share allergies, special requests, or anything our team should know." rows={4} className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200" /></label></div>
+
             <div className="mt-6 grid gap-4 sm:grid-cols-1"><label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm"><input name="cancellationAccepted" checked={formData.cancellationAccepted} onChange={handleCheckboxChange} type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300" />I agree to the no-refund policy after payment</label>{fieldErrors.cancellationAccepted && <span className="text-xs font-normal text-red-600">{fieldErrors.cancellationAccepted}</span>}</div>
             <p className="mt-4 text-xs text-neutral-500">Payment is handled securely through Sedifex Checkout. Browser return alone does not confirm payment; final confirmation comes from Sedifex payment status.</p>
 
@@ -216,7 +220,7 @@ export default function BookPage() {
             <h2 className="text-lg font-semibold">Booking details preview</h2>
             <p className="mt-2 text-sm text-neutral-600">Location filters the available services. The final booking and checkout go to the main Sedifex store.</p>
             <div className="mt-5 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700 whitespace-pre-line">
-              Service: {selectedServiceName || "____"}{"\n"}Service price: {selectedServicePrice === null ? "____" : currency.format(selectedServicePrice)}{"\n"}Customer name: {formData.name || "____"}{"\n"}Date: {formData.date || "____"}{"\n"}Time: {formData.time || "____"}{"\n"}Phone: {formData.phone || "____"}{"\n"}Email: {formData.email || "____"}{"\n"}Appointment location: {formData.branch || "____"}{"\n"}Contact method: {formData.contactMethod || "____"}{"\n"}No-refund policy accepted: {formData.cancellationAccepted ? "Yes" : "No"}
+              Service: {selectedServiceName || "____"}{"\n"}Service price: {selectedServicePrice === null ? "____" : currency.format(selectedServicePrice)}{"\n"}Customer name: {formData.name || "____"}{"\n"}Date: {formData.date || "____"}{"\n"}Time: {formData.time || "____"}{"\n"}Phone: {formData.phone || "____"}{"\n"}Email: {formData.email || "____"}{"\n"}Appointment location: {formData.branch || "____"}{"\n"}Contact method: {formData.contactMethod || "____"}{"\n"}Notes: {formData.notes || "____"}{"\n"}No-refund policy accepted: {formData.cancellationAccepted ? "Yes" : "No"}
             </div>
             <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700"><h3 className="text-sm font-semibold text-neutral-900">Payment status flow</h3><ul className="mt-4 list-disc space-y-2 pl-5 text-xs text-neutral-600 sm:text-sm"><li>Booking is created first with status booked.</li><li>Checkout is created with clientOrderId based on the bookingId.</li><li>Returning from checkout shows processing/verification, not confirmed.</li><li>Payment becomes confirmed only after Sedifex payment status confirms it.</li></ul></div>
           </div>
