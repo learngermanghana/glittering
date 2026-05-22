@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-const teamRoutes = ["/dashboard", "/login", "/sms"];
+const teamRoutes = ["/dashboard", "/sms"];
 
 function isTeamRoute(pathname: string) {
   return teamRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));

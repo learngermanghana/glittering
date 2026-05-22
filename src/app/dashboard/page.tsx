@@ -18,7 +18,6 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 const quickLinks = [
-  { href: "/login", label: "Booking Sync", description: "Enter and sync appointments." },
   { href: "/calendar", label: "Booking Calendar", description: "View upcoming events from the booking CSV feed." },
 ];
 

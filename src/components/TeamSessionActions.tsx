@@ -11,7 +11,7 @@ export function TeamSessionActions() {
     setLoading(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
+      router.push("/");
       router.refresh();
     } finally {
       setLoading(false);
