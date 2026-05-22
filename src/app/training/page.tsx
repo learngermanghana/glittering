@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SITE } from "@/lib/site";
@@ -77,7 +79,10 @@ function readFormGroup(formData: FormData, fields: Array<{ key: string; label: s
 }
 
 export default function TrainingPage() {
-  const [selectedCourse, setSelectedCourse] = useState(courseRows[0]?.course ?? "");
+  const searchParams = useSearchParams();
+  const initialCourseFromQuery = searchParams.get("course")?.trim() ?? "";
+  const initialCourse = courseRows.some((row) => row.course === initialCourseFromQuery) ? initialCourseFromQuery : (courseRows[0]?.course ?? "");
+  const [selectedCourse, setSelectedCourse] = useState(initialCourse);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const selectedCourseRow = useMemo(() => courseRows.find((row) => row.course === selectedCourse) ?? courseRows[0], [selectedCourse]);
@@ -146,6 +151,7 @@ export default function TrainingPage() {
         <div className="mt-8 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-semibold">Apprentice Bio Data</h2>
           <p className="mt-2 text-sm text-neutral-600">Selected course: <strong>{selectedCourseRow.course}</strong> · {selectedCourseRow.duration} · <strong>{currency.format(selectedCourseRow.price)}</strong></p>
+          <p className="mt-2 text-sm text-neutral-600">Need to pick from the latest Sedifex course list? <Link href="/courses" className="font-semibold text-neutral-900 underline underline-offset-2">View Courses</Link>.</p>
           <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
             <label className="text-sm text-neutral-700 sm:col-span-2">
               <span className="mb-1 block font-medium">Course</span>
