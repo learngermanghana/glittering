@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useMemo, useState } from "react";
+import Link from "next/link";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SITE } from "@/lib/site";
@@ -83,6 +84,14 @@ export default function TrainingPage() {
   const selectedCourseRow = useMemo(() => courseRows.find((row) => row.course === selectedCourse) ?? courseRows[0], [selectedCourse]);
   const currency = useMemo(() => new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }), []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const courseFromQuery = new URLSearchParams(window.location.search).get("course")?.trim() ?? "";
+    if (!courseFromQuery) return;
+    if (!courseRows.some((row) => row.course === courseFromQuery)) return;
+    setSelectedCourse(courseFromQuery);
+  }, []);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
@@ -146,6 +155,7 @@ export default function TrainingPage() {
         <div className="mt-8 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-semibold">Apprentice Bio Data</h2>
           <p className="mt-2 text-sm text-neutral-600">Selected course: <strong>{selectedCourseRow.course}</strong> · {selectedCourseRow.duration} · <strong>{currency.format(selectedCourseRow.price)}</strong></p>
+          <p className="mt-2 text-sm text-neutral-600">Need to pick from the latest Sedifex course list? <Link href="/courses" className="font-semibold text-neutral-900 underline underline-offset-2">View Courses</Link>.</p>
           <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
             <label className="text-sm text-neutral-700 sm:col-span-2">
               <span className="mb-1 block font-medium">Course</span>
