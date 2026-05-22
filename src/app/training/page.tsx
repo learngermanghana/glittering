@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SITE } from "@/lib/site";
@@ -78,7 +79,10 @@ function readFormGroup(formData: FormData, fields: Array<{ key: string; label: s
 }
 
 export default function TrainingPage() {
-  const [selectedCourse, setSelectedCourse] = useState(courseRows[0]?.course ?? "");
+  const searchParams = useSearchParams();
+  const initialCourseFromQuery = searchParams.get("course")?.trim() ?? "";
+  const initialCourse = courseRows.some((row) => row.course === initialCourseFromQuery) ? initialCourseFromQuery : (courseRows[0]?.course ?? "");
+  const [selectedCourse, setSelectedCourse] = useState(initialCourse);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const selectedCourseRow = useMemo(() => courseRows.find((row) => row.course === selectedCourse) ?? courseRows[0], [selectedCourse]);
