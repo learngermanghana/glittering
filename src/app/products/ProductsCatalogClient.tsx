@@ -521,7 +521,7 @@ export function ProductsCatalogClient({ products }: { products: DisplayProduct[]
                     Add to cart
                   </button>
                   <Link
-                    href={`/products/${productSlug}`}
+                    href={`/spa/products/${productSlug}`}
                     className="inline-flex items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
                   >
                     Details
