@@ -29,6 +29,7 @@ const nextConfig = {
       { source: "/services", destination: "/spa/services", permanent: true },
       { source: "/services.html", destination: "/spa/services", permanent: true },
       { source: "/products", destination: "/spa/products", permanent: true },
+      { source: "/products/:slug", destination: "/spa/products/:slug", permanent: true },
       { source: "/products.html", destination: "/spa/products", permanent: true },
       { source: "/gallery", destination: "/spa/gallery", permanent: true },
       { source: "/gallery.html", destination: "/spa/gallery", permanent: true },
