@@ -17,7 +17,6 @@ const nav = [
   { href: "/training", label: "Registration" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
-  { href: "/login", label: "Login" },
 ];
 
 export function Navbar() {
