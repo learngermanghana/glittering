@@ -25,7 +25,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   return (
     <Container>
       <section className="py-12 sm:py-16">
-        <Link href="/products" className="text-sm font-semibold text-brand-900 hover:underline">
+        <Link href="/spa/products" className="text-sm font-semibold text-brand-900 hover:underline">
           ← Back to products
         </Link>
 
@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return buildPageMetadata({
       title: "Product Not Found | Glittering Med Spa",
       description: "The product you requested is not available.",
-      path: `/products/${slug}`,
+      path: `/spa/products/${slug}`,
       noIndex: true,
     });
   }
@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return buildPageMetadata({
     title: `${product.name} | Glittering Med Spa Products`,
     description: buildProductMetaDescription(product),
-    path: `/products/${slug}`,
+    path: `/spa/products/${slug}`,
     image: product.image,
   });
 }
