@@ -88,6 +88,14 @@ export default function TrainingPage() {
   const selectedCourseRow = useMemo(() => courseRows.find((row) => row.course === selectedCourse) ?? courseRows[0], [selectedCourse]);
   const currency = useMemo(() => new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }), []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const courseFromQuery = new URLSearchParams(window.location.search).get("course")?.trim() ?? "";
+    if (!courseFromQuery) return;
+    if (!courseRows.some((row) => row.course === courseFromQuery)) return;
+    setSelectedCourse(courseFromQuery);
+  }, []);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
