@@ -8,8 +8,9 @@ import { TeamAreaChromeToggle } from "@/components/TeamAreaChromeToggle";
 import { LiveActivityToast } from "@/components/LiveActivityToast";
 
 export const metadata: Metadata = {
-  title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
-  description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
+  title: "Glittering Med Spa & Academy | Spa Services and Beauty Training in Accra",
+  description:
+    "Glittering Med Spa serves spa and beauty clients in Awoshie and Spintex, Accra, and Glittering Academy offers professional beauty, spa, nails, makeup, hair, and cosmetology training.",
   metadataBase: new URL("https://www.glitteringmedspa.com"),
   verification: {
     google: "Lu17AMVwA5S5K4aKY-tdyJtZAHV_ofPldi5xFdo8fWc",
@@ -29,28 +30,33 @@ export const metadata: Metadata = {
   },
   keywords: [
     "Glittering Spa",
+    "Glittering Academy",
     "med spa",
+    "beauty school Ghana",
+    "beauty academy Accra",
+    "nail training Ghana",
+    "makeup training Ghana",
     "beauty salon",
     "nail salon",
     "Awoshie spa",
     "Spintex spa",
     "spa in Ghana",
     "Accra med spa",
-    "beauty salon Accra",
     "massage",
     "facials",
   ],
   openGraph: {
-    title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
-    description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
+    title: "Glittering Med Spa & Academy | Spa Services and Beauty Training in Accra",
+    description:
+      "Book spa and beauty services or register for professional beauty, spa, nails, makeup, hair, and cosmetology training at Glittering Academy.",
     url: "https://www.glitteringmedspa.com",
-    siteName: "Glittering Spa",
+    siteName: "Glittering Med Spa & Academy",
     images: [
       {
         url: "/logo-glittering.svg",
         width: 1200,
         height: 630,
-        alt: "Glittering Spa",
+        alt: "Glittering Med Spa & Academy",
       },
     ],
     locale: "en_US",
@@ -58,8 +64,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Glittering Spa Ghana | Med Spa in Awoshie & Spintex, Accra",
-    description: "Glittering Spa is a premium med spa in Ghana with branches in Awoshie and Spintex, Accra. Book spa, beauty, salon, nails, facials, massage, and wellness services on WhatsApp.",
+    title: "Glittering Med Spa & Academy | Spa Services and Beauty Training in Accra",
+    description:
+      "Book spa and beauty services or register for professional beauty, spa, nails, makeup, hair, and cosmetology training at Glittering Academy.",
     images: ["/logo-glittering.svg"],
   },
 };
@@ -89,13 +96,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <LiveActivityToast />
 
-        <Link
-          data-site-chrome="floating-book"
-          href="https://www.glitteringmedspa.com/book"
-          className="fixed bottom-5 right-5 z-50 rounded-full bg-rose-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-rose-800"
-        >
-          Book Now
-        </Link>
+        <div data-site-chrome="floating-book" className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 sm:flex-row">
+          <Link href="/spa/book" className="rounded-full bg-rose-700 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-rose-800">
+            Book Spa
+          </Link>
+          <Link href="/academy/register" className="rounded-full bg-rose-950 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-black">
+            Register
+          </Link>
+        </div>
       </body>
     </html>
   );
