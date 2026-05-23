@@ -7,44 +7,68 @@ import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SITE } from "@/lib/site";
 
+type FieldConfig = {
+  key: string;
+  label: string;
+  required?: boolean;
+  type?: "text" | "email" | "tel" | "date" | "number";
+  options?: string[];
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  inputMode?: "text" | "numeric" | "tel" | "email";
+};
+
 const healthComplications = [
+  "None",
   "Stomach Ulcer",
   "Hepatitis B",
   "Skin Disease",
   "Eye Problem",
   "Blood Pressure",
+  "Asthma",
+  "Diabetes",
+  "Pregnancy",
   "Any Other? Specify",
 ];
 
+const classTimeOptions = ["Morning", "Afternoon", "Evening", "Weekend", "Flexible / Call me"];
+const branchOptions = ["Glittering Med Spa Academy", "Tema", "Accra", "Spintex", "Online / To be confirmed"];
+const nationalityOptions = ["Ghanaian", "Nigerian", "Togolese", "Ivorian", "Liberian", "Other"];
+const religionOptions = ["Christian", "Muslim", "Traditional", "Other", "Prefer not to say"];
+const maritalStatusOptions = ["Single", "Married", "Divorced", "Widowed", "Prefer not to say"];
+const educationOptions = ["JHS", "SHS", "TVET / Vocational", "Diploma", "HND", "Degree", "Postgraduate", "Other"];
+const relationshipOptions = ["Parent", "Guardian", "Spouse", "Sibling", "Relative", "Employer", "Friend", "Other"];
+
 const trainingGallery = ["/training/1.jpeg", "/training/2.jpeg", "/training/3.jpeg", "/training/4.jpeg"];
 
-const apprenticeFields = [
-  { key: "full_name", label: "Full Name", required: true },
-  { key: "date_of_birth", label: "Date of Birth" },
-  { key: "place_of_birth", label: "Place of Birth" },
-  { key: "nationality", label: "Nationality" },
-  { key: "religion", label: "Religion" },
-  { key: "marital_status", label: "Marital Status" },
-  { key: "children_count", label: "Number of children (if any)" },
-  { key: "hometown", label: "Hometown" },
-  { key: "residence", label: "Residence" },
-  { key: "contact", label: "Contact", required: true },
-  { key: "email", label: "Email" },
-  { key: "education", label: "Highest level of education" },
-  { key: "qualification_year", label: "Year Qualification" },
-  { key: "school_name", label: "Name of School" },
-  { key: "age", label: "Age" },
-  { key: "preferred_class_time", label: "Preferred Class Time" },
-  { key: "branch", label: "Preferred Branch" },
-  { key: "apprentice_sign_date", label: "Sign Date" },
+const apprenticeFields: FieldConfig[] = [
+  { key: "full_name", label: "Full Name", required: true, placeholder: "e.g. Ama Mensah" },
+  { key: "date_of_birth", label: "Date of Birth", type: "date" },
+  { key: "place_of_birth", label: "Place of Birth", placeholder: "e.g. Accra" },
+  { key: "nationality", label: "Nationality", options: nationalityOptions },
+  { key: "religion", label: "Religion", options: religionOptions },
+  { key: "marital_status", label: "Marital Status", options: maritalStatusOptions },
+  { key: "children_count", label: "Number of children (if any)", type: "number", min: 0, max: 20, placeholder: "0" },
+  { key: "hometown", label: "Hometown", placeholder: "e.g. Cape Coast" },
+  { key: "residence", label: "Residence", placeholder: "e.g. Tema Community 25" },
+  { key: "contact", label: "Contact", required: true, type: "tel", inputMode: "tel", placeholder: "e.g. 0244123456" },
+  { key: "email", label: "Email", type: "email", inputMode: "email", placeholder: "name@example.com" },
+  { key: "education", label: "Highest level of education", options: educationOptions },
+  { key: "qualification_year", label: "Year Qualification", type: "number", min: 1970, max: 2100, placeholder: "2024" },
+  { key: "school_name", label: "Name of School", placeholder: "Previous school attended" },
+  { key: "age", label: "Age", type: "number", min: 10, max: 90, placeholder: "Auto or type age" },
+  { key: "preferred_class_time", label: "Preferred Class Time", options: classTimeOptions },
+  { key: "branch", label: "Preferred Branch", options: branchOptions },
+  { key: "apprentice_sign_date", label: "Sign Date", type: "date" },
 ];
 
-const guarantorFields = [
-  { key: "guarantor_full_name", label: "Full Name" },
-  { key: "guarantor_relationship", label: "Relationship with Apprentice" },
-  { key: "guarantor_residence", label: "Residence" },
-  { key: "guarantor_contact", label: "Contact" },
-  { key: "guarantor_sign_date", label: "Sign Date" },
+const guarantorFields: FieldConfig[] = [
+  { key: "guarantor_full_name", label: "Full Name", placeholder: "Guarantor full name" },
+  { key: "guarantor_relationship", label: "Relationship with Apprentice", options: relationshipOptions },
+  { key: "guarantor_residence", label: "Residence", placeholder: "Guarantor residence" },
+  { key: "guarantor_contact", label: "Contact", type: "tel", inputMode: "tel", placeholder: "e.g. 0244123456" },
+  { key: "guarantor_sign_date", label: "Sign Date", type: "date" },
 ];
 
 const courseRows = [
@@ -77,9 +101,52 @@ function readFormGroup(formData: FormData, fields: Array<{ key: string; label: s
   return Object.fromEntries(fields.map(({ key }) => [key, String(formData.get(key) ?? "").trim()]));
 }
 
+function calculateAge(dateOfBirth: string) {
+  if (!dateOfBirth) return "";
+  const date = new Date(dateOfBirth);
+  if (Number.isNaN(date.getTime())) return "";
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const monthDiff = today.getMonth() - date.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) age -= 1;
+  return age > 0 && age < 120 ? String(age) : "";
+}
+
+function FieldInput({ field, onDateOfBirthChange }: { field: FieldConfig; onDateOfBirthChange?: (value: string) => void }) {
+  const baseClass = "w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700";
+  const common = {
+    name: field.key,
+    required: field.required,
+    className: baseClass,
+    placeholder: field.placeholder,
+  };
+
+  if (field.options?.length) {
+    return (
+      <select {...common} defaultValue="">
+        <option value="" disabled>Select {field.label.toLowerCase()}</option>
+        {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+    );
+  }
+
+  return (
+    <input
+      {...common}
+      type={field.type ?? "text"}
+      min={field.min}
+      max={field.max}
+      inputMode={field.inputMode}
+      onChange={field.key === "date_of_birth" ? (event) => onDateOfBirthChange?.(event.target.value) : undefined}
+    />
+  );
+}
+
 export default function TrainingPage() {
   const initialCourse = courseRows[0]?.course ?? "";
   const [selectedCourse, setSelectedCourse] = useState(initialCourse);
+  const [calculatedAge, setCalculatedAge] = useState("");
+  const [otherHealth, setOtherHealth] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const selectedCourseRow = useMemo(() => courseRows.find((row) => row.course === selectedCourse) ?? courseRows[0], [selectedCourse]);
@@ -99,7 +166,11 @@ export default function TrainingPage() {
     const formData = new FormData(event.currentTarget);
     const apprentice = readFormGroup(formData, apprenticeFields);
     const guarantor = readFormGroup(formData, guarantorFields);
-    const selectedHealthConditions = healthComplications.filter((item) => formData.get(`health_${item}`) === "on");
+    const selectedHealthConditions = healthComplications
+      .filter((item) => item !== "Any Other? Specify")
+      .filter((item) => formData.get(`health_${item}`) === "on");
+    const otherHealthValue = String(formData.get("health_other") ?? "").trim();
+    if (otherHealthValue) selectedHealthConditions.push(otherHealthValue);
 
     if (!selectedCourseRow) {
       setMessage({ type: "error", text: "Please select a course." });
@@ -111,6 +182,14 @@ export default function TrainingPage() {
     }
     if (!apprentice.contact && !apprentice.email) {
       setMessage({ type: "error", text: "Please enter phone contact or email." });
+      return;
+    }
+    if (apprentice.contact && apprentice.contact.replace(/\D/g, "").length < 9) {
+      setMessage({ type: "error", text: "Please enter a valid phone number." });
+      return;
+    }
+    if (guarantor.guarantor_contact && guarantor.guarantor_contact.replace(/\D/g, "").length < 9) {
+      setMessage({ type: "error", text: "Please enter a valid guarantor phone number." });
       return;
     }
 
@@ -156,6 +235,7 @@ export default function TrainingPage() {
         <div className="mt-8 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-semibold">Apprentice Bio Data</h2>
           <p className="mt-2 text-sm text-neutral-600">Selected course: <strong>{selectedCourseRow.course}</strong> · {selectedCourseRow.duration} · <strong>{currency.format(selectedCourseRow.price)}</strong></p>
+          <p className="mt-2 text-sm text-neutral-600">Most fields now use dropdowns, date pickers, and number inputs to reduce typing errors before the data enters Sedifex.</p>
           <p className="mt-2 text-sm text-neutral-600">Need to pick from the latest Sedifex course list? <Link href="/academy/courses" className="font-semibold text-neutral-900 underline underline-offset-2">View Courses</Link>.</p>
           <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
             <label className="text-sm text-neutral-700 sm:col-span-2">
@@ -165,32 +245,54 @@ export default function TrainingPage() {
               </select>
             </label>
 
-            {apprenticeFields.map(({ key, label, required }) => (
-              <label key={key} className="text-sm text-neutral-700">
-                <span className="mb-1 block font-medium">{label}{required ? " *" : ""}</span>
-                <input type={key === "email" ? "email" : "text"} name={key} required={required} className="w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700" />
-              </label>
-            ))}
+            {apprenticeFields.map((field) => {
+              const isAgeField = field.key === "age";
+              return (
+                <label key={field.key} className="text-sm text-neutral-700">
+                  <span className="mb-1 block font-medium">{field.label}{field.required ? " *" : ""}</span>
+                  {isAgeField ? (
+                    <input
+                      type="number"
+                      name={field.key}
+                      min={field.min}
+                      max={field.max}
+                      value={calculatedAge}
+                      onChange={(event) => setCalculatedAge(event.target.value)}
+                      className="w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700"
+                      placeholder={field.placeholder}
+                    />
+                  ) : (
+                    <FieldInput field={field} onDateOfBirthChange={(value) => setCalculatedAge(calculateAge(value))} />
+                  )}
+                  {field.key === "contact" && <span className="mt-1 block text-xs text-neutral-500">Use an active WhatsApp number.</span>}
+                </label>
+              );
+            })}
 
             <fieldset className="rounded-2xl border border-black/10 p-4 sm:col-span-2">
               <legend className="px-1 text-sm font-semibold">Health Complications (tick any)</legend>
               <div className="mt-3 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
                 {healthComplications.map((item) => (
                   <label key={item} className="flex items-center gap-2 text-sm text-neutral-700">
-                    <input type="checkbox" name={`health_${item}`} className="h-4 w-4 rounded border-black/20" />
+                    <input type="checkbox" name={`health_${item}`} className="h-4 w-4 rounded border-black/20" onChange={item === "Any Other? Specify" ? (event) => !event.target.checked && setOtherHealth("") : undefined} />
                     <span>{item}</span>
                   </label>
                 ))}
               </div>
+              <label className="mt-4 block text-sm text-neutral-700">
+                <span className="mb-1 block font-medium">Other health note</span>
+                <input name="health_other" value={otherHealth} onChange={(event) => setOtherHealth(event.target.value)} className="w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700" placeholder="Only type here if you selected Any Other" />
+              </label>
             </fieldset>
 
             <fieldset className="rounded-2xl border border-black/10 p-4 sm:col-span-2">
               <legend className="px-1 text-sm font-semibold">Guarantor Details</legend>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                {guarantorFields.map(({ key, label }) => (
-                  <label key={key} className="text-sm text-neutral-700">
-                    <span className="mb-1 block font-medium">{label}</span>
-                    <input type="text" name={key} className="w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700" />
+                {guarantorFields.map((field) => (
+                  <label key={field.key} className="text-sm text-neutral-700">
+                    <span className="mb-1 block font-medium">{field.label}</span>
+                    <FieldInput field={field} />
+                    {field.key === "guarantor_contact" && <span className="mt-1 block text-xs text-neutral-500">Use a reachable phone number for verification.</span>}
                   </label>
                 ))}
               </div>
