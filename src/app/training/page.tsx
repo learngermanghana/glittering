@@ -33,7 +33,7 @@ const healthComplications = [
 ];
 
 const classTimeOptions = ["Morning", "Afternoon", "Evening", "Weekend", "Flexible / Call me"];
-const branchOptions = ["Glittering Med Spa Academy", "Tema", "Accra", "Spintex", "Online / To be confirmed"];
+const branchOptions = ["Awoshie", "Spintex", "Online / To be confirmed"];
 const nationalityOptions = ["Ghanaian", "Nigerian", "Togolese", "Ivorian", "Liberian", "Other"];
 const religionOptions = ["Christian", "Muslim", "Traditional", "Other", "Prefer not to say"];
 const maritalStatusOptions = ["Single", "Married", "Divorced", "Widowed", "Prefer not to say"];
