@@ -33,7 +33,7 @@ const healthComplications = [
 ];
 
 const classTimeOptions = ["Morning", "Afternoon", "Evening", "Weekend", "Flexible / Call me"];
-const branchOptions = ["Glittering Med Spa Academy", "Tema", "Accra", "Spintex", "Online / To be confirmed"];
+const branchOptions = ["Awoshie", "Spintex", "Online / To be confirmed"];
 const nationalityOptions = ["Ghanaian", "Nigerian", "Togolese", "Ivorian", "Liberian", "Other"];
 const religionOptions = ["Christian", "Muslim", "Traditional", "Other", "Prefer not to say"];
 const maritalStatusOptions = ["Single", "Married", "Divorced", "Widowed", "Prefer not to say"];
@@ -112,11 +112,18 @@ function calculateAge(dateOfBirth: string) {
   return age > 0 && age < 120 ? String(age) : "";
 }
 
+
+function getMissingFieldLabels(values: Record<string, string>, fields: FieldConfig[]) {
+  return fields
+    .filter((field) => field.required)
+    .filter((field) => !values[field.key])
+    .map((field) => field.label);
+}
+
 function FieldInput({ field, onDateOfBirthChange }: { field: FieldConfig; onDateOfBirthChange?: (value: string) => void }) {
   const baseClass = "w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700";
   const common = {
     name: field.key,
-    required: field.required,
     className: baseClass,
     placeholder: field.placeholder,
   };
@@ -176,8 +183,9 @@ export default function TrainingPage() {
       setMessage({ type: "error", text: "Please select a course." });
       return;
     }
-    if (!apprentice.full_name) {
-      setMessage({ type: "error", text: "Please enter the apprentice full name." });
+    const missingRequiredFields = getMissingFieldLabels(apprentice, apprenticeFields);
+    if (missingRequiredFields.length) {
+      setMessage({ type: "error", text: `Please complete: ${missingRequiredFields.join(", ")}.` });
       return;
     }
     if (!apprentice.contact && !apprentice.email) {
@@ -237,7 +245,7 @@ export default function TrainingPage() {
           <p className="mt-2 text-sm text-neutral-600">Selected course: <strong>{selectedCourseRow.course}</strong> · {selectedCourseRow.duration} · <strong>{currency.format(selectedCourseRow.price)}</strong></p>
           <p className="mt-2 text-sm text-neutral-600">Most fields now use dropdowns, date pickers, and number inputs to reduce typing errors before the data enters Sedifex.</p>
           <p className="mt-2 text-sm text-neutral-600">Need to pick from the latest Sedifex course list? <Link href="/academy/courses" className="font-semibold text-neutral-900 underline underline-offset-2">View Courses</Link>.</p>
-          <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
+          <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit} noValidate>
             <label className="text-sm text-neutral-700 sm:col-span-2">
               <span className="mb-1 block font-medium">Course</span>
               <select value={selectedCourse} onChange={(event) => setSelectedCourse(event.target.value)} className="w-full rounded-xl border border-black/15 px-3 py-2 text-sm outline-none focus:border-brand-700">
