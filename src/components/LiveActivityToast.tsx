@@ -45,8 +45,10 @@ const SERVICES = [
   "Detox Steam Therapy",
 ];
 
-const INTERVAL_MIN_MS = 12000;
-const INTERVAL_MAX_MS = 26000;
+const INTERVAL_MIN_MS = 45000;
+const INTERVAL_MAX_MS = 90000;
+const TOAST_VISIBLE_MS = 4200;
+const MAX_TOASTS_PER_VISIT = 3;
 
 function randomFrom<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)];
@@ -98,7 +100,9 @@ export function LiveActivityToast() {
   const [isVisible, setIsVisible] = useState(false);
   const [activity, setActivity] = useState<ActivityItem | null>(null);
   const [soundOn, setSoundOn] = useState(true);
+  const soundOnRef = useRef(soundOn);
   const timeouts = useRef<number[]>([]);
+  const shownCount = useRef(0);
 
   const clearTimers = useCallback(() => {
     for (const timer of timeouts.current) {
@@ -108,19 +112,28 @@ export function LiveActivityToast() {
   }, []);
 
   useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
+
+  useEffect(() => {
     const scheduleNextToast = () => {
+      if (shownCount.current >= MAX_TOASTS_PER_VISIT) return;
+
       const delay = randomInt(INTERVAL_MIN_MS, INTERVAL_MAX_MS);
       const showTimer = window.setTimeout(() => {
+        if (shownCount.current >= MAX_TOASTS_PER_VISIT) return;
+
+        shownCount.current += 1;
         const next = buildRandomActivity();
         setActivity(next);
         setIsVisible(true);
-        if (soundOn) {
+        if (soundOnRef.current) {
           playToastSound();
         }
 
         const hideTimer = window.setTimeout(() => {
           setIsVisible(false);
-        }, 5200);
+        }, TOAST_VISIBLE_MS);
         timeouts.current.push(hideTimer);
 
         scheduleNextToast();
@@ -135,7 +148,7 @@ export function LiveActivityToast() {
     return () => {
       clearTimers();
     };
-  }, [soundOn, clearTimers]);
+  }, [clearTimers]);
 
   const message = useMemo(() => {
     if (!activity) return "";
