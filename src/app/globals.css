@@ -42,6 +42,10 @@ h1,h2,h3{
   letter-spacing: -0.02em;
 }
 
+[data-site-chrome="floating-book"] {
+  display: none;
+}
+
 body[data-team-area="true"] [data-site-chrome="navbar"],
 body[data-team-area="true"] [data-site-chrome="footer"],
 body[data-team-area="true"] [data-site-chrome="floating-book"] {
