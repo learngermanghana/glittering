@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -8,7 +8,8 @@ import { SITE } from "@/lib/site";
 import { Container } from "@/components/Container";
 
 const primaryNav = [
-  { href: "/spa", label: "Spa" },
+  { href: "/spa/services", label: "Services" },
+  { href: "/spa/products", label: "Products" },
   { href: "/academy", label: "Academy" },
   { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
@@ -58,7 +59,7 @@ export function Navbar() {
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-6 text-sm md:flex">
+          <nav className="hidden items-center gap-5 text-sm lg:flex">
             {primaryNav.map((n) => {
               const active = isActive(pathname, n.href);
               return (
@@ -69,9 +70,9 @@ export function Navbar() {
             })}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-2 lg:flex">
             <Link href="/spa/book" className="rounded-2xl bg-rose-700 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:bg-rose-800">
-              Book Spa
+              Book Service
             </Link>
             <Link href="/academy/register" className="rounded-2xl bg-rose-950 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:bg-black">
               Register
@@ -83,14 +84,14 @@ export function Navbar() {
             onClick={() => setIsOpen((open) => !open)}
             aria-expanded={isOpen}
             aria-label="Toggle navigation"
-            className="inline-flex items-center justify-center rounded-2xl border border-rose-300 px-3 py-2 text-sm font-semibold text-rose-800 shadow-sm hover:border-rose-400 hover:text-rose-950 md:hidden"
+            className="inline-flex items-center justify-center rounded-2xl border border-rose-300 px-3 py-2 text-sm font-semibold text-rose-800 shadow-sm hover:border-rose-400 hover:text-rose-950 lg:hidden"
           >
             {isOpen ? "Close" : "Menu"}
           </button>
         </div>
 
         {isOpen ? (
-          <div className="border-t border-rose-300/70 bg-rose-100/95 py-4 md:hidden">
+          <div className="border-t border-rose-300/70 bg-rose-100/95 py-4 lg:hidden">
             <Link href="/" onClick={() => setIsOpen(false)} className={`mb-3 block rounded-xl px-3 py-2 text-sm hover:bg-rose-200 ${pathname === "/" ? "bg-rose-200 font-semibold text-rose-950" : "text-rose-800"}`}>
               Home
             </Link>
