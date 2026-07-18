@@ -13,7 +13,16 @@ const BRANCH_OPTIONS = [
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
 
 type ServiceOption = { id: string; name: string; price?: number | null };
-type CheckoutResponse = { checkoutUrl?: string; authorizationUrl?: string; error?: string };
+type PaymentOption = "pay_now" | "pay_later";
+type CheckoutResponse = {
+  checkoutUrl?: string;
+  authorizationUrl?: string;
+  bookingId?: string;
+  bookingSaved?: boolean;
+  paymentOption?: PaymentOption;
+  message?: string;
+  error?: string;
+};
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -31,7 +40,7 @@ function readServicePrice(service: ServiceOption) {
 
 export default function BookPage() {
   const currency = useMemo(() => new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }), []);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingOption, setSubmittingOption] = useState<PaymentOption | null>(null);
   const [submitMessage, setSubmitMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
@@ -48,6 +57,7 @@ export default function BookPage() {
     cancellationAccepted: false,
   });
 
+  const isSubmitting = submittingOption !== null;
   const selectedBranch = useMemo(() => BRANCH_OPTIONS.find((branch) => branch.value === formData.branch) ?? null, [formData.branch]);
   const selectedServices = useMemo(
     () => serviceOptions.filter((service) => formData.selectedServiceIds.includes(service.id)),
@@ -109,15 +119,15 @@ export default function BookPage() {
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = "Name is required.";
     if (!formData.phone.trim()) errors.phone = "Phone number is required.";
-    if (!formData.email.trim()) errors.email = "Email is required for secure checkout.";
+    if (!formData.email.trim()) errors.email = "Email is required for booking updates.";
     else if (!isValidEmail(formData.email.trim())) errors.email = "Please provide a valid email address.";
     if (!formData.branch.trim()) errors.branch = "Choose a branch.";
     if (formData.selectedServiceIds.length === 0) errors.services = "Please select at least one service.";
-    if (formData.selectedServiceIds.length > 0 && hasInvalidSelectedServicePrice) errors.services = "Every selected service needs a valid price before checkout.";
+    if (formData.selectedServiceIds.length > 0 && hasInvalidSelectedServicePrice) errors.services = "Every selected service needs a valid price before booking.";
     if (!formData.date.trim()) errors.date = "Date is required.";
     if (!formData.time.trim()) errors.time = "Time is required.";
     if (formData.date && formData.time && isPastDateTime(formData.date, formData.time)) errors.time = "Please choose a future date/time.";
-    if (!formData.cancellationAccepted) errors.cancellationAccepted = "Accept the no-refund policy before payment.";
+    if (!formData.cancellationAccepted) errors.cancellationAccepted = "Accept the cancellation and no-refund policy before booking.";
     return errors;
   }, [formData, hasInvalidSelectedServicePrice]);
 
@@ -182,12 +192,16 @@ export default function BookPage() {
       return;
     }
 
-    setIsSubmitting(true);
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const paymentOption: PaymentOption = submitter?.value === "pay_later" ? "pay_later" : "pay_now";
+
+    setSubmittingOption(paymentOption);
     try {
       const response = await fetch("/api/bookings/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          paymentOption,
           services: selectedServices.map((service) => ({
             id: service.id,
             serviceId: service.id,
@@ -218,22 +232,34 @@ export default function BookPage() {
       });
 
       const data = (await response.json()) as CheckoutResponse;
-      const checkoutUrl = data.checkoutUrl ?? data.authorizationUrl;
-      if (!response.ok || !checkoutUrl) throw new Error(data.error ?? "Unable to create checkout.");
+      if (!response.ok) throw new Error(data.error ?? "Unable to save the booking.");
 
-      setSubmitMessage({ kind: "success", text: "Payment page ready. Redirecting you to secure checkout..." });
+      if (paymentOption === "pay_later") {
+        if (!data.bookingSaved && !data.bookingId) throw new Error(data.error ?? "Sedifex did not confirm the booking.");
+        setSubmitMessage({
+          kind: "success",
+          text: data.message ?? "Your booking has been saved to Sedifex. Payment is pending, and the spa team will contact you.",
+        });
+        setSubmittingOption(null);
+        return;
+      }
+
+      const checkoutUrl = data.checkoutUrl ?? data.authorizationUrl;
+      if (!checkoutUrl) throw new Error(data.error ?? "Unable to create checkout.");
+
+      setSubmitMessage({ kind: "success", text: "Booking saved. Redirecting you to secure Sedifex Checkout..." });
       window.location.href = checkoutUrl;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to open payment right now.";
+      const message = error instanceof Error ? error.message : "Unable to complete the booking right now.";
       setSubmitMessage({ kind: "error", text: message });
-      setIsSubmitting(false);
+      setSubmittingOption(null);
     }
   };
 
   return (
     <Container>
       <section className="rounded-[32px] bg-[#ffe6ea] px-4 py-12 sm:px-8 sm:py-16">
-        <SectionTitle title="Book and Pay Online" subtitle="Choose your branch and one or more services, then continue to secure Sedifex Checkout to reserve your slot." />
+        <SectionTitle title="Book Your Appointment" subtitle="Choose your branch and services, then pay now through Sedifex Checkout or save the booking and pay later." />
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <form className="rounded-3xl border border-black/10 bg-white p-6 shadow-lg sm:p-8" onSubmit={handleSubmit}>
@@ -245,7 +271,7 @@ export default function BookPage() {
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-200" role="progressbar" aria-label="Booking form completion progress" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.completed}>
                 <div className="h-full rounded-full bg-neutral-900 transition-all duration-300 ease-out" style={{ width: `${progress.percentage}%` }} />
               </div>
-              <p className="mt-2 text-xs text-neutral-600">{progress.remaining > 0 ? `${progress.remaining} field${progress.remaining === 1 ? "" : "s"} left to complete.` : "Great! Ready to pay."}</p>
+              <p className="mt-2 text-xs text-neutral-600">{progress.remaining > 0 ? `${progress.remaining} field${progress.remaining === 1 ? "" : "s"} left to complete.` : "Great! Ready to book."}</p>
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
@@ -298,22 +324,26 @@ export default function BookPage() {
 
             <div className="mt-5"><label className="text-sm font-semibold text-neutral-700">Notes / Special requests<textarea name="notes" value={formData.notes} onChange={handleInputChange} placeholder="Share allergies, special requests, or anything our team should know." rows={4} className="mt-2 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200" /></label></div>
 
-            <div className="mt-6 grid gap-4"><label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm"><input name="cancellationAccepted" checked={formData.cancellationAccepted} onChange={handleCheckboxChange} type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300" />I agree to the no-refund policy after payment</label>{fieldErrors.cancellationAccepted && <span className="text-xs font-normal text-red-600">{fieldErrors.cancellationAccepted}</span>}</div>
+            <div className="mt-6 grid gap-4"><label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm"><input name="cancellationAccepted" checked={formData.cancellationAccepted} onChange={handleCheckboxChange} type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300" />I agree to the cancellation policy and the no-refund policy after payment</label>{fieldErrors.cancellationAccepted && <span className="text-xs font-normal text-red-600">{fieldErrors.cancellationAccepted}</span>}</div>
 
-            <p className="mt-4 text-xs text-neutral-500">No manual payment reference is needed. Payment is completed securely through Sedifex Checkout.</p>
+            <p className="mt-4 text-xs text-neutral-500">Both choices save your appointment in Sedifex. Pay now opens secure Sedifex Checkout; Pay later saves the payment as pending.</p>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center"><button type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm sm:w-auto ${canSubmit ? "bg-neutral-900 hover:bg-neutral-800" : "cursor-not-allowed bg-neutral-400"}`}>{isSubmitting ? "Preparing secure payment..." : "Continue to secure payment"}</button><p className="text-xs text-neutral-500">{clientValidationMessage ? clientValidationMessage : "Your appointment details will be saved before payment opens."}</p></div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button name="paymentOption" value="pay_now" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm ${canSubmit ? "bg-neutral-900 hover:bg-neutral-800" : "cursor-not-allowed bg-neutral-400"}`}>{submittingOption === "pay_now" ? "Preparing secure payment..." : "Pay now"}</button>
+              <button name="paymentOption" value="pay_later" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold shadow-sm ${canSubmit ? "border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-50" : "cursor-not-allowed border-neutral-300 bg-neutral-100 text-neutral-400"}`}>{submittingOption === "pay_later" ? "Saving booking..." : "Pay later"}</button>
+            </div>
+            <p className="mt-3 text-xs text-neutral-500">{clientValidationMessage ? clientValidationMessage : "Choose how you want to pay. Your booking details are saved first."}</p>
 
-            {submitMessage && <div role="status" className={`mt-4 rounded-2xl border px-4 py-3 text-sm shadow-sm ${submitMessage.kind === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}><p className="font-semibold">{submitMessage.kind === "success" ? "Payment page ready" : "Payment not ready"}</p><p className="mt-1 whitespace-pre-line">{submitMessage.text}</p></div>}
+            {submitMessage && <div role="status" className={`mt-4 rounded-2xl border px-4 py-3 text-sm shadow-sm ${submitMessage.kind === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}><p className="font-semibold">{submitMessage.kind === "success" ? "Booking saved" : "Booking not completed"}</p><p className="mt-1 whitespace-pre-line">{submitMessage.text}</p></div>}
           </form>
 
           <div className="rounded-3xl border border-black/10 bg-neutral-50 p-6 shadow-lg sm:p-8">
             <h2 className="text-lg font-semibold">Your booking summary</h2>
-            <p className="mt-2 text-sm text-neutral-600">Review your appointment details before continuing to secure payment.</p>
+            <p className="mt-2 text-sm text-neutral-600">Review your appointment details, then choose Pay now or Pay later.</p>
             <div className="mt-5 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700 whitespace-pre-line">
               Services: {selectedServiceNames.length ? selectedServiceNames.join("\n- ") : "____"}{"\n"}Total service price: {selectedServices.length === 0 ? "____" : currency.format(selectedServiceTotal)}{"\n"}Customer name: {formData.name || "____"}{"\n"}Date: {formData.date || "____"}{"\n"}Time: {formData.time || "____"}{"\n"}Phone: {formData.phone || "____"}{"\n"}Email: {formData.email || "____"}{"\n"}Preferred branch: {formData.branch || "____"}{"\n"}Contact method: {formData.contactMethod || "____"}{"\n"}Notes: {formData.notes || "____"}{"\n"}No-refund policy accepted: {formData.cancellationAccepted ? "Yes" : "No"}
             </div>
-            <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700"><h3 className="text-sm font-semibold text-neutral-900">How to book</h3><ul className="mt-4 list-disc space-y-2 pl-5 text-xs text-neutral-600 sm:text-sm"><li>Choose your preferred branch.</li><li>Select one or more services.</li><li>Select your appointment date and time.</li><li>Enter your contact details so our team can reach you.</li><li>Continue to secure payment to reserve your slot.</li></ul></div>
+            <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700"><h3 className="text-sm font-semibold text-neutral-900">How to book</h3><ul className="mt-4 list-disc space-y-2 pl-5 text-xs text-neutral-600 sm:text-sm"><li>Choose your preferred branch.</li><li>Select one or more services.</li><li>Select your appointment date and time.</li><li>Enter your contact details so our team can reach you.</li><li>Choose Pay now for secure checkout or Pay later to save the booking with payment pending.</li></ul></div>
           </div>
         </div>
       </section>
