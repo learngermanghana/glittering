@@ -8,9 +8,9 @@ import { TeamAreaChromeToggle } from "@/components/TeamAreaChromeToggle";
 import { LiveActivityToast } from "@/components/LiveActivityToast";
 
 export const metadata: Metadata = {
-  title: "Glittering Med Spa & Academy | Spa Services and Beauty Training in Accra",
+  title: "Glittering Med Spa & Academy | Spa Services, Products and Beauty Training in Accra",
   description:
-    "Glittering Med Spa serves spa and beauty clients in Awoshie and Spintex, Accra, and Glittering Academy offers professional beauty, spa, nails, makeup, hair, and cosmetology training.",
+    "Book spa and beauty services, shop skincare and beauty products, or join Glittering Academy for professional beauty training in Awoshie and Spintex, Accra.",
   metadataBase: new URL("https://www.glitteringmedspa.com"),
   verification: {
     google: "Lu17AMVwA5S5K4aKY-tdyJtZAHV_ofPldi5xFdo8fWc",
@@ -32,6 +32,8 @@ export const metadata: Metadata = {
     "Glittering Spa",
     "Glittering Academy",
     "med spa",
+    "beauty products Accra",
+    "skincare products Ghana",
     "beauty school Ghana",
     "beauty academy Accra",
     "nail training Ghana",
@@ -46,9 +48,9 @@ export const metadata: Metadata = {
     "facials",
   ],
   openGraph: {
-    title: "Glittering Med Spa & Academy | Spa Services and Beauty Training in Accra",
+    title: "Glittering Med Spa & Academy | Spa Services, Products and Beauty Training in Accra",
     description:
-      "Book spa and beauty services or register for professional beauty, spa, nails, makeup, hair, and cosmetology training at Glittering Academy.",
+      "Book spa and beauty services, shop skincare and beauty products, or register for professional beauty training at Glittering Academy.",
     url: "https://www.glitteringmedspa.com",
     siteName: "Glittering Med Spa & Academy",
     images: [
@@ -64,9 +66,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Glittering Med Spa & Academy | Spa Services and Beauty Training in Accra",
+    title: "Glittering Med Spa & Academy | Spa Services, Products and Beauty Training in Accra",
     description:
-      "Book spa and beauty services or register for professional beauty, spa, nails, makeup, hair, and cosmetology training at Glittering Academy.",
+      "Book spa and beauty services, shop skincare and beauty products, or register for professional beauty training at Glittering Academy.",
     images: ["/logo-glittering.svg"],
   },
 };
@@ -96,11 +98,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <LiveActivityToast />
 
-        <div data-site-chrome="floating-book" className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 sm:flex-row">
-          <Link href="/spa/book" className="rounded-full bg-rose-700 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-rose-800">
-            Book Spa
+        <div data-site-chrome="floating-book" className="fixed bottom-5 right-5 z-50 flex flex-row gap-2">
+          <Link href="/spa/book" className="rounded-full bg-rose-700 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-rose-800">
+            Book
           </Link>
-          <Link href="/academy/register" className="rounded-full bg-rose-950 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-black">
+          <Link href="/spa/products" className="rounded-full border border-rose-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-rose-900 shadow-lg shadow-rose-200 hover:bg-rose-50">
+            Shop
+          </Link>
+          <Link href="/academy/register" className="rounded-full bg-rose-950 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:bg-black">
             Register
           </Link>
         </div>
