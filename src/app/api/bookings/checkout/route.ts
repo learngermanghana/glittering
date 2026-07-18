@@ -5,6 +5,8 @@ const SEDIFEX_STORE_ID = process.env.SEDIFEX_BOOKING_TARGET_STORE_ID || process.
 const CHECKOUT_CREATE_URL = process.env.SEDIFEX_INTEGRATION_CHECKOUT_CREATE_URL || `${SEDIFEX_BASE_URL.replace(/\/$/, "")}/integrationCheckoutCreate`;
 const BOOKINGS_URL = process.env.SEDIFEX_INTEGRATION_BOOKINGS_URL || `${SEDIFEX_BASE_URL.replace(/\/$/, "")}/v1IntegrationBookings`;
 
+type PaymentOption = "pay_now" | "pay_later";
+
 type CheckoutService = {
   id?: string;
   serviceId?: string;
@@ -16,6 +18,7 @@ type CheckoutService = {
 };
 
 type CheckoutBody = {
+  paymentOption?: PaymentOption;
   serviceId?: string;
   serviceName?: string;
   servicePrice?: number;
@@ -113,6 +116,8 @@ function normalizeServices(body: CheckoutBody) {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CheckoutBody;
+    const paymentOption: PaymentOption = body.paymentOption === "pay_later" ? "pay_later" : "pay_now";
+    const isPayLater = paymentOption === "pay_later";
     const selectedServices = normalizeServices(body);
     const actualServiceId = selectedServices[0]?.id ?? "";
     const serviceName = selectedServices.map((service) => service.name).join(" + ") || "Service booking";
@@ -122,10 +127,13 @@ export async function POST(request: Request) {
     const customerPhone = readString(body.customer?.phone);
     const apiKey = getSedifexKey();
     const syncRequestedAt = new Date().toISOString();
+    const paymentMethod = isPayLater ? "pay_later" : "paystack";
+    const paymentCollectionMode = isPayLater ? "pay_later" : "online_checkout";
+    const paymentStatus = isPayLater ? "pending" : "checkout_created";
 
     if (!actualServiceId || selectedServices.length === 0) return NextResponse.json({ error: "Select at least one service." }, { status: 400 });
     if (selectedServices.some((service) => !service.price || service.price <= 0)) return NextResponse.json({ error: "Every selected service must have a valid price." }, { status: 400 });
-    if (!customerEmail) return NextResponse.json({ error: "Email is required for online checkout." }, { status: 400 });
+    if (!customerEmail) return NextResponse.json({ error: "Email is required for booking updates." }, { status: 400 });
     if (!servicePrice || servicePrice <= 0) return NextResponse.json({ error: "Service price is required." }, { status: 400 });
     if (!apiKey) return NextResponse.json({ error: "Sedifex integration key is missing." }, { status: 500 });
 
@@ -157,13 +165,14 @@ export async function POST(request: Request) {
       bookingDate: body.bookingDate,
       bookingTime: body.bookingTime,
       notes: body.notes || undefined,
-      paymentMethod: "paystack",
+      paymentMethod,
       paymentAmount: servicePrice,
-      depositAmount: servicePrice,
+      depositAmount: isPayLater ? 0 : servicePrice,
+      amountOutstanding: servicePrice,
       quantity: 1,
       bookingStatus: "booked",
-      paymentCollectionMode: "online_checkout",
-      paymentStatus: "checkout_created",
+      paymentCollectionMode,
+      paymentStatus,
       syncStatus: "pending",
       syncRequestedAt,
       attributes: {
@@ -189,13 +198,17 @@ export async function POST(request: Request) {
         serviceNames: selectedServices.map((service) => service.name),
         service_names: selectedServices.map((service) => service.name),
         services: selectedServices,
-        paymentMethod: "paystack",
-        payment_method: "paystack",
+        paymentOption,
+        payment_option: paymentOption,
+        paymentMethod,
+        payment_method: paymentMethod,
         paymentAmount: servicePrice,
-        depositAmount: servicePrice,
+        depositAmount: isPayLater ? 0 : servicePrice,
+        amountOutstanding: servicePrice,
+        amount_outstanding: servicePrice,
         bookingStatus: "booked",
-        paymentCollectionMode: "online_checkout",
-        paymentStatus: "checkout_created",
+        paymentCollectionMode,
+        paymentStatus,
         syncStatus: "pending",
         syncRequestedAt,
         no_refund_policy_accepted: body.noRefundPolicyAccepted,
@@ -214,11 +227,25 @@ export async function POST(request: Request) {
 
     if (!bookingResponse.ok) {
       console.error("Sedifex booking creation failed", { status: bookingResponse.status, body: bookingRawText });
-      return NextResponse.json({ error: "Unable to create booking before checkout." }, { status: 502 });
+      return NextResponse.json({ error: "Unable to save the booking in Sedifex." }, { status: 502 });
     }
 
     const bookingId = readBookingId(bookingParsed);
     const clientOrderId = bookingId ? `BOOKING-${bookingId}` : `BOOKING-${Date.now()}`;
+
+    if (isPayLater) {
+      console.log("Sedifex pay-later booking response (raw):", bookingRawText);
+      return NextResponse.json({
+        booking: bookingParsed,
+        bookingId,
+        bookingSaved: true,
+        paymentOption,
+        paymentStatus,
+        clientOrderId,
+        message: "Your booking has been saved to Sedifex. Payment is pending, and the spa team will contact you.",
+      });
+    }
+
     const checkoutPayload = {
       storeId: SEDIFEX_STORE_ID,
       store_id: SEDIFEX_STORE_ID,
@@ -257,6 +284,7 @@ export async function POST(request: Request) {
         bookingTime: body.bookingTime,
         serviceCount: selectedServices.length,
         services: selectedServices,
+        paymentOption,
       },
       returnUrl: process.env.SEDIFEX_CHECKOUT_RETURN_URL || "https://www.glitteringmedspa.com/payment/return",
       syncStatus: "pending",
@@ -277,11 +305,11 @@ export async function POST(request: Request) {
     console.log("Sedifex checkout response (raw):", checkoutRawText);
 
     if (!checkoutResponse.ok) {
-      return NextResponse.json({ error: "Unable to create Sedifex checkout.", bookingId, details: checkoutParsed ?? checkoutRawText }, { status: checkoutResponse.status });
+      return NextResponse.json({ error: "Booking was saved, but Sedifex Checkout could not be created.", bookingSaved: true, bookingId, details: checkoutParsed ?? checkoutRawText }, { status: checkoutResponse.status });
     }
 
     const checkoutUrl = readCheckoutUrl(checkoutParsed);
-    return NextResponse.json({ booking: bookingParsed, bookingId, checkout: checkoutParsed ?? checkoutRawText, checkoutUrl, authorizationUrl: checkoutUrl, clientOrderId });
+    return NextResponse.json({ booking: bookingParsed, bookingId, bookingSaved: true, paymentOption, checkout: checkoutParsed ?? checkoutRawText, checkoutUrl, authorizationUrl: checkoutUrl, clientOrderId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create checkout.";
     return NextResponse.json({ error: message }, { status: 500 });
