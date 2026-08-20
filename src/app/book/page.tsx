@@ -44,6 +44,7 @@ export default function BookPage() {
   const [submitMessage, setSubmitMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
+  const [serviceSearch, setServiceSearch] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -64,6 +65,11 @@ export default function BookPage() {
     [formData.selectedServiceIds, serviceOptions]
   );
   const selectedServiceNames = useMemo(() => selectedServices.map((service) => service.name), [selectedServices]);
+  const filteredServiceOptions = useMemo(() => {
+    const query = serviceSearch.trim().toLowerCase();
+    if (!query) return serviceOptions;
+    return serviceOptions.filter((service) => service.name.toLowerCase().includes(query));
+  }, [serviceOptions, serviceSearch]);
   const selectedServiceTotal = useMemo(
     () => selectedServices.reduce((total, service) => total + (readServicePrice(service) ?? 0), 0),
     [selectedServices]
@@ -119,8 +125,8 @@ export default function BookPage() {
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = "Name is required.";
     if (!formData.phone.trim()) errors.phone = "Phone number is required.";
-    if (!formData.email.trim()) errors.email = "Email is required for booking updates.";
-    else if (!isValidEmail(formData.email.trim())) errors.email = "Please provide a valid email address.";
+    if (formData.email.trim() && !isValidEmail(formData.email.trim())) errors.email = "Please provide a valid email address.";
+    if (formData.contactMethod === "Email" && !formData.email.trim()) errors.email = "Enter an email address or choose another contact method.";
     if (!formData.branch.trim()) errors.branch = "Choose a branch.";
     if (formData.selectedServiceIds.length === 0) errors.services = "Please select at least one service.";
     if (formData.selectedServiceIds.length > 0 && hasInvalidSelectedServicePrice) errors.services = "Every selected service needs a valid price before booking.";
@@ -132,7 +138,7 @@ export default function BookPage() {
   }, [formData, hasInvalidSelectedServicePrice]);
 
   const progress = useMemo(() => {
-    const checks = [formData.name, formData.phone, formData.email, formData.branch, formData.selectedServiceIds.length > 0, formData.date, formData.time, formData.cancellationAccepted];
+    const checks = [formData.name, formData.phone, formData.branch, formData.selectedServiceIds.length > 0, formData.date, formData.time, formData.cancellationAccepted];
     const completed = checks.filter(Boolean).length;
     return { completed, total: checks.length, percentage: Math.round((completed / checks.length) * 100), remaining: checks.length - completed };
   }, [formData]);
@@ -157,6 +163,7 @@ export default function BookPage() {
     clearFieldError(name);
     if (name === "branch") {
       clearFieldError("services");
+      setServiceSearch("");
       setFormData((prev) => ({ ...prev, branch: value, selectedServiceIds: [] }));
       return;
     }
@@ -226,7 +233,7 @@ export default function BookPage() {
           customer: {
             name: formData.name.trim(),
             phone: formData.phone.trim(),
-            email: formData.email.trim(),
+            email: formData.email.trim() || undefined,
           },
         }),
       });
@@ -279,10 +286,26 @@ export default function BookPage() {
               <label className="text-sm font-semibold text-neutral-700">Phone<input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" required className={inputClassName("phone")} type="tel" />{fieldErrors.phone && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.phone}</span>}</label>
             </div>
 
-            <div className="mt-5"><label className="text-sm font-semibold text-neutral-700">Email<input name="email" value={formData.email} onChange={handleInputChange} placeholder="Email address" required className={inputClassName("email")} type="email" />{fieldErrors.email && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.email}</span>}</label></div>
+            <div className="mt-5"><label className="text-sm font-semibold text-neutral-700">Email <span className="font-normal text-neutral-500">(optional)</span><input name="email" value={formData.email} onChange={handleInputChange} placeholder="Email address (optional)" className={inputClassName("email")} type="email" />{fieldErrors.email && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.email}</span>}</label></div>
 
-            <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <label className="text-sm font-semibold text-neutral-700">Branch<select name="branch" value={formData.branch} onChange={handleInputChange} required className={inputClassName("branch")}><option value="">Select a branch</option>{BRANCH_OPTIONS.map((branch) => <option key={branch.storeId} value={branch.value}>{branch.label}</option>)}</select><span className="mt-2 block text-xs font-normal text-neutral-500">Services are loaded from the selected branch.</span>{fieldErrors.branch && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.branch}</span>}</label>
+            <fieldset className={`mt-5 rounded-3xl border p-4 ${fieldErrors.branch ? "border-red-300 bg-red-50" : "border-neutral-200 bg-neutral-50"}`}>
+              <legend className="px-1 text-sm font-semibold text-neutral-700">Choose your branch</legend>
+              <p className="mt-1 text-xs text-neutral-500">Tap one of the three locations below. Its available services will load automatically.</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {BRANCH_OPTIONS.map((branch) => {
+                  const checked = formData.branch === branch.value;
+                  return (
+                    <label key={branch.storeId} className={`flex cursor-pointer items-start gap-3 rounded-2xl border bg-white p-4 text-sm shadow-sm transition ${checked ? "border-neutral-900 ring-2 ring-neutral-900/10" : "border-neutral-200 hover:border-neutral-400"}`}>
+                      <input name="branch" type="radio" value={branch.value} checked={checked} onChange={handleInputChange} required className="mt-1 h-4 w-4 border-neutral-300 text-neutral-900 focus:ring-neutral-300" />
+                      <span className="font-semibold leading-5 text-neutral-900">{branch.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {fieldErrors.branch && <span className="mt-2 block text-xs font-normal text-red-600">{fieldErrors.branch}</span>}
+            </fieldset>
+
+            <div className="mt-5">
               <label className="text-sm font-semibold text-neutral-700">Date<input name="date" value={formData.date} onChange={handleInputChange} required min={new Date().toISOString().split("T")[0]} className={inputClassName("date")} type="date" />{fieldErrors.date && <span className="mt-1 block text-xs font-normal text-red-600">{fieldErrors.date}</span>}</label>
             </div>
 
@@ -294,21 +317,31 @@ export default function BookPage() {
               ) : serviceOptions.length === 0 ? (
                 <p className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">No services loaded for this branch yet. Try another branch or refresh.</p>
               ) : (
-                <div className="mt-4 grid max-h-[360px] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
-                  {serviceOptions.map((service) => {
-                    const price = readServicePrice(service);
-                    const checked = formData.selectedServiceIds.includes(service.id);
-                    return (
-                      <label key={service.id} className={`flex cursor-pointer items-start gap-3 rounded-2xl border bg-white p-4 text-sm shadow-sm transition ${checked ? "border-neutral-900 ring-2 ring-neutral-900/10" : "border-neutral-200 hover:border-neutral-400"}`}>
-                        <input type="checkbox" checked={checked} onChange={() => handleServiceToggle(service.id)} className="mt-1 h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-semibold text-neutral-900">{service.name}</span>
-                          <span className="mt-1 block text-xs font-normal text-neutral-500">{price === null ? "Price not set" : currency.format(price)}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
+                <>
+                  <label className="mt-4 block text-sm font-semibold text-neutral-700">
+                    <span className="sr-only">Search services</span>
+                    <input type="search" value={serviceSearch} onChange={(event) => setServiceSearch(event.target.value)} placeholder="Search services..." className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-normal text-neutral-900 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+                  </label>
+                  {filteredServiceOptions.length === 0 ? (
+                    <p className="mt-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">No services match “{serviceSearch.trim()}”. Try another search.</p>
+                  ) : (
+                    <div className="mt-3 grid max-h-[360px] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+                      {filteredServiceOptions.map((service) => {
+                        const price = readServicePrice(service);
+                        const checked = formData.selectedServiceIds.includes(service.id);
+                        return (
+                          <label key={service.id} className={`flex cursor-pointer items-start gap-3 rounded-2xl border bg-white p-4 text-sm shadow-sm transition ${checked ? "border-neutral-900 ring-2 ring-neutral-900/10" : "border-neutral-200 hover:border-neutral-400"}`}>
+                            <input type="checkbox" checked={checked} onChange={() => handleServiceToggle(service.id)} className="mt-1 h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block font-semibold text-neutral-900">{service.name}</span>
+                              <span className="mt-1 block text-xs font-normal text-neutral-500">{price === null ? "Price not set" : currency.format(price)}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
               <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
                 <span className="font-semibold">Selected:</span> {selectedServices.length === 0 ? "No service selected" : `${selectedServices.length} service${selectedServices.length === 1 ? "" : "s"}`}
