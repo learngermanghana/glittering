@@ -133,7 +133,7 @@ export async function POST(request: Request) {
 
     if (!actualServiceId || selectedServices.length === 0) return NextResponse.json({ error: "Select at least one service." }, { status: 400 });
     if (selectedServices.some((service) => !service.price || service.price <= 0)) return NextResponse.json({ error: "Every selected service must have a valid price." }, { status: 400 });
-    if (!customerEmail) return NextResponse.json({ error: "Email is required for booking updates." }, { status: 400 });
+    if (!customerPhone) return NextResponse.json({ error: "Phone number is required for booking updates." }, { status: 400 });
     if (!servicePrice || servicePrice <= 0) return NextResponse.json({ error: "Service price is required." }, { status: 400 });
     if (!apiKey) return NextResponse.json({ error: "Sedifex integration key is missing." }, { status: 500 });
 
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
       "x-api-key": apiKey,
     };
 
-    const customer = { name: customerName, email: customerEmail, phone: customerPhone };
+    const customer = { name: customerName, email: customerEmail || undefined, phone: customerPhone };
     const bookingPayload = {
       serviceId: actualServiceId,
       serviceName,
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       })),
       customer,
       customerName,
-      customerEmail,
+      customerEmail: customerEmail || undefined,
       customerPhone,
       bookingDate: body.bookingDate,
       bookingTime: body.bookingTime,
