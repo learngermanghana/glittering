@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Container";
 import { SectionTitle } from "@/components/SectionTitle";
+import { SITE } from "@/lib/site";
 
 const BRANCH_OPTIONS = [
   { label: "Glittering Med Spa Main (Awoshie)", value: "Glittering Med Spa Main", storeId: "37mJqg20MjOriggaIaOOuahDsgj1" },
@@ -11,6 +12,14 @@ const BRANCH_OPTIONS = [
 ] as const;
 
 const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
+const BANK_ACCOUNT_NUMBER = "2400777697112";
+const BANK_NAME = "Fidelity Bank";
+const BANK_ACCOUNT_NAME = "Glittering Med Spa";
+const BRANCH_MOMO_NUMBERS: Record<string, string> = {
+  "Glittering Med Spa Main": "0270763296",
+  "Glittering Spa Spintex": "0530530852",
+  "Glittering Spa Annex": "0598611996",
+};
 
 type ServiceOption = { id: string; name: string; price?: number | null };
 type PaymentOption = "pay_now" | "pay_later";
@@ -45,6 +54,7 @@ export default function BookPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
   const [serviceSearch, setServiceSearch] = useState("");
+  const [directPaymentDetails, setDirectPaymentDetails] = useState<{ bookingId: string; momoNumber: string } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -192,6 +202,7 @@ export default function BookPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitMessage(null);
+    setDirectPaymentDetails(null);
 
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
@@ -243,9 +254,13 @@ export default function BookPage() {
 
       if (paymentOption === "pay_later") {
         if (!data.bookingSaved && !data.bookingId) throw new Error(data.error ?? "Sedifex did not confirm the booking.");
+        setDirectPaymentDetails({
+          bookingId: data.bookingId ?? "Pending",
+          momoNumber: BRANCH_MOMO_NUMBERS[formData.branch] ?? "",
+        });
         setSubmitMessage({
           kind: "success",
-          text: data.message ?? "Your booking has been saved to Sedifex. Payment is pending, and the spa team will contact you.",
+          text: "Your appointment is reserved. Complete the payment using the branch MoMo number or bank account shown below, then send your receipt on WhatsApp.",
         });
         setSubmittingOption(null);
         return;
@@ -266,7 +281,7 @@ export default function BookPage() {
   return (
     <Container>
       <section className="rounded-[32px] bg-[#ffe6ea] px-4 py-12 sm:px-8 sm:py-16">
-        <SectionTitle title="Book Your Appointment" subtitle="Choose your branch and services, then pay now through Sedifex Checkout or save the booking and pay later." />
+        <SectionTitle title="Book Your Appointment" subtitle="Choose your branch and services, then pay securely through Paystack or pay the store directly by MoMo or bank transfer." />
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <form className="rounded-3xl border border-black/10 bg-white p-6 shadow-lg sm:p-8" onSubmit={handleSubmit}>
@@ -359,24 +374,40 @@ export default function BookPage() {
 
             <div className="mt-6 grid gap-4"><label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm"><input name="cancellationAccepted" checked={formData.cancellationAccepted} onChange={handleCheckboxChange} type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300" />I agree to the cancellation policy and the no-refund policy after payment</label>{fieldErrors.cancellationAccepted && <span className="text-xs font-normal text-red-600">{fieldErrors.cancellationAccepted}</span>}</div>
 
-            <p className="mt-4 text-xs text-neutral-500">Both choices save your appointment in Sedifex. Pay now opens secure Sedifex Checkout; Pay later saves the payment as pending.</p>
+            <p className="mt-4 text-xs text-neutral-500">Both choices reserve your appointment. Pay with Paystack online, or transfer directly to the store by MoMo or bank and send your receipt.</p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button name="paymentOption" value="pay_now" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm ${canSubmit ? "bg-neutral-900 hover:bg-neutral-800" : "cursor-not-allowed bg-neutral-400"}`}>{submittingOption === "pay_now" ? "Preparing secure payment..." : "Pay now"}</button>
-              <button name="paymentOption" value="pay_later" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold shadow-sm ${canSubmit ? "border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-50" : "cursor-not-allowed border-neutral-300 bg-neutral-100 text-neutral-400"}`}>{submittingOption === "pay_later" ? "Saving booking..." : "Pay later"}</button>
+              <button name="paymentOption" value="pay_now" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm ${canSubmit ? "bg-neutral-900 hover:bg-neutral-800" : "cursor-not-allowed bg-neutral-400"}`}>{submittingOption === "pay_now" ? "Opening Paystack..." : "Pay now with Paystack"}</button>
+              <button name="paymentOption" value="pay_later" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold shadow-sm ${canSubmit ? "border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-50" : "cursor-not-allowed border-neutral-300 bg-neutral-100 text-neutral-400"}`}>{submittingOption === "pay_later" ? "Reserving booking..." : "Pay by MoMo / bank transfer"}</button>
             </div>
             <p className="mt-3 text-xs text-neutral-500">{clientValidationMessage ? clientValidationMessage : "Choose how you want to pay. Your booking details are saved first."}</p>
 
             {submitMessage && <div role="status" className={`mt-4 rounded-2xl border px-4 py-3 text-sm shadow-sm ${submitMessage.kind === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}><p className="font-semibold">{submitMessage.kind === "success" ? "Booking saved" : "Booking not completed"}</p><p className="mt-1 whitespace-pre-line">{submitMessage.text}</p></div>}
+            {directPaymentDetails && (
+              <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950 shadow-sm">
+                <h3 className="font-semibold">Complete your direct payment</h3>
+                <dl className="mt-3 grid gap-2">
+                  <div><dt className="inline font-semibold">Branch:</dt> <dd className="inline">{selectedBranch?.label ?? formData.branch}</dd></div>
+                  <div><dt className="inline font-semibold">Amount:</dt> <dd className="inline">{currency.format(selectedServiceTotal)}</dd></div>
+                  <div><dt className="inline font-semibold">MoMo number:</dt> <dd className="inline">{directPaymentDetails.momoNumber}</dd></div>
+                  <div><dt className="inline font-semibold">Bank:</dt> <dd className="inline">{BANK_NAME}</dd></div>
+                  <div><dt className="inline font-semibold">Account name:</dt> <dd className="inline">{BANK_ACCOUNT_NAME}</dd></div>
+                  <div><dt className="inline font-semibold">Account number:</dt> <dd className="inline">{BANK_ACCOUNT_NUMBER}</dd></div>
+                  <div><dt className="inline font-semibold">Booking reference:</dt> <dd className="inline">{directPaymentDetails.bookingId}</dd></div>
+                </dl>
+                <p className="mt-3">Use your name or booking reference as the payment reference. After paying, send the receipt so the store can confirm your appointment.</p>
+                <a href={`https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(`Hi Glittering Spa, I have paid for booking ${directPaymentDetails.bookingId}. Name: ${formData.name}. Branch: ${selectedBranch?.label ?? formData.branch}. Amount: ${currency.format(selectedServiceTotal)}. I am sending my payment receipt.`)}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-xl bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Send receipt on WhatsApp</a>
+              </div>
+            )}
           </form>
 
           <div className="rounded-3xl border border-black/10 bg-neutral-50 p-6 shadow-lg sm:p-8">
             <h2 className="text-lg font-semibold">Your booking summary</h2>
-            <p className="mt-2 text-sm text-neutral-600">Review your appointment details, then choose Pay now or Pay later.</p>
+            <p className="mt-2 text-sm text-neutral-600">Review your appointment details, then choose Paystack or direct MoMo/bank payment.</p>
             <div className="mt-5 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700 whitespace-pre-line">
               Services: {selectedServiceNames.length ? selectedServiceNames.join("\n- ") : "____"}{"\n"}Total service price: {selectedServices.length === 0 ? "____" : currency.format(selectedServiceTotal)}{"\n"}Customer name: {formData.name || "____"}{"\n"}Date: {formData.date || "____"}{"\n"}Time: {formData.time || "____"}{"\n"}Phone: {formData.phone || "____"}{"\n"}Email: {formData.email || "____"}{"\n"}Preferred branch: {formData.branch || "____"}{"\n"}Contact method: {formData.contactMethod || "____"}{"\n"}Notes: {formData.notes || "____"}{"\n"}No-refund policy accepted: {formData.cancellationAccepted ? "Yes" : "No"}
             </div>
-            <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700"><h3 className="text-sm font-semibold text-neutral-900">How to book</h3><ul className="mt-4 list-disc space-y-2 pl-5 text-xs text-neutral-600 sm:text-sm"><li>Choose your preferred branch.</li><li>Select one or more services.</li><li>Select your appointment date and time.</li><li>Enter your contact details so our team can reach you.</li><li>Choose Pay now for secure checkout or Pay later to save the booking with payment pending.</li></ul></div>
+            <div className="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-sm text-neutral-700"><h3 className="text-sm font-semibold text-neutral-900">How to book</h3><ul className="mt-4 list-disc space-y-2 pl-5 text-xs text-neutral-600 sm:text-sm"><li>Choose your preferred branch.</li><li>Select one or more services.</li><li>Select your appointment date and time.</li><li>Enter your contact details so our team can reach you.</li><li>Pay securely with Paystack, or reserve the booking and pay the store directly by MoMo or bank transfer.</li></ul></div>
           </div>
         </div>
       </section>
