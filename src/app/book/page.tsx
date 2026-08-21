@@ -374,11 +374,15 @@ export default function BookPage() {
 
             <div className="mt-6 grid gap-4"><label className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm"><input name="cancellationAccepted" checked={formData.cancellationAccepted} onChange={handleCheckboxChange} type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-300" />I agree to the cancellation policy and the no-refund policy after payment</label>{fieldErrors.cancellationAccepted && <span className="text-xs font-normal text-red-600">{fieldErrors.cancellationAccepted}</span>}</div>
 
-            <p className="mt-4 text-xs text-neutral-500">Both choices reserve your appointment. Pay with Paystack online, or transfer directly to the store by MoMo or bank and send your receipt.</p>
-
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button name="paymentOption" value="pay_now" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm ${canSubmit ? "bg-neutral-900 hover:bg-neutral-800" : "cursor-not-allowed bg-neutral-400"}`}>{submittingOption === "pay_now" ? "Opening Paystack..." : "Pay now with Paystack"}</button>
-              <button name="paymentOption" value="pay_later" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold shadow-sm ${canSubmit ? "border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-50" : "cursor-not-allowed border-neutral-300 bg-neutral-100 text-neutral-400"}`}>{submittingOption === "pay_later" ? "Reserving booking..." : "Pay by MoMo / bank transfer"}</button>
+              <div>
+                <button name="paymentOption" value="pay_now" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm ${canSubmit ? "bg-neutral-900 hover:bg-neutral-800" : "cursor-not-allowed bg-neutral-400"}`}>{submittingOption === "pay_now" ? "Opening Paystack..." : "Pay with Paystack"}</button>
+                <p className="mt-2 text-xs leading-5 text-neutral-500"><strong className="text-neutral-700">Automatic confirmation.</strong> Pay securely with Mobile Money or card. You do not need to send a receipt.</p>
+              </div>
+              <div>
+                <button name="paymentOption" value="pay_later" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold shadow-sm ${canSubmit ? "border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-50" : "cursor-not-allowed border-neutral-300 bg-neutral-100 text-neutral-400"}`}>{submittingOption === "pay_later" ? "Reserving booking..." : "Book & pay store directly"}</button>
+                <p className="mt-2 text-xs leading-5 text-neutral-500"><strong className="text-neutral-700">Receipt verification required.</strong> Pay the store by Mobile Money or bank transfer, then send your receipt through WhatsApp.</p>
+              </div>
             </div>
             <p className="mt-3 text-xs text-neutral-500">{clientValidationMessage ? clientValidationMessage : "Choose how you want to pay. Your booking details are saved first."}</p>
 
@@ -396,7 +400,7 @@ export default function BookPage() {
                   <div><dt className="inline font-semibold">Booking reference:</dt> <dd className="inline">{directPaymentDetails.bookingId}</dd></div>
                 </dl>
                 <p className="mt-3">Use your name or booking reference as the payment reference. After paying, send the receipt so the store can confirm your appointment.</p>
-                <a href={`https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(`Hi Glittering Spa, I have paid for booking ${directPaymentDetails.bookingId}. Name: ${formData.name}. Branch: ${selectedBranch?.label ?? formData.branch}. Amount: ${currency.format(selectedServiceTotal)}. I am sending my payment receipt.`)}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-xl bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Send receipt on WhatsApp</a>
+                <a href={`https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(`Hi Glittering Spa, I have booked appointment ${directPaymentDetails.bookingId}. Name: ${formData.name}. Branch: ${selectedBranch?.label ?? formData.branch}. Amount: ${currency.format(selectedServiceTotal)}. I am sending my payment receipt for verification.`)}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-xl bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Send receipt on WhatsApp</a>
               </div>
             )}
           </form>
