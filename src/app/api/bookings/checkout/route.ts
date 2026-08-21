@@ -230,8 +230,6 @@ export async function POST(request: Request) {
       payment_status: paymentStatus,
       quantity: 1,
       bookingStatus: "booked",
-      paymentCollectionMode,
-      paymentStatus,
       syncStatus: "pending",
       syncRequestedAt,
       attributes: {
