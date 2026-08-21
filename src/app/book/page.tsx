@@ -15,6 +15,7 @@ const CONTACT_OPTIONS = ["WhatsApp", "Phone call", "SMS", "Email"] as const;
 const BANK_ACCOUNT_NUMBER = "2400777697112";
 const BANK_NAME = "Fidelity Bank";
 const BANK_ACCOUNT_NAME = "Glittering Med Spa";
+const DIRECT_PAYMENT_MINIMUM_DEPOSIT = 50;
 const BRANCH_MOMO_NUMBERS: Record<string, string> = {
   "Glittering Med Spa Main": "0270763296",
   "Glittering Spa Spintex": "0530530852",
@@ -29,6 +30,7 @@ type CheckoutResponse = {
   bookingId?: string;
   bookingSaved?: boolean;
   paymentOption?: PaymentOption;
+  requiredDepositAmount?: number;
   message?: string;
   error?: string;
 };
@@ -54,7 +56,12 @@ export default function BookPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
   const [serviceSearch, setServiceSearch] = useState("");
-  const [directPaymentDetails, setDirectPaymentDetails] = useState<{ bookingId: string; momoNumber: string } | null>(null);
+  const [directPaymentDetails, setDirectPaymentDetails] = useState<{
+    bookingId: string;
+    momoNumber: string;
+    requiredDepositAmount: number;
+    totalAmount: number;
+  } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -84,6 +91,7 @@ export default function BookPage() {
     () => selectedServices.reduce((total, service) => total + (readServicePrice(service) ?? 0), 0),
     [selectedServices]
   );
+  const directPaymentDeposit = Math.min(DIRECT_PAYMENT_MINIMUM_DEPOSIT, selectedServiceTotal);
   const hasInvalidSelectedServicePrice = useMemo(
     () => selectedServices.some((service) => {
       const price = readServicePrice(service);
@@ -257,10 +265,12 @@ export default function BookPage() {
         setDirectPaymentDetails({
           bookingId: data.bookingId ?? "Pending",
           momoNumber: BRANCH_MOMO_NUMBERS[formData.branch] ?? "",
+          requiredDepositAmount: data.requiredDepositAmount ?? directPaymentDeposit,
+          totalAmount: selectedServiceTotal,
         });
         setSubmitMessage({
           kind: "success",
-          text: "Your appointment is reserved. Complete the payment using the branch MoMo number or bank account shown below, then send your receipt on WhatsApp.",
+          text: `Your appointment is reserved. Pay the required ${currency.format(data.requiredDepositAmount ?? directPaymentDeposit)} deposit using the branch MoMo number or bank account below, then send your receipt on WhatsApp for approval.`,
         });
         setSubmittingOption(null);
         return;
@@ -380,8 +390,8 @@ export default function BookPage() {
                 <p className="mt-2 text-xs leading-5 text-neutral-500"><strong className="text-neutral-700">Automatic confirmation.</strong> Pay securely with Mobile Money or card. You do not need to send a receipt.</p>
               </div>
               <div>
-                <button name="paymentOption" value="pay_later" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold shadow-sm ${canSubmit ? "border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-50" : "cursor-not-allowed border-neutral-300 bg-neutral-100 text-neutral-400"}`}>{submittingOption === "pay_later" ? "Reserving booking..." : "Book & pay store directly"}</button>
-                <p className="mt-2 text-xs leading-5 text-neutral-500"><strong className="text-neutral-700">Receipt verification required.</strong> Pay the store by Mobile Money or bank transfer, then send your receipt through WhatsApp.</p>
+                <button name="paymentOption" value="pay_later" type="submit" disabled={!canSubmit} className={`inline-flex w-full items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold shadow-sm ${canSubmit ? "border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-50" : "cursor-not-allowed border-neutral-300 bg-neutral-100 text-neutral-400"}`}>{submittingOption === "pay_later" ? "Reserving booking..." : selectedServices.length > 0 ? `Book & pay ${currency.format(directPaymentDeposit)} deposit` : "Book & pay store deposit"}</button>
+                <p className="mt-2 text-xs leading-5 text-neutral-500"><strong className="text-neutral-700">Minimum deposit required.</strong> Pay {selectedServices.length > 0 ? currency.format(directPaymentDeposit) : "GH₵50.00"} by store MoMo or bank transfer and send the receipt through WhatsApp. Your appointment is confirmed only after staff approval.</p>
               </div>
             </div>
             <p className="mt-3 text-xs text-neutral-500">{clientValidationMessage ? clientValidationMessage : "Choose how you want to pay. Your booking details are saved first."}</p>
@@ -392,15 +402,17 @@ export default function BookPage() {
                 <h3 className="font-semibold">Complete your direct payment</h3>
                 <dl className="mt-3 grid gap-2">
                   <div><dt className="inline font-semibold">Branch:</dt> <dd className="inline">{selectedBranch?.label ?? formData.branch}</dd></div>
-                  <div><dt className="inline font-semibold">Amount:</dt> <dd className="inline">{currency.format(selectedServiceTotal)}</dd></div>
+                  <div><dt className="inline font-semibold">Total service price:</dt> <dd className="inline">{currency.format(directPaymentDetails.totalAmount)}</dd></div>
+                  <div><dt className="inline font-semibold">Required deposit:</dt> <dd className="inline">{currency.format(directPaymentDetails.requiredDepositAmount)}</dd></div>
+                  <div><dt className="inline font-semibold">Balance after approved deposit:</dt> <dd className="inline">{currency.format(Math.max(0, directPaymentDetails.totalAmount - directPaymentDetails.requiredDepositAmount))}</dd></div>
                   <div><dt className="inline font-semibold">MoMo number:</dt> <dd className="inline">{directPaymentDetails.momoNumber}</dd></div>
                   <div><dt className="inline font-semibold">Bank:</dt> <dd className="inline">{BANK_NAME}</dd></div>
                   <div><dt className="inline font-semibold">Account name:</dt> <dd className="inline">{BANK_ACCOUNT_NAME}</dd></div>
                   <div><dt className="inline font-semibold">Account number:</dt> <dd className="inline">{BANK_ACCOUNT_NUMBER}</dd></div>
                   <div><dt className="inline font-semibold">Booking reference:</dt> <dd className="inline">{directPaymentDetails.bookingId}</dd></div>
                 </dl>
-                <p className="mt-3">Use your name or booking reference as the payment reference. After paying, send the receipt so the store can confirm your appointment.</p>
-                <a href={`https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(`Hi Glittering Spa, I have booked appointment ${directPaymentDetails.bookingId}. Name: ${formData.name}. Branch: ${selectedBranch?.label ?? formData.branch}. Amount: ${currency.format(selectedServiceTotal)}. I am sending my payment receipt for verification.`)}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-xl bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Send receipt on WhatsApp</a>
+                <p className="mt-3">Use your name or booking reference as the payment reference. Your booking remains pending until the store verifies the deposit receipt.</p>
+                <a href={`https://wa.me/${SITE.phoneIntl}?text=${encodeURIComponent(`Hi Glittering Spa, I have booked appointment ${directPaymentDetails.bookingId}. Name: ${formData.name}. Branch: ${selectedBranch?.label ?? formData.branch}. Total: ${currency.format(directPaymentDetails.totalAmount)}. Required deposit: ${currency.format(directPaymentDetails.requiredDepositAmount)}. I am sending my deposit receipt for verification.`)}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-xl bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Send deposit receipt on WhatsApp</a>
               </div>
             )}
           </form>

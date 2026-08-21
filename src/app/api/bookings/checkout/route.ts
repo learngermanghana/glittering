@@ -4,6 +4,7 @@ const SEDIFEX_BASE_URL = process.env.SEDIFEX_INTEGRATION_API_BASE_URL || "https:
 const SEDIFEX_STORE_ID = process.env.SEDIFEX_BOOKING_TARGET_STORE_ID || process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID || "37mJqg20MjOriggaIaOOuahDsgj1";
 const CHECKOUT_CREATE_URL = process.env.SEDIFEX_INTEGRATION_CHECKOUT_CREATE_URL || `${SEDIFEX_BASE_URL.replace(/\/$/, "")}/integrationCheckoutCreate`;
 const BOOKINGS_URL = process.env.SEDIFEX_INTEGRATION_BOOKINGS_URL || `${SEDIFEX_BASE_URL.replace(/\/$/, "")}/v1IntegrationBookings`;
+const DIRECT_PAYMENT_MINIMUM_DEPOSIT = 50;
 
 type PaymentOption = "pay_now" | "pay_later";
 
@@ -122,6 +123,7 @@ export async function POST(request: Request) {
     const actualServiceId = selectedServices[0]?.id ?? "";
     const serviceName = selectedServices.map((service) => service.name).join(" + ") || "Service booking";
     const servicePrice = selectedServices.reduce((total, service) => total + service.price, 0);
+    const requiredDepositAmount = isPayLater ? Math.min(DIRECT_PAYMENT_MINIMUM_DEPOSIT, servicePrice) : 0;
     const customerName = readString(body.customer?.name);
     const customerEmail = readString(body.customer?.email).toLowerCase();
     const customerPhone = readString(body.customer?.phone);
@@ -176,6 +178,8 @@ export async function POST(request: Request) {
       paymentCollectionMode,
       paymentAmount: servicePrice,
       depositAmount: 0,
+      requiredDepositAmount,
+      required_deposit_amount: requiredDepositAmount,
       amountOutstanding: servicePrice,
       paymentStatus,
       payment_status: paymentStatus,
@@ -215,6 +219,8 @@ export async function POST(request: Request) {
         payment_method: paymentMethod,
         paymentAmount: servicePrice,
         depositAmount: 0,
+        requiredDepositAmount,
+        required_deposit_amount: requiredDepositAmount,
         amountOutstanding: servicePrice,
         amount_outstanding: servicePrice,
         bookingStatus: "booked",
@@ -252,8 +258,9 @@ export async function POST(request: Request) {
         bookingSaved: true,
         paymentOption,
         paymentStatus,
+        requiredDepositAmount,
         clientOrderId,
-        message: "Your booking has been saved to Sedifex. Payment is pending, and the spa team will contact you.",
+        message: `Your booking has been saved to Sedifex. A GHS ${requiredDepositAmount.toFixed(2)} deposit is required and remains pending until the spa verifies the receipt.`,
       });
     }
 
