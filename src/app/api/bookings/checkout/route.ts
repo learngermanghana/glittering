@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
+import { getProducts } from "@/lib/crm";
 
 const SEDIFEX_BASE_URL = process.env.SEDIFEX_INTEGRATION_API_BASE_URL || "https://us-central1-sedifex-web.cloudfunctions.net";
 const SEDIFEX_STORE_ID = process.env.SEDIFEX_BOOKING_TARGET_STORE_ID || process.env.NEXT_PUBLIC_SEDIFEX_STORE_ID || "37mJqg20MjOriggaIaOOuahDsgj1";
 const CHECKOUT_CREATE_URL = process.env.SEDIFEX_INTEGRATION_CHECKOUT_CREATE_URL || `${SEDIFEX_BASE_URL.replace(/\/$/, "")}/integrationCheckoutCreate`;
 const BOOKINGS_URL = process.env.SEDIFEX_INTEGRATION_BOOKINGS_URL || `${SEDIFEX_BASE_URL.replace(/\/$/, "")}/v1IntegrationBookings`;
 const DIRECT_PAYMENT_MINIMUM_DEPOSIT = 50;
+const BOOKING_BRANCHES = [
+  { name: "Glittering Med Spa Main", storeId: "37mJqg20MjOriggaIaOOuahDsgj1" },
+  { name: "Glittering Spa Annex", storeId: "2EeDEIDS1FO814KVfaaUVdv66bM2" },
+  { name: "Glittering Spa Spintex", storeId: "kT9QTWUkACMby6OwI2RO1bxG0WL2" },
+] as const;
+const BRANCH_STORE_IDS = new Set<string>(BOOKING_BRANCHES.map((branch) => branch.storeId));
+const BRANCH_STORE_ID_BY_NAME = new Map<string, string>(BOOKING_BRANCHES.map((branch) => [branch.name.toLowerCase(), branch.storeId]));
 
 type PaymentOption = "pay_now" | "pay_later";
 
@@ -90,7 +98,7 @@ function readCheckoutUrl(data: AnyRecord | null) {
   return typeof value === "string" ? value : "";
 }
 
-function normalizeServices(body: CheckoutBody) {
+function readRequestedServiceIds(body: CheckoutBody) {
   const rawServices = Array.isArray(body.services) && body.services.length > 0
     ? body.services
     : [
@@ -104,14 +112,42 @@ function normalizeServices(body: CheckoutBody) {
         },
       ];
 
-  return rawServices
-    .map((service) => {
-      const id = readString(service.serviceId) || readString(service.id) || readString(service.item_id);
-      const name = readString(service.serviceName) || readString(service.name) || "Service booking";
-      const price = readNumber(service.servicePrice ?? service.price);
-      return { id, name, price };
-    })
-    .filter((service) => service.id);
+  return Array.from(new Set(rawServices
+    .map((service) => readString(service.serviceId) || readString(service.id) || readString(service.item_id))
+    .filter(Boolean)));
+}
+
+function resolveBranchStoreId(body: CheckoutBody) {
+  const suppliedStoreIds = [body.branchLocationId, body.selectedBranchStoreId]
+    .map(readString)
+    .filter(Boolean);
+  if (suppliedStoreIds.some((storeId) => !BRANCH_STORE_IDS.has(storeId))) return "";
+  if (new Set(suppliedStoreIds).size > 1) return "";
+
+  const storeIdFromName = BRANCH_STORE_ID_BY_NAME.get(readString(body.branchLocationName).toLowerCase()) ?? "";
+  const storeId = suppliedStoreIds[0] || storeIdFromName;
+  if (!storeId || (storeIdFromName && storeIdFromName !== storeId)) return "";
+  return storeId;
+}
+
+async function loadAuthoritativeServices(serviceIds: string[], branchStoreId: string) {
+  const requestedIds = new Set(serviceIds);
+  const products = await getProducts();
+  const servicesById = new Map<string, { id: string; name: string; price: number }>();
+
+  for (const product of products) {
+    const id = readString(product.id);
+    if (!requestedIds.has(id)) continue;
+    if (readString(product.storeId) !== branchStoreId) continue;
+    if (readString(product.itemType).toLowerCase() !== "service") continue;
+
+    const name = readString(product.name);
+    const price = readNumber(product.price);
+    if (!name || price <= 0) continue;
+    servicesById.set(id, { id, name, price });
+  }
+
+  return serviceIds.map((serviceId) => servicesById.get(serviceId)).filter((service): service is { id: string; name: string; price: number } => Boolean(service));
 }
 
 export async function POST(request: Request) {
@@ -119,7 +155,17 @@ export async function POST(request: Request) {
     const body = (await request.json()) as CheckoutBody;
     const paymentOption: PaymentOption = body.paymentOption === "pay_later" ? "pay_later" : "pay_now";
     const isPayLater = paymentOption === "pay_later";
-    const selectedServices = normalizeServices(body);
+    const requestedServiceIds = readRequestedServiceIds(body);
+    const branchStoreId = resolveBranchStoreId(body);
+
+    if (requestedServiceIds.length === 0) return NextResponse.json({ error: "Select at least one service." }, { status: 400 });
+    if (!branchStoreId) return NextResponse.json({ error: "Choose a valid booking branch." }, { status: 400 });
+
+    const selectedServices = await loadAuthoritativeServices(requestedServiceIds, branchStoreId);
+    if (selectedServices.length !== requestedServiceIds.length) {
+      return NextResponse.json({ error: "One or more selected services are unavailable or have no valid store price. Please refresh and select again." }, { status: 400 });
+    }
+
     const actualServiceId = selectedServices[0]?.id ?? "";
     const serviceName = selectedServices.map((service) => service.name).join(" + ") || "Service booking";
     const servicePrice = selectedServices.reduce((total, service) => total + service.price, 0);
@@ -134,7 +180,6 @@ export async function POST(request: Request) {
     const paymentStatus = isPayLater ? "pending" : "checkout_created";
 
     if (!actualServiceId || selectedServices.length === 0) return NextResponse.json({ error: "Select at least one service." }, { status: 400 });
-    if (selectedServices.some((service) => !service.price || service.price <= 0)) return NextResponse.json({ error: "Every selected service must have a valid price." }, { status: 400 });
     if (!customerPhone) return NextResponse.json({ error: "Phone number is required for booking updates." }, { status: 400 });
     if (!servicePrice || servicePrice <= 0) return NextResponse.json({ error: "Service price is required." }, { status: 400 });
     if (!apiKey) return NextResponse.json({ error: "Sedifex integration key is missing." }, { status: 500 });
